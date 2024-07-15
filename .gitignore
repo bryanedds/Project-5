@@ -1,0 +1,68 @@
+######################
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+######################
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+#######################
+# IDE generated files #
+#######################
+*.suo
+*.tws
+
+#####################
+# Build Directories #
+#####################
+bin/
+obj/
+refinement/
+.vs/
+
+#########
+# Nuget #
+#########
+packages/
+!packages/repositories.config
+
+##########################
+# LibreOffice Temp Files #
+##########################
+*.*#
+
+####################
+# Tiled Temp Files #
+####################
+*.tiled-session
+
+#################
+# Blender Files #
+#################
+*.blend1
+
+##########
+# VSCode #
+##########
+.vscode
+
+###############
+# Local Items #
+###############
+/Nu/Nu.Gaia/TestGroups
+/Nu/Nu.Gaia/Assets/Default/Cerberus_by_Andrew_Maximov
+/Nu/Nu.Gaia/Assets/Default/desert-environment
+/Nu/Nu.Gaia/Assets/Default/HQ_AbandonedSchool
+/Nu/Nu.Gaia/Assets/Default/QA_HoldingCells
+/Nu/Nu.Gaia/Assets/Default/Residence
+/Nu/Nu.Gaia/Assets/Default/Villa
