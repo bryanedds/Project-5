@@ -131,7 +131,7 @@
       [OpaqueDistanceOpt [Some 100000]]]]
     [Model
      ["Project5.CharacterDispatcher+CharacterModel, Project 5, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-      [9 0 0 [Gameplay Sophie]]]]
+      [0 0 0 [Gameplay Sophie]]]]
     [Name Character]
     [Offset [6.651878E-05 0.88234997 0.001584962]]
     [Position [0.88 501.7 2.56]]
@@ -144,7 +144,7 @@
     [Light False]
     [LightProbe False]
     [Loaded True]
-    [Name RigidModelHierarchy-0002]
+    [Name Library]
     [Offset [-12.587509 -23.811188 0]]
     [Pickable False]
     [Position [0.06848487 500.05 2.644596]]
