@@ -131,7 +131,7 @@
       [OpaqueDistanceOpt [Some 100000]]]]
     [Model
      ["Project5.CharacterDispatcher+CharacterModel, Project 5, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-      [1713 0 0 [Gameplay Sophie]]]]
+      [9 0 0 [Gameplay Sophie]]]]
     [Name Character]
     [Offset [6.651878E-05 0.88234997 0.001584962]]
     [Position [0.88 501.7 2.56]]
