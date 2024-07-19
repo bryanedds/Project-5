@@ -138,9 +138,12 @@ type GameplayDispatcher () =
             let world = World.setEye3dCenter (positionInterp + v3Up * 1.75f - rotationInterp.Forward * 3.0f) world
             let world = World.setEye3dRotation rotationInterp world
 
-            // update sun to shine over player
-            let positionInterpFloor = positionInterp.MapX(MathF.Floor).MapY(MathF.Floor).MapZ(MathF.Floor)
-            let world = Simulants.GameplaySun.SetPosition (positionInterpFloor + v3Up * 12.0f) world
+            // update sun to shine over player.
+            let world =
+                if Simulants.GameplaySun.GetExists world then
+                    let positionInterpFloor = positionInterp.MapX(MathF.Floor).MapY(MathF.Floor).MapZ(MathF.Floor)
+                    Simulants.GameplaySun.SetPosition (positionInterpFloor + v3Up * 12.0f) world
+                else world
             just world
 
     // here we describe the content of the game including the hud group and the scene group
