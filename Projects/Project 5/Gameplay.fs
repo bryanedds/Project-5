@@ -135,7 +135,7 @@ type GameplayDispatcher () =
             let rotation = Simulants.GameplayPlayer.GetRotation world
             let positionInterp = player.PositionInterp position
             let rotationInterp = player.RotationInterp rotation * Quaternion.CreateFromAxisAngle (v3Right, -0.2f)
-            let world = World.setEye3dCenter (positionInterp + v3Up * 1.75f - rotationInterp.Forward * 3.0f) world
+            let world = World.setEye3dCenter (positionInterp + v3Up * 1.75f - rotationInterp.Forward * 1.25f) world
             let world = World.setEye3dRotation rotationInterp world
 
             // update sun to shine over player.

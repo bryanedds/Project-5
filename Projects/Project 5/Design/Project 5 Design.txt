@@ -1,0 +1,29 @@
+okay, so doing a little iteration with the interactive code reload, i've decided Project 5 is going to be a horror game like Clock Tower, but with stealth -
+Image
+Image
+WASD moves character, Q peeks left and E peeks right (where peek = translate camera slightly to left or right of character)
+left / right arrow turns
+taking a cue from RE8
+it takes two hits for the player to die
+the first hit can't be recovered from except by health restore event or item
+the second hit can be recovered from over time
+stages consist of enemies that move along a predefined patrol path
+these enemies are only vulnerable by attacking them from the back 
+these are basic enemies
+enemy type A
+however, over a random amount of time (3-6 minutes)
+another type of enemy shows up
+enemy type B
+Stalker Type
+he acts as Scissorman in Clock Tower
+when spawned, he always knows where you are by scent
+(homegirl be smellin good, don't H8)
+bryanedds — Today at 4:30 AM
+he is unkillable, basically
+he only leaves the scene for two reasons -
+1) you evade him for 3 minutes
+2) you hide in a one-time hiding place or use a one-time use scene object to drive him away
+that's it
+that's the game
+done, mic drop
+ship it
