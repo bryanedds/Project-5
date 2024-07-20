@@ -19,14 +19,14 @@ type JumpState =
 
 type AttackState =
     { AttackTime : single
-      AttackedCharacters : Entity Set
       FollowUpBuffered : bool
+      AttackedCharacters : Entity Set
       TranspiredSounds : Sound AssetTag HashSet }
 
     static member make time =
         { AttackTime = time
-          AttackedCharacters = Set.empty
           FollowUpBuffered = false
+          AttackedCharacters = Set.empty
           TranspiredSounds = HashSet () }
 
 type InjuryState =
