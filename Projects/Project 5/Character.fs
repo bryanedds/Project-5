@@ -1,5 +1,6 @@
 ﻿namespace Project5
 open System
+open System.Collections.Generic
 open System.Numerics
 open Prime
 open Nu
@@ -19,12 +20,14 @@ type JumpState =
 type AttackState =
     { AttackTime : single
       AttackedCharacters : Entity Set
-      FollowUpBuffered : bool }
+      FollowUpBuffered : bool
+      TranspiredSounds : Sound AssetTag HashSet }
 
     static member make time =
         { AttackTime = time
           AttackedCharacters = Set.empty
-          FollowUpBuffered = false }
+          FollowUpBuffered = false
+          TranspiredSounds = HashSet () }
 
 type InjuryState =
     { InjuryTime : single }
@@ -115,30 +118,28 @@ type [<ReferenceEquality; SymbolicExpansion>] Character =
         | _ -> []
 
     static member private tryUpdateActionAnimation time character world =
-        //match character.ActionState with
-        //| NormalState -> None
-        //| AttackState attack ->
-        //    let localTime = time - attack.AttackTime
-        //    if localTime > 0.10f && localTime < 0.12f then
-        //        World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
-        //    elif localTime > 1.10f && localTime < 1.12f then
-        //        World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.Slash2Sound world
-        //    let animationStartTime = GameTime.ofUpdates (time - localTime % 55L)
-        //    let animationName = if localTime <= 55 then "Armature|AttackVertical" else "Armature|AttackHorizontal"
-        //    let animation = Animation.once animationStartTime None animationName
-        //    Some (animation, false)
-        //| InjuryState injury ->
-        //    let localTime = time - injury.InjuryTime
-        //    let animationStartTime = GameTime.ofUpdates (time - localTime % 55L)
-        //    let animation = Animation.once animationStartTime None "Armature|WalkBack"
-        //    Some (animation, false)
-        //| WoundState wound ->
-        //    let localTime = time - wound.WoundTime
-        //    let animationStartTime = GameTime.ofUpdates (time - localTime % 55L)
-        //    let animation = Animation.loop animationStartTime None "Armature|WalkBack"
-        //    let invisible = localTime / 5L % 2L = 0L
-        //    Some (animation, invisible)
-        None
+        match character.ActionState with
+        | NormalState -> None
+        | AttackState attack ->
+            let localTime = time - attack.AttackTime
+            if localTime >= 0.1333f && attack.TranspiredSounds.Add Assets.Gameplay.SlashSound then
+                World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
+            if localTime >= 1.35f && attack.TranspiredSounds.Add Assets.Gameplay.Slash2Sound then
+                World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.Slash2Sound world
+            let (animationTime, animationName) =
+                if localTime < 1.1f
+                then (attack.AttackTime, "Armature|AttackVertical")
+                else (attack.AttackTime + 1.1f, "Armature|AttackHorizontal")
+            let animation = Animation.once animationTime None animationName
+            Some (animation, false)
+        | InjuryState injury ->
+            let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
+            Some (animation, false)
+        | WoundState wound ->
+            let localTime = time - wound.WoundTime
+            let animation = Animation.loop wound.WoundTime None "Armature|WalkBack"
+            let invisible = localTime % 1.0f < 0.5f
+            Some (animation, invisible)
 
     static member private updateInterps position rotation linearVelocity angularVelocity character =
 
@@ -235,7 +236,7 @@ type [<ReferenceEquality; SymbolicExpansion>] Character =
         | AttackState attack ->
             let actionState =
                 let localTime = time - attack.AttackTime
-                if localTime < 0.92f || localTime < 1.83f && attack.FollowUpBuffered
+                if localTime < 0.92f || localTime < 2.5f && attack.FollowUpBuffered
                 then AttackState attack
                 else NormalState
             { character with ActionState = actionState }
