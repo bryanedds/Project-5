@@ -286,7 +286,7 @@ void main()
             float search1 = 0;
             int hit0 = 0;
             int hit1 = 0;
-            float viewDistance = startView.z;
+            float viewDistance = -startView.z;
             float depth = thickness;
             for (int i = 0; i < min(int(delta), 256); ++i)
             {
@@ -298,8 +298,8 @@ void main()
                 //{
                     search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
                     search1 = clamp(search1, 0.0, 1.0);
-                    viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, search1);
-                    depth = viewDistance - positionTo.z;
+                    viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
+                    depth = viewDistance - -positionTo.z;
                     if (depth > 0 && depth < thickness)
                     {
                         hit0 = 1;
@@ -316,8 +316,8 @@ void main()
                 frag = mix(startFrag.xy, endFrag.xy, search1);
                 uv.xy = frag / texSize;
                 positionTo = view * texture(positionTexture, uv.xy);
-                viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, search1);
-                depth = viewDistance - positionTo.z;
+                viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
+                depth = viewDistance - -positionTo.z;
                 if (depth > 0 && depth < thickness)
                 {
                     hit1 = 1;
