@@ -251,33 +251,37 @@ void main()
         /////////////////////////
         float maxDistance = 8;
         float resolution = 0.1;
-        float thickness = 4.0;
+        float thickness = 0.5;
+        int walksMax = 128;
         int steps = 8;
         float surfaceAngle = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        if (surfaceAngle >= 0.8) // ~36.87 degrees
+        if (surfaceAngle >= 0.8) // ignore surfaces with slope >= ~36.87 degrees
         {
-            vec2 texSize = textureSize(positionTexture, 0).xy;
-            vec2 texCoords2 = gl_FragCoord.xy / texSize;
             vec4 uv = vec4(0.0);
+            vec2 texSize = textureSize(positionTexture, 0).xy;
             vec3 normalView = normalize(mat3(view) * normal);
-            vec4 positionFrom = view * texture(positionTexture, texCoords2);
-            if (positionFrom.w > 0.0)
+            vec4 positionView = view * texture(positionTexture, texCoordsOut);
+            if (positionView.w > 0.0)
             {
-                vec3 unitPositionFrom = normalize(positionFrom.xyz);
-                vec3 pivot = normalize(reflect(unitPositionFrom, normalView));
-                vec4 positionTo = positionFrom;
-                vec4 startView = vec4(positionFrom.xyz, 1.0);
-                vec4 endView = vec4(positionFrom.xyz + pivot * maxDistance, 1.0);
-                vec4 startFrag = startView;
-                startFrag = projection * startFrag;
+                vec3 positionViewNormal = normalize(positionView.xyz);
+                vec3 pivotView = normalize(reflect(positionViewNormal, normalView));
+                vec4 intersectionView = positionView;
+                vec4 startView = vec4(positionView.xyz, 1.0);
+                vec4 endView = vec4(positionView.xyz + pivotView * maxDistance, 1.0);
+
+                // compute the fragment at which to start walking
+                vec4 startFrag = projection * startView;
                 startFrag.xy /= startFrag.w;
                 startFrag.xy = startFrag.xy * 0.5 + 0.5;
                 startFrag.xy *= texSize;
-                vec4 endFrag = endView;
-                endFrag = projection * endFrag;
+                
+                // compute the fragment at which to end walking when applicable
+                vec4 endFrag = projection * endView;
                 endFrag.xy /= endFrag.w;
                 endFrag.xy = endFrag.xy * 0.5 + 0.5;
                 endFrag.xy *= texSize;
+
+                // compute fragment increment amount
                 vec2 frag = startFrag.xy;
                 uv.xy = frag / texSize;
                 float deltaX = endFrag.x - startFrag.x;
@@ -285,22 +289,24 @@ void main()
                 float useX = abs(deltaX) >= abs(deltaY) ? 1.0 : 0.0;
                 float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(resolution, 0.0, 1.0);
                 vec2 increment = vec2(deltaX, deltaY) / max(delta, 0.001);
+
+                // increment fragment
                 float search0 = 0;
                 float search1 = 0;
                 int hit0 = 0;
-                int hit1 = 0;
                 float viewDistance = -startView.z;
                 float depth = thickness;
-                for (int i = 0; i < min(int(delta), 128); ++i)
+                for (int i = 0; i < min(int(delta), walksMax); ++i)
                 {
+                    // walk fragment one increment
                     frag += increment;
                     uv.xy = frag / texSize;
-                    positionTo = view * texture(positionTexture, uv.xy);
+                    intersectionView = view * texture(positionTexture, uv.xy);
                     vec3 normalTo = normalize(mat3(view) * texture(normalPlusTexture, uv.xy).xyz);
                     search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
                     search1 = clamp(search1, 0.0, 1.0);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
-                    depth = viewDistance - -positionTo.z;
+                    depth = viewDistance - -intersectionView.z;
                     if (depth > 0 && depth < thickness)
                     {
                         hit0 = 1;
@@ -308,33 +314,39 @@ void main()
                     }
                     else search0 = search1;
                 }
-                search1 = search0 + ((search1 - search0) / 2.0);
+                
+                // perform steps within last walk
+                int hit1 = 0;
+                search1 = search0 + (search1 - search0) * 0.5;
                 steps *= hit0;
                 for (int i = 0; i < steps; ++i)
                 {
+                    // step fragment in the appropriate direction
                     frag = mix(startFrag.xy, endFrag.xy, search1);
                     uv.xy = frag / texSize;
-                    positionTo = view * texture(positionTexture, uv.xy);
+                    intersectionView = view * texture(positionTexture, uv.xy);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
-                    depth = viewDistance - -positionTo.z;
+                    depth = viewDistance - -intersectionView.z;
                     if (depth > 0 && depth < thickness)
                     {
                         hit1 = 1;
-                        search1 = search0 + ((search1 - search0) / 2);
+                        search1 = search0 + (search1 - search0) * 0.5;
                     }
                     else
                     {
                         float temp = search1;
-                        search1 = search1 + ((search1 - search0) / 2);
+                        search1 = search1 + (search1 - search0) * 0.5;
                         search0 = temp;
                     }
                 }
+
+                // determine strength of reflection visibility
                 float visibility =
                     hit1 *
-                    positionTo.w *
-                    (1 - max(dot(-unitPositionFrom, pivot), 0)) *
+                    intersectionView.w *
+                    (1 - max(dot(-positionViewNormal, pivotView), 0)) *
                     (1 - clamp(depth / thickness, 0, 1)) *
-                    (1 - clamp(length(positionTo - positionFrom) / maxDistance, 0, 1)) *
+                    (1 - clamp(length(intersectionView - positionView) / maxDistance, 0, 1)) *
                     (uv.x < 0 || uv.x > 1 ? 0 : 1) *
                     (uv.y < 0 || uv.y > 1 ? 0 : 1) *
                     (1.0 - roughness) *
