@@ -295,11 +295,11 @@ void main()
                 uv.xy = currentFrag / texSize;
 
                 // compute fragment step amount
-                float stepHorizonalDelta = stopFrag.x - startFrag.x;
-                float stepVerticalDelta = stopFrag.y - startFrag.y;
-                float shouldStepHorizontal = abs(stepHorizonalDelta) >= abs(stepVerticalDelta) ? 1.0 : 0.0;
-                float stepLength = mix(abs(stepVerticalDelta), abs(stepHorizonalDelta), shouldStepHorizontal) * reflectionFineness;
-                vec2 stepAmount = vec2(stepHorizonalDelta, stepVerticalDelta) / max(stepLength, 0.001);
+                float marchHorizonal = stopFrag.x - startFrag.x;
+                float marchVertical = stopFrag.y - startFrag.y;
+                float shouldMarchHorizontal = abs(marchHorizonal) >= abs(marchVertical) ? 1.0 : 0.0;
+                float stepLength = mix(abs(marchVertical), abs(marchHorizonal), shouldMarchHorizontal) * reflectionFineness;
+                vec2 stepAmount = vec2(marchHorizonal, marchVertical) / max(stepLength, 0.001);
 
                 // march fragment
                 int hit0 = 0;
@@ -315,7 +315,7 @@ void main()
                     uv.xy = currentFrag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
                     vec3 normalTo = normalize(view3 * texture(normalPlusTexture, uv.xy).xyz);
-                    search1 = mix((currentFrag.y - startFrag.y) / stepVerticalDelta, (currentFrag.x - startFrag.x) / stepHorizonalDelta, shouldStepHorizontal);
+                    search1 = mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal);
                     search1 = clamp(search1, 0.0, 1.0);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
                     depth = viewDistance - -intersectionView.z;
