@@ -263,16 +263,16 @@ void main()
             vec3 unitPositionFrom = normalize(positionFrom.xyz);
             vec3 pivot = normalize(reflect(unitPositionFrom, normal));
             vec4 positionTo = positionFrom;
-            vec4 startView = vec4(positionFrom.xyz + (pivot * 0.0), 1.0);
-            vec4 endView = vec4(positionFrom.xyz + (pivot * maxDistance), 1.0);
+            vec4 startView = vec4(positionFrom.xyz, 1.0);
+            vec4 endView = vec4(positionFrom.xyz + pivot * maxDistance, 1.0);
             vec4 startFrag = startView;
             startFrag = projection * startFrag;
-            startFrag.xyz /= startFrag.w;
+            startFrag.xy /= startFrag.w;
             startFrag.xy = startFrag.xy * 0.5 + 0.5;
             startFrag.xy *= texSize;
             vec4 endFrag = endView;
             endFrag = projection * endFrag;
-            endFrag.xyz /= endFrag.w;
+            endFrag.xy /= endFrag.w;
             endFrag.xy = endFrag.xy * 0.5 + 0.5;
             endFrag.xy *= texSize;
             vec2 frag = startFrag.xy;
@@ -341,7 +341,7 @@ void main()
             visibility = clamp(visibility, 0, 1);
             uv.ba = vec2(visibility);
         }
-        frag = texture(albedoTexture, uv.xy);
+        frag = texture(albedoTexture, uv.xy) * uv.a;
         /////////////////////////
         // ssr end
         /////////////////////////
