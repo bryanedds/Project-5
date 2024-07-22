@@ -356,7 +356,7 @@ void main()
                     //(1.0 - roughness) *
                     surfaceAngle;
                 visibility = clamp(visibility, 0.0, 1.0);
-                visibility = min(visibility, 0.2);
+                //visibility = min(visibility, 0.2);
                 uv.ba = vec2(visibility);
             }
             frag = texture(albedoTexture, uv.xy) * uv.a + frag * (1.0 - uv.a);
