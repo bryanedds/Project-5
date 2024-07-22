@@ -290,10 +290,11 @@ void main()
                 float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(resolution, 0.0, 1.0);
                 vec2 increment = vec2(deltaX, deltaY) / max(delta, 0.001);
 
-                // increment fragment
+                // walk fragment
+                int hit0 = 0;
+                int hit1 = 0;
                 float search0 = 0;
                 float search1 = 0;
-                int hit0 = 0;
                 float viewDistance = -startView.z;
                 float depth = thickness;
                 for (int i = 0; i < min(int(delta), walksMax); ++i)
@@ -316,7 +317,6 @@ void main()
                 }
                 
                 // perform steps within last walk
-                int hit1 = 0;
                 search1 = search0 + (search1 - search0) * 0.5;
                 steps *= hit0;
                 for (int i = 0; i < steps; ++i)
