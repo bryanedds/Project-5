@@ -68,8 +68,8 @@ float computeShadowScalar(sampler2D shadowMap, vec2 shadowTexCoords, float shado
     vec2 moments = texture(shadowMap, shadowTexCoords).xy;
     float p = step(shadowZ, moments.x);
     float variance = max(moments.y - moments.x * moments.x, varianceMin);
-    float delta = shadowZ - moments.x;
-    float pMax = linstep(lightBleedFilter, 1.0, variance / (variance + delta * delta));
+    float stepLength = shadowZ - moments.x;
+    float pMax = linstep(lightBleedFilter, 1.0, variance / (variance + stepLength * stepLength));
     return max(p, pMax);
 }
 
@@ -253,11 +253,16 @@ void main()
         float reflectionDistanceMax = 16;
         float reflectionFineness = 0.1;
         float reflectionRayThickness = 0.5;
-        float reflectionSurfaceAngleMax = 0.8;
+        float reflectionSurfaceSlopeMax = 0.8;
         int reflectionStepsMax = 128;
         int reflectionRefinements = 8;
-        float surfaceAngle = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        if (surfaceAngle >= reflectionSurfaceAngleMax) // ignore surfaces with slope >= ~36.87 degrees
+
+        // clamp user-defined values
+        reflectionFineness = clamp(reflectionFineness, 0.0, 1.0);
+
+        // apply screen-space reflection when surface slope isn't too great
+        float surfaceSlope = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
+        if (surfaceSlope >= reflectionSurfaceSlopeMax) // ignore surfaces with slope >= ~36.87 degrees
         {
             vec4 uv = vec4(0.0);
             mat3 view3 = mat3(view);
@@ -280,19 +285,21 @@ void main()
                 startFrag *= texSize;
                 
                 // compute the fragment at which to end marching
-                vec4 endFrag4 = projection * endView;
-                vec2 endFrag = endFrag4.xy / endFrag4.w;
-                endFrag = endFrag * 0.5 + 0.5;
-                endFrag *= texSize;
+                vec4 stopFrag4 = projection * endView;
+                vec2 stopFrag = stopFrag4.xy / stopFrag4.w;
+                stopFrag = stopFrag * 0.5 + 0.5;
+                stopFrag *= texSize;
+
+                // initialize current fragment
+                vec2 currentFrag = startFrag;
+                uv.xy = currentFrag / texSize;
 
                 // compute fragment step amount
-                vec2 frag = startFrag;
-                uv.xy = frag / texSize;
-                float deltaX = endFrag.x - startFrag.x;
-                float deltaY = endFrag.y - startFrag.y;
-                float useX = abs(deltaX) >= abs(deltaY) ? 1.0 : 0.0;
-                float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(reflectionFineness, 0.0, 1.0);
-                vec2 step = vec2(deltaX, deltaY) / max(delta, 0.001);
+                float stepHorizonalDelta = stopFrag.x - startFrag.x;
+                float stepVerticalDelta = stopFrag.y - startFrag.y;
+                float shouldStepHorizontal = abs(stepHorizonalDelta) >= abs(stepVerticalDelta) ? 1.0 : 0.0;
+                float stepLength = mix(abs(stepVerticalDelta), abs(stepHorizonalDelta), shouldStepHorizontal) * reflectionFineness;
+                vec2 stepAmount = vec2(stepHorizonalDelta, stepVerticalDelta) / max(stepLength, 0.001);
 
                 // march fragment
                 int hit0 = 0;
@@ -301,14 +308,14 @@ void main()
                 float search1 = 0;
                 float viewDistance = -startView.z;
                 float depth = reflectionRayThickness;
-                for (int i = 0; i < min(int(delta), reflectionStepsMax); ++i)
+                for (int i = 0; i < min(int(stepLength), reflectionStepsMax); ++i)
                 {
                     // step fragment
-                    frag += step;
-                    uv.xy = frag / texSize;
+                    currentFrag += stepAmount;
+                    uv.xy = currentFrag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
                     vec3 normalTo = normalize(view3 * texture(normalPlusTexture, uv.xy).xyz);
-                    search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
+                    search1 = mix((currentFrag.y - startFrag.y) / stepVerticalDelta, (currentFrag.x - startFrag.x) / stepHorizonalDelta, shouldStepHorizontal);
                     search1 = clamp(search1, 0.0, 1.0);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
                     depth = viewDistance - -intersectionView.z;
@@ -326,8 +333,8 @@ void main()
                 for (int i = 0; i < reflectionRefinements; ++i)
                 {
                     // refine fragment
-                    frag = mix(startFrag, endFrag, search1);
-                    uv.xy = frag / texSize;
+                    currentFrag = mix(startFrag, stopFrag, search1);
+                    uv.xy = currentFrag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
                     depth = viewDistance - -intersectionView.z;
@@ -356,7 +363,7 @@ void main()
                     ((specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0) *
                     //clamp(mix(1.0 - roughness, 1.0, metallic), 0.0, 1.0) *
                     //(1.0 - roughness) *
-                    surfaceAngle;
+                    surfaceSlope;
                 visibility = clamp(visibility, 0.0, 1.0);
                 //visibility = min(visibility, 0.2);
                 uv.ba = vec2(visibility);
