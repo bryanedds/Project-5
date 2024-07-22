@@ -250,7 +250,7 @@ void main()
         // ssr
         /////////////////////////
         float maxDistance = 8;
-        float resolution = 0.12;
+        float resolution = 0.1;
         float thickness = 4.0;
         int steps = 8;
         vec2 texSize = textureSize(positionTexture, 0).xy;
