@@ -250,9 +250,9 @@ void main()
         // ssr
         /////////////////////////
         float maxDistance = 8;
-        float resolution = 0.05;
-        int steps = 16;
+        float resolution = 0.12;
         float thickness = 4.0;
+        int steps = 8;
         vec2 texSize = textureSize(positionTexture, 0).xy;
         vec2 texCoords2 = gl_FragCoord.xy / texSize;
         vec4 uv = vec4(0.0);
@@ -288,26 +288,22 @@ void main()
             int hit1 = 0;
             float viewDistance = -startView.z;
             float depth = thickness;
-            for (int i = 0; i < min(int(delta), 64); ++i)
+            for (int i = 0; i < min(int(delta), 128); ++i)
             {
                 frag += increment;
                 uv.xy = frag / texSize;
                 positionTo = view * texture(positionTexture, uv.xy);
                 vec3 normalTo = normalize(mat3(view) * texture(normalPlusTexture, uv.xy).xyz);
-                //if (normalTo != vec3(1.0))
-                //{
-                    search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
-                    search1 = clamp(search1, 0.0, 1.0);
-                    viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
-                    depth = viewDistance - -positionTo.z;
-                    if (depth > 0 && depth < thickness)
-                    {
-                        hit0 = 1;
-                        break;
-                    }
-                    else search0 = search1;
-                //}
-                //else break;
+                search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
+                search1 = clamp(search1, 0.0, 1.0);
+                viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
+                depth = viewDistance - -positionTo.z;
+                if (depth > 0 && depth < thickness)
+                {
+                    hit0 = 1;
+                    break;
+                }
+                else search0 = search1;
             }
             search1 = search0 + ((search1 - search0) / 2.0);
             steps *= hit0;
