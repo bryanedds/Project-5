@@ -244,23 +244,14 @@ void main()
         color = pow(color, vec3(1.0 / GAMMA));
         color = color + emission * albedo.rgb;
 
-        // write
-        frag = vec4(color, 1.0);
-
-        /////////////////////////
-        // ssr
-        /////////////////////////
+        // apply screen-space reflection when surface slope isn't too great
         float reflectionDistanceMax = 16;
         float reflectionFineness = 0.1;
         float reflectionRayThickness = 0.5;
         float reflectionSurfaceSlopeMax = 0.2;
         int reflectionStepsMax = 128;
         int reflectionRefinements = 8;
-
-        // clamp user-defined values
-        reflectionFineness = clamp(reflectionFineness, 0.0, 1.0);
-
-        // apply screen-space reflection when surface slope isn't too great
+        reflectionFineness = clamp(reflectionFineness, 0.0, 1.0); // clamp user-defined values
         float surfaceSlope = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
         if (surfaceSlope <= reflectionSurfaceSlopeMax) // ignore surfaces with slope >= ~36.87 degrees
         {
@@ -316,7 +307,7 @@ void main()
                 currentDistanceView = startView.z * endView.z / mix(endView.z, startView.z, search1);
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
-                // determine whether we hit within acceptable thickness, otherwise continue marching
+                // determine whether we hit within acceptable thickness, otherwise loop
                 if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
                 {
                     hit0 = 1;
@@ -357,7 +348,7 @@ void main()
 
             // compute ssr visibility
             float visibility =
-                //hit1 *
+                //hit1 * // filter out if specific hit not found
                 specularAvg * // filter out as specularity descreases
                 (1.0 - surfaceSlope) * // filter out as slope increases
                 (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection bounces toward eye
@@ -366,12 +357,10 @@ void main()
             visibility = clamp(visibility, 0.0, 1.0);
             currentUV.a = visibility;
 
-            frag = texture(albedoTexture, currentUV.xy) * currentUV.a + frag * (1.0 - currentUV.a);
+            // write ssr and color composision
+            frag = texture(albedoTexture, currentUV.xy) * currentUV.a + vec4(color, 1.0) * (1.0 - currentUV.a);
         }
-        else frag = frag;
-        /////////////////////////
-        // ssr end
-        /////////////////////////
+        else frag = vec4(color, 1.0); // write color
     }
-    else frag = vec4(1.0, 1.0, 1.0, 1.0); // white lighting
+    else frag = vec4(1.0, 1.0, 1.0, 1.0); // write white
 }
