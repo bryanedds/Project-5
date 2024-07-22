@@ -249,10 +249,10 @@ void main()
         /////////////////////////
         // ssr
         /////////////////////////
-        float maxDistance = 8;
-        float resolution = 0.3;
-        int steps = 5;
-        float thickness = 0.5;
+        float maxDistance = 32;
+        float resolution = 0.1;
+        int steps = 10;
+        float thickness = 1.0;
         vec2 texSize = textureSize(positionTexture, 0).xy;
         vec2 texCoords2 = gl_FragCoord.xy / texSize;
         vec4 uv = vec4(0.0);
@@ -337,11 +337,14 @@ void main()
                 (1 - clamp(depth / thickness, 0, 1)) *
                 (1 - clamp(length(positionTo - positionFrom) / maxDistance, 0, 1)) *
                 (uv.x < 0 || uv.x > 1 ? 0 : 1) *
-                (uv.y < 0 || uv.y > 1 ? 0 : 1);
-            visibility = clamp(visibility, 0, 1);
+                (uv.y < 0 || uv.y > 1 ? 0 : 1) *
+                (1.0 - roughness) *
+                dot(normal, vec3(0.0, 1.0, 0.0));
+            visibility = clamp(visibility, 0.0, 1.0);
+            visibility = min(visibility, 0.25);
             uv.ba = vec2(visibility);
         }
-        frag = texture(albedoTexture, uv.xy) * uv.a;
+        frag = texture(albedoTexture, uv.xy) * uv.a + frag * (1.0 - uv.a);
         /////////////////////////
         // ssr end
         /////////////////////////
