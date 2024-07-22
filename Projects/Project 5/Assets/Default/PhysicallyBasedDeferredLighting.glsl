@@ -232,7 +232,8 @@ void main()
 
         // compute specular term
         vec2 environmentBrdf = texture(brdfTexture, vec2(max(dot(normal, v), 0.0), roughness)).rg;
-        vec3 specular = environmentFilter * (f * environmentBrdf.x + environmentBrdf.y) * lightAmbientSpecular;
+        vec3 specularSubterm = f * environmentBrdf.x + environmentBrdf.y;
+        vec3 specular = environmentFilter * specularSubterm * lightAmbientSpecular;
 
         // compute ambient term
         vec3 ambient = diffuse + specular;
@@ -350,7 +351,9 @@ void main()
                     (1 - clamp(length(intersectionView - positionView) / reflectionDistanceMax, 0, 1)) *
                     (uv.x < 0 || uv.x > 1 ? 0 : 1) *
                     (uv.y < 0 || uv.y > 1 ? 0 : 1) *
-                    (1.0 - roughness) *
+                    ((specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0) *
+                    //clamp(mix(1.0 - roughness, 1.0, metallic), 0.0, 1.0) *
+                    //(1.0 - roughness) *
                     surfaceAngle;
                 visibility = clamp(visibility, 0.0, 1.0);
                 visibility = min(visibility, 0.2);
