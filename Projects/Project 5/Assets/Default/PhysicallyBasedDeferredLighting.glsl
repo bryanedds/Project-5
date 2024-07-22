@@ -254,7 +254,7 @@ void main()
         float reflectionFineness = 0.1;
         float reflectionRayThickness = 0.5;
         float reflectionSurfaceAngleMax = 0.8;
-        int reflectionWalksMax = 128;
+        int reflectionStepsMax = 128;
         int reflectionRefinements = 8;
         float surfaceAngle = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
         if (surfaceAngle >= reflectionSurfaceAngleMax) // ignore surfaces with slope >= ~36.87 degrees
@@ -271,38 +271,38 @@ void main()
                 vec4 startView = vec4(positionView.xyz, 1.0);
                 vec4 endView = vec4(positionView.xyz + pivotView * reflectionDistanceMax, 1.0);
 
-                // compute the fragment at which to start walking
+                // compute the fragment at which to start marching
                 vec4 startFrag = projection * startView;
                 startFrag.xy /= startFrag.w;
                 startFrag.xy = startFrag.xy * 0.5 + 0.5;
                 startFrag.xy *= texSize;
                 
-                // compute the fragment at which to end walking when applicable
+                // compute the fragment at which current step ends
                 vec4 endFrag = projection * endView;
                 endFrag.xy /= endFrag.w;
                 endFrag.xy = endFrag.xy * 0.5 + 0.5;
                 endFrag.xy *= texSize;
 
-                // compute fragment increment amount
+                // compute fragment step amount
                 vec2 frag = startFrag.xy;
                 uv.xy = frag / texSize;
                 float deltaX = endFrag.x - startFrag.x;
                 float deltaY = endFrag.y - startFrag.y;
                 float useX = abs(deltaX) >= abs(deltaY) ? 1.0 : 0.0;
                 float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(reflectionFineness, 0.0, 1.0);
-                vec2 increment = vec2(deltaX, deltaY) / max(delta, 0.001);
+                vec2 step = vec2(deltaX, deltaY) / max(delta, 0.001);
 
-                // walk fragment
+                // march fragment
                 int hit0 = 0;
                 int hit1 = 0;
                 float search0 = 0;
                 float search1 = 0;
                 float viewDistance = -startView.z;
                 float depth = reflectionRayThickness;
-                for (int i = 0; i < min(int(delta), reflectionWalksMax); ++i)
+                for (int i = 0; i < min(int(delta), reflectionStepsMax); ++i)
                 {
-                    // walk fragment one increment
-                    frag += increment;
+                    // step fragment
+                    frag += step;
                     uv.xy = frag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
                     vec3 normalTo = normalize(mat3(view) * texture(normalPlusTexture, uv.xy).xyz);
@@ -323,7 +323,7 @@ void main()
                 reflectionRefinements *= hit0;
                 for (int i = 0; i < reflectionRefinements; ++i)
                 {
-                    // step fragment in the appropriate direction
+                    // refine fragment
                     frag = mix(startFrag.xy, endFrag.xy, search1);
                     uv.xy = frag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
