@@ -253,7 +253,7 @@ void main()
         float reflectionDistanceMax = 16;
         float reflectionFineness = 0.1;
         float reflectionRayThickness = 0.5;
-        float reflectionSurfaceSlopeMax = 0.8;
+        float reflectionSurfaceSlopeMax = 0.2;
         int reflectionStepsMax = 128;
         int reflectionRefinements = 8;
 
@@ -261,8 +261,8 @@ void main()
         reflectionFineness = clamp(reflectionFineness, 0.0, 1.0);
 
         // apply screen-space reflection when surface slope isn't too great
-        float surfaceSlope = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        if (surfaceSlope >= reflectionSurfaceSlopeMax) // ignore surfaces with slope >= ~36.87 degrees
+        float surfaceSlope = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
+        if (surfaceSlope <= reflectionSurfaceSlopeMax) // ignore surfaces with slope >= ~36.87 degrees
         {
             // compute view values
             mat3 view3 = mat3(view);
@@ -351,22 +351,20 @@ void main()
                 }
             }
 
-            // determine strength of reflection visibility
+            // compute specular average
+            float specularAvg = (specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0;
+            currentUV.b = specularAvg;
+
+            // compute ssr visibility
             float visibility =
-                hit1 *
-                currentPositionView.w *
-                (1 - max(dot(-positionViewNormal, reflectionView), 0)) *
-                (1 - clamp(currentDepthView / -reflectionRayThickness, 0, 1)) *
-                (1 - clamp(length(currentPositionView - positionView) / reflectionDistanceMax, 0, 1)) *
-                (currentUV.x < 0 || currentUV.x > 1 ? 0 : 1) *
-                (currentUV.y < 0 || currentUV.y > 1 ? 0 : 1) *
-                ((specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0) *
-                //clamp(mix(1.0 - roughness, 1.0, metallic), 0.0, 1.0) *
-                //(1.0 - roughness) *
-                surfaceSlope;
+                //hit1 *
+                specularAvg * // filter out as specularity descreases
+                (1.0 - surfaceSlope) * // filter out as slope increases
+                (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection bounces toward eye
+                (currentUV.x >= 0.0 && currentUV.x <= 1.0 ? 1.0 : 0.0) * // ensure reflection in uv range
+                (currentUV.y >= 0.0 && currentUV.y <= 1.0 ? 1.0 : 0.0); // ensure reflection in uv range;
             visibility = clamp(visibility, 0.0, 1.0);
-            //visibility = min(visibility, 0.2);
-            currentUV.ba = vec2(visibility);
+            currentUV.a = visibility;
 
             frag = texture(albedoTexture, currentUV.xy) * currentUV.a + frag * (1.0 - currentUV.a);
         }
