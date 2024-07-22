@@ -260,31 +260,33 @@ void main()
         if (surfaceAngle >= reflectionSurfaceAngleMax) // ignore surfaces with slope >= ~36.87 degrees
         {
             vec4 uv = vec4(0.0);
+            mat3 view3 = mat3(view);
             vec2 texSize = textureSize(positionTexture, 0).xy;
-            vec3 normalView = normalize(mat3(view) * normal);
+            vec3 normalView = normalize(view3 * normal);
             vec4 positionView = view * vec4(position, 1.0);
             if (positionView.w > 0.0)
             {
+                // compute view values
                 vec3 positionViewNormal = normalize(positionView.xyz);
-                vec3 pivotView = normalize(reflect(positionViewNormal, normalView));
+                vec3 reflectionView = reflect(positionViewNormal, normalView);
                 vec4 intersectionView = positionView;
                 vec4 startView = vec4(positionView.xyz, 1.0);
-                vec4 endView = vec4(positionView.xyz + pivotView * reflectionDistanceMax, 1.0);
+                vec4 endView = vec4(positionView.xyz + reflectionView * reflectionDistanceMax, 1.0);
 
                 // compute the fragment at which to start marching
-                vec4 startFrag = projection * startView;
-                startFrag.xy /= startFrag.w;
-                startFrag.xy = startFrag.xy * 0.5 + 0.5;
-                startFrag.xy *= texSize;
+                vec4 startFrag4 = projection * startView;
+                vec2 startFrag = startFrag4.xy / startFrag4.w;
+                startFrag = startFrag * 0.5 + 0.5;
+                startFrag *= texSize;
                 
-                // compute the fragment at which current step ends
-                vec4 endFrag = projection * endView;
-                endFrag.xy /= endFrag.w;
-                endFrag.xy = endFrag.xy * 0.5 + 0.5;
-                endFrag.xy *= texSize;
+                // compute the fragment at which to end marching
+                vec4 endFrag4 = projection * endView;
+                vec2 endFrag = endFrag4.xy / endFrag4.w;
+                endFrag = endFrag * 0.5 + 0.5;
+                endFrag *= texSize;
 
                 // compute fragment step amount
-                vec2 frag = startFrag.xy;
+                vec2 frag = startFrag;
                 uv.xy = frag / texSize;
                 float deltaX = endFrag.x - startFrag.x;
                 float deltaY = endFrag.y - startFrag.y;
@@ -305,7 +307,7 @@ void main()
                     frag += step;
                     uv.xy = frag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
-                    vec3 normalTo = normalize(mat3(view) * texture(normalPlusTexture, uv.xy).xyz);
+                    vec3 normalTo = normalize(view3 * texture(normalPlusTexture, uv.xy).xyz);
                     search1 = mix((frag.y - startFrag.y) / deltaY, (frag.x - startFrag.x) / deltaX, useX);
                     search1 = clamp(search1, 0.0, 1.0);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
@@ -324,7 +326,7 @@ void main()
                 for (int i = 0; i < reflectionRefinements; ++i)
                 {
                     // refine fragment
-                    frag = mix(startFrag.xy, endFrag.xy, search1);
+                    frag = mix(startFrag, endFrag, search1);
                     uv.xy = frag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
@@ -346,7 +348,7 @@ void main()
                 float visibility =
                     hit1 *
                     intersectionView.w *
-                    (1 - max(dot(-positionViewNormal, pivotView), 0)) *
+                    (1 - max(dot(-positionViewNormal, reflectionView), 0)) *
                     (1 - clamp(depth / reflectionRayThickness, 0, 1)) *
                     (1 - clamp(length(intersectionView - positionView) / reflectionDistanceMax, 0, 1)) *
                     (uv.x < 0 || uv.x > 1 ? 0 : 1) *
