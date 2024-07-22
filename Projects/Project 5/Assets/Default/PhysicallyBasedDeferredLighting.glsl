@@ -306,20 +306,21 @@ void main()
                 int hit1 = 0;
                 float search0 = 0;
                 float search1 = 0;
-                float viewDepth = startView.z;
-                float depth = reflectionRayThickness;
+                float currentDistance = startView.z;
+                float currentDepth = -reflectionRayThickness;
                 for (int i = 0; i < min(int(stepLength), reflectionStepsMax); ++i)
                 {
                     // step fragment
                     currentFrag += stepAmount;
                     uv.xy = currentFrag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
-                    vec3 normalTo = normalize(view3 * texture(normalPlusTexture, uv.xy).xyz);
+
+                    // determine whether we hit within acceptable thickness, otherwise continue marching
                     search1 = mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal);
                     search1 = clamp(search1, 0.0, 1.0);
-                    viewDepth = startView.z * endView.z / mix(endView.z, startView.z, search1);
-                    depth = viewDepth - intersectionView.z;
-                    if (depth < 0.0 && depth > -reflectionRayThickness)
+                    currentDistance = startView.z * endView.z / mix(endView.z, startView.z, search1);
+                    currentDepth = currentDistance - intersectionView.z;
+                    if (currentDepth < 0.0 && currentDepth > -reflectionRayThickness)
                     {
                         hit0 = 1;
                         break;
@@ -336,9 +337,9 @@ void main()
                     currentFrag = mix(startFrag, stopFrag, search1);
                     uv.xy = currentFrag / texSize;
                     intersectionView = view * texture(positionTexture, uv.xy);
-                    viewDepth = startView.z * endView.z / mix(endView.z, startView.z, search1);
-                    depth = viewDepth - intersectionView.z;
-                    if (depth < 0 && depth > -reflectionRayThickness)
+                    currentDistance = startView.z * endView.z / mix(endView.z, startView.z, search1);
+                    currentDepth = currentDistance - intersectionView.z;
+                    if (currentDepth < 0 && currentDepth > -reflectionRayThickness)
                     {
                         hit1 = 1;
                         search1 = search0 + (search1 - search0) * 0.5;
@@ -356,7 +357,7 @@ void main()
                     hit1 *
                     intersectionView.w *
                     (1 - max(dot(-positionViewNormal, reflectionView), 0)) *
-                    (1 - clamp(depth / -reflectionRayThickness, 0, 1)) *
+                    (1 - clamp(currentDepth / -reflectionRayThickness, 0, 1)) *
                     (1 - clamp(length(intersectionView - positionView) / reflectionDistanceMax, 0, 1)) *
                     (uv.x < 0 || uv.x > 1 ? 0 : 1) *
                     (uv.y < 0 || uv.y > 1 ? 0 : 1) *
