@@ -249,25 +249,26 @@ void main()
         /////////////////////////
         // ssr
         /////////////////////////
-        float maxDistance = 8;
-        float resolution = 0.1;
-        float thickness = 0.5;
-        int walksMax = 128;
-        int steps = 8;
+        float reflectionDistanceMax = 16;
+        float reflectionFineness = 0.1;
+        float reflectionRayThickness = 0.5;
+        float reflectionSurfaceAngleMax = 0.8;
+        int reflectionWalksMax = 128;
+        int reflectionRefinements = 8;
         float surfaceAngle = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        if (surfaceAngle >= 0.8) // ignore surfaces with slope >= ~36.87 degrees
+        if (surfaceAngle >= reflectionSurfaceAngleMax) // ignore surfaces with slope >= ~36.87 degrees
         {
             vec4 uv = vec4(0.0);
             vec2 texSize = textureSize(positionTexture, 0).xy;
             vec3 normalView = normalize(mat3(view) * normal);
-            vec4 positionView = view * texture(positionTexture, texCoordsOut);
+            vec4 positionView = view * vec4(position, 1.0);
             if (positionView.w > 0.0)
             {
                 vec3 positionViewNormal = normalize(positionView.xyz);
                 vec3 pivotView = normalize(reflect(positionViewNormal, normalView));
                 vec4 intersectionView = positionView;
                 vec4 startView = vec4(positionView.xyz, 1.0);
-                vec4 endView = vec4(positionView.xyz + pivotView * maxDistance, 1.0);
+                vec4 endView = vec4(positionView.xyz + pivotView * reflectionDistanceMax, 1.0);
 
                 // compute the fragment at which to start walking
                 vec4 startFrag = projection * startView;
@@ -287,7 +288,7 @@ void main()
                 float deltaX = endFrag.x - startFrag.x;
                 float deltaY = endFrag.y - startFrag.y;
                 float useX = abs(deltaX) >= abs(deltaY) ? 1.0 : 0.0;
-                float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(resolution, 0.0, 1.0);
+                float delta = mix(abs(deltaY), abs(deltaX), useX) * clamp(reflectionFineness, 0.0, 1.0);
                 vec2 increment = vec2(deltaX, deltaY) / max(delta, 0.001);
 
                 // walk fragment
@@ -296,8 +297,8 @@ void main()
                 float search0 = 0;
                 float search1 = 0;
                 float viewDistance = -startView.z;
-                float depth = thickness;
-                for (int i = 0; i < min(int(delta), walksMax); ++i)
+                float depth = reflectionRayThickness;
+                for (int i = 0; i < min(int(delta), reflectionWalksMax); ++i)
                 {
                     // walk fragment one increment
                     frag += increment;
@@ -308,7 +309,7 @@ void main()
                     search1 = clamp(search1, 0.0, 1.0);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
                     depth = viewDistance - -intersectionView.z;
-                    if (depth > 0 && depth < thickness)
+                    if (depth > 0 && depth < reflectionRayThickness)
                     {
                         hit0 = 1;
                         break;
@@ -316,10 +317,10 @@ void main()
                     else search0 = search1;
                 }
                 
-                // perform steps within last walk
+                // perform reflectionRefinements within last walk
                 search1 = search0 + (search1 - search0) * 0.5;
-                steps *= hit0;
-                for (int i = 0; i < steps; ++i)
+                reflectionRefinements *= hit0;
+                for (int i = 0; i < reflectionRefinements; ++i)
                 {
                     // step fragment in the appropriate direction
                     frag = mix(startFrag.xy, endFrag.xy, search1);
@@ -327,7 +328,7 @@ void main()
                     intersectionView = view * texture(positionTexture, uv.xy);
                     viewDistance = (-startView.z * -endView.z) / mix(-endView.z, -startView.z, search1);
                     depth = viewDistance - -intersectionView.z;
-                    if (depth > 0 && depth < thickness)
+                    if (depth > 0 && depth < reflectionRayThickness)
                     {
                         hit1 = 1;
                         search1 = search0 + (search1 - search0) * 0.5;
@@ -345,8 +346,8 @@ void main()
                     hit1 *
                     intersectionView.w *
                     (1 - max(dot(-positionViewNormal, pivotView), 0)) *
-                    (1 - clamp(depth / thickness, 0, 1)) *
-                    (1 - clamp(length(intersectionView - positionView) / maxDistance, 0, 1)) *
+                    (1 - clamp(depth / reflectionRayThickness, 0, 1)) *
+                    (1 - clamp(length(intersectionView - positionView) / reflectionDistanceMax, 0, 1)) *
                     (uv.x < 0 || uv.x > 1 ? 0 : 1) *
                     (uv.y < 0 || uv.y > 1 ? 0 : 1) *
                     (1.0 - roughness) *
