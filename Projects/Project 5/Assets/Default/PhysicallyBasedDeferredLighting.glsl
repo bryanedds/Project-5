@@ -316,17 +316,17 @@ void main()
                 else search0 = search1;
             }
                 
-            // perform reflectionRefinements within last walk
+            // perform refinements within last walk
             search1 = search0 + (search1 - search0) * 0.5;
             reflectionRefinements *= hit0;
             for (int i = 0; i < reflectionRefinements; ++i)
             {
                 // refine fragment
                 currentFrag = mix(startFrag, stopFrag, search1);
+                currentUV.xy = currentFrag / texSize;
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
                 currentDistanceView = startView.z * endView.z / mix(endView.z, startView.z, search1);
                 currentDepthView = currentDistanceView - currentPositionView.z;
-                currentUV.xy = currentFrag / texSize;
 
                 // determine whether we hit within acceptable thickness, otherwise continue refining
                 if (currentDepthView < 0 && currentDepthView > -reflectionRayThickness)
