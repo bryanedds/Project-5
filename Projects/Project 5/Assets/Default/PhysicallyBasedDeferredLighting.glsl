@@ -354,6 +354,7 @@ void main()
                 specularAvg * // filter out as specularity descreases
                 (1.0 - surfaceSlope) * // filter out as slope increases
                 (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection angles toward eye
+                (1.0 - clamp(length(currentPositionView - positionView) / reflectionDistanceMax, 0, 1)) * // filter out as reflection point reaches max distance
                 (currentUV.x >= 0.0 && currentUV.x <= 1.0 ? 1.0 : 0.0) * // ensure reflection in uv range
                 (currentUV.y >= 0.0 && currentUV.y <= 1.0 ? 1.0 : 0.0); // ensure reflection in uv range
             visibility = clamp(visibility, 0.0, 1.0);
