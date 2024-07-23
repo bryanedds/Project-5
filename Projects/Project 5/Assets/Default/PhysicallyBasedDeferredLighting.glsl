@@ -56,7 +56,7 @@ uniform mat4 shadowMatrices[SHADOWS_MAX];
 
 in vec2 texCoordsOut;
 
-layout (location = 0) out vec4 frag;
+layout(location = 0) out vec4 frag;
 
 float linstep(float low, float high, float v)
 {
@@ -125,12 +125,12 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
 
 void main()
 {
-    // retrieve normal value first, allowing for early-out
-    vec3 normal = texture(normalPlusTexture, texCoordsOut).xyz;
-    if (normal != vec3(1.0)) // when geometry pixel was written (IE, normal is not equal to the buffer clearing color of white)
+    // ensure position was written
+    vec4 position = texture(positionTexture, texCoordsOut);
+    if (position.w == 1.0)
     {
         // retrieve remaining data from geometry buffers
-        vec3 position = texture(positionTexture, texCoordsOut).xyz;
+        vec3 normal = texture(normalPlusTexture, texCoordsOut).xyz;
         vec3 albedo = texture(albedoTexture, texCoordsOut).rgb;
         vec4 material = texture(materialTexture, texCoordsOut);
 
@@ -146,7 +146,7 @@ void main()
         vec3 emission = vec3(material.a);
 
         // compute lightAccum term
-        vec3 v = normalize(eyeCenter - position);
+        vec3 v = normalize(eyeCenter - position.xyz);
         vec3 f0 = mix(vec3(0.04), albedo, metallic); // if dia-electric (plastic) use f0 of 0.04f and if metal, use the albedo color as f0.
         vec3 lightAccum = vec3(0.0);
         for (int i = 0; i < lightsCount; ++i)
@@ -155,7 +155,7 @@ void main()
             vec3 l, h, radiance;
             if (lightDirectionals[i] == 0)
             {
-                vec3 d = lightOrigins[i] - position;
+                vec3 d = lightOrigins[i] - position.xyz;
                 l = normalize(d);
                 h = normalize(v + l);
                 float distanceSquared = dot(d, d);
@@ -184,7 +184,7 @@ void main()
             float shadowScalar = 1.0;
             if (shadowIndex >= 0)
             {
-                vec4 positionShadow = shadowMatrices[shadowIndex] * vec4(position, 1.0);
+                vec4 positionShadow = shadowMatrices[shadowIndex] * position;
                 vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
                 vec2 shadowTexCoords = vec2(shadowTexCoordsProj.x, shadowTexCoordsProj.y) * 0.5 + 0.5;
                 float shadowZ = shadowTexCoordsProj.z * 0.5 + 0.5;
@@ -261,7 +261,7 @@ void main()
             // compute view values
             mat3 view3 = mat3(view);
             vec2 texSize = textureSize(positionTexture, 0).xy;
-            vec4 positionView = view * vec4(position, 1.0);
+            vec4 positionView = view * position;
             vec3 positionViewNormal = normalize(positionView.xyz);
             vec3 normalView = normalize(view3 * normal);
             vec3 reflectionView = reflect(positionViewNormal, normalView);
@@ -273,7 +273,7 @@ void main()
             vec2 startFrag = startFrag4.xy / startFrag4.w;
             startFrag = startFrag * 0.5 + 0.5;
             startFrag *= texSize;
-                
+
             // compute the fragment at which to end marching
             vec4 stopFrag4 = projection * stopView;
             vec2 stopFrag = stopFrag4.xy / stopFrag4.w;
@@ -306,8 +306,8 @@ void main()
                 currentUV.xy = currentFrag / texSize;
 
                 // determine whether we're on geometry (not sky box)
-                vec3 currentNormal = texture(normalPlusTexture, currentUV.xy).xyz;
-                if (currentNormal != vec3(1.0))
+                vec4 currentPosition = texture(positionTexture, currentUV.xy);
+                if (currentPosition.w == 1.0)
                 {
                     // determine whether we hit geometry within acceptable thickness
                     currentPositionView = view * texture(positionTexture, currentUV.xy);
@@ -335,12 +335,12 @@ void main()
                     // refine fragment
                     currentFrag = mix(startFrag, stopFrag, search1);
                     currentUV.xy = currentFrag / texSize;
-                    
+
                     // determine whether we're on geometry (not sky box)
-                    vec3 currentNormal = texture(normalPlusTexture, currentUV.xy).xyz;
-                    if (currentNormal != vec3(1.0))
+                    vec4 currentPosition = texture(positionTexture, currentUV.xy);
+                    if (currentPosition.w == 1.0)
                     {
-                        // determine whether we hit geometry within acceptable thickness and not the sky box
+                        // determine whether we hit geometry within acceptable thickness
                         currentPositionView = view * texture(positionTexture, currentUV.xy);
                         currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                         currentDepthView = currentDistanceView - currentPositionView.z;
