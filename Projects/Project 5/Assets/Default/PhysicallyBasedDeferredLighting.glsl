@@ -383,5 +383,5 @@ void main()
         }
         else frag = vec4(color, 1.0); // write color
     }
-    else frag = vec4(1.0, 1.0, 1.0, 1.0); // write white
+    else frag = vec4(0.0); // write zero
 }
