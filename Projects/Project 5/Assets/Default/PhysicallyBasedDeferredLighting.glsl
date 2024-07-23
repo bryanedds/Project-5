@@ -303,7 +303,7 @@ void main()
                 currentUV.xy = currentFrag / texSize;
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
                 search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
-                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1);
+                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
                 // determine whether we hit within acceptable thickness, otherwise loop
@@ -314,7 +314,7 @@ void main()
                 }
                 else search0 = search1;
             }
-                
+
             // perform refinements within last walk
             search1 = search0 + (search1 - search0) * 0.5;
             reflectionRefinements *= hit0;
@@ -324,11 +324,11 @@ void main()
                 currentFrag = mix(startFrag, stopFrag, search1);
                 currentUV.xy = currentFrag / texSize;
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
-                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1);
+                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
                 // determine whether we hit within acceptable thickness, otherwise continue refining
-                if (currentDepthView < 0 && currentDepthView > -reflectionRayThickness)
+                if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
                 {
                     hit1 = 1;
                     search1 = search0 + (search1 - search0) * 0.5;
