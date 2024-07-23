@@ -263,7 +263,7 @@ void main()
             vec3 normalView = normalize(view3 * normal);
             vec3 reflectionView = reflect(positionViewNormal, normalView);
             vec4 startView = vec4(positionView.xyz, 1.0);
-            vec4 endView = vec4(positionView.xyz + reflectionView * reflectionDistanceMax, 1.0);
+            vec4 stopView = vec4(positionView.xyz + reflectionView * reflectionDistanceMax, 1.0);
 
             // compute the fragment at which to start marching
             vec4 startFrag4 = projection * startView;
@@ -272,7 +272,7 @@ void main()
             startFrag *= texSize;
                 
             // compute the fragment at which to end marching
-            vec4 stopFrag4 = projection * endView;
+            vec4 stopFrag4 = projection * stopView;
             vec2 stopFrag = stopFrag4.xy / stopFrag4.w;
             stopFrag = stopFrag * 0.5 + 0.5;
             stopFrag *= texSize;
@@ -280,6 +280,7 @@ void main()
             // initialize current fragment
             vec2 currentFrag = startFrag;
             vec4 currentUV = vec4(currentFrag / texSize, 0.0, 0.0);
+            vec4 currentPositionView = positionView;
 
             // compute fragment step amount
             float marchHorizonal = stopFrag.x - startFrag.x;
@@ -293,7 +294,6 @@ void main()
             int hit1 = 0;
             float search0 = 0;
             float search1 = 0;
-            vec4 currentPositionView = positionView;
             float currentDistanceView = startView.z;
             float currentDepthView = -reflectionRayThickness;
             for (int i = 0; i < min(int(stepLength), reflectionStepsMax); ++i)
@@ -301,10 +301,9 @@ void main()
                 // step fragment
                 currentFrag += stepAmount;
                 currentUV.xy = currentFrag / texSize;
-                search1 = mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal);
-                search1 = clamp(search1, 0.0, 1.0);
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
-                currentDistanceView = startView.z * endView.z / mix(endView.z, startView.z, search1);
+                search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
+                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1);
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
                 // determine whether we hit within acceptable thickness, otherwise loop
@@ -325,7 +324,7 @@ void main()
                 currentFrag = mix(startFrag, stopFrag, search1);
                 currentUV.xy = currentFrag / texSize;
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
-                currentDistanceView = startView.z * endView.z / mix(endView.z, startView.z, search1);
+                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1);
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
                 // determine whether we hit within acceptable thickness, otherwise continue refining

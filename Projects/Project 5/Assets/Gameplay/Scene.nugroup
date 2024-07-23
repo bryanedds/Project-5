@@ -74543,4 +74543,19 @@
         [Static True]
         [Visible False]
         [VisibleLocal False]]
-       []]]]]]]]
+       []]]]]]
+  [StaticModelSurfaceDispatcher
+   [[Material
+     [[AlbedoImageOpt None]
+      [RoughnessImageOpt None]
+      [MetallicImageOpt None]
+      [AmbientOcclusionImageOpt None]
+      [EmissionImageOpt None]
+      [NormalImageOpt
+       [Some [Default MaterialNormal]]]
+      [HeightImageOpt None]
+      [TwoSidedOpt None]]]
+    [Name Block3d-0001]
+    [Position [-0.09 4.24 -0.14]]
+    [Scale [8.7 1 15.1]]]
+   []]]]
