@@ -250,7 +250,8 @@ void main()
         float reflectionDistanceMax = 64;
         float reflectionDepthMax = 4096.0;
         float reflectionSurfaceSlopeMax = 0.1;
-        float reflectionEdgeCutoff = 0.1;
+        float reflectionEdgeCutoffHorizontal = 0.05;
+        float reflectionEdgeCutoffVertical = 0.25;
         int reflectionStepsMax = 256;
         int reflectionRefinements = 5;
         reflectionFineness = clamp(reflectionFineness, 0.0, 1.0); // clamp user-defined values
@@ -356,7 +357,9 @@ void main()
                 (1.0 - surfaceSlope) * // filter out as slope increases
                 (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection angles toward eye
                 (1.0 - clamp(length(currentPositionView - positionView) / reflectionDistanceMax, 0, 1)) * // filter out as reflection point reaches max distance
-                smoothstep(0.0, reflectionEdgeCutoff, min(min(currentUV.x, 1.0 - currentUV.x), min(currentUV.y, 1.0 - currentUV.y))); // filter out reflection as it reaches uv bounds
+                min( // filter out reflection as it reaches uv bounds
+                    smoothstep(0.0, reflectionEdgeCutoffHorizontal, min(currentUV.x, 1.0 - currentUV.x)),
+                    smoothstep(0.0, reflectionEdgeCutoffVertical, min(currentUV.y, 1.0 - currentUV.y)));
             visibility = clamp(visibility, 0.0, 1.0);
             currentUV.a = visibility;
 
