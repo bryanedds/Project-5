@@ -292,10 +292,10 @@ void main()
             // march fragment
             int hit0 = 0;
             int hit1 = 0;
-            float search0 = 0;
-            float search1 = 0;
-            float currentDistanceView = startView.z;
-            float currentDepthView = -reflectionRayThickness;
+            float search0 = 0.0;
+            float search1 = 0.0;
+            float currentDistanceView = 0.0;
+            float currentDepthView = 0.0;
             for (int i = 0; i < min(int(stepLength), reflectionStepsMax); ++i)
             {
                 // step fragment
