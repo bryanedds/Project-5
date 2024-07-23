@@ -304,17 +304,21 @@ void main()
                 // step fragment
                 currentFrag += stepAmount;
                 currentUV.xy = currentFrag / texSize;
-                vec4 currentPosition = texture(positionTexture, currentUV.xy);
-                currentPositionView = view * currentPosition;
-                search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
-                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
-                currentDepthView = currentDistanceView - currentPositionView.z;
 
-                // determine whether we hit geometry within acceptable thickness and not the sky box
-                if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness && currentPosition != vec4(1.0))
+                // determine whether we're on geometry (not sky box)
+                vec3 currentNormal = texture(normalPlusTexture, currentUV.xy).xyz;
+                if (currentNormal != vec3(1.0))
                 {
-                    hit0 = 1;
-                    break;
+                    // determine whether we hit geometry within acceptable thickness
+                    currentPositionView = view * texture(positionTexture, currentUV.xy);
+                    search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
+                    currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
+                    currentDepthView = currentDistanceView - currentPositionView.z;
+                    if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                    {
+                        hit0 = 1;
+                        break;
+                    }
                 }
 
                 // otherwise loop
@@ -331,17 +335,21 @@ void main()
                     // refine fragment
                     currentFrag = mix(startFrag, stopFrag, search1);
                     currentUV.xy = currentFrag / texSize;
-                    vec4 currentPosition = texture(positionTexture, currentUV.xy);
-                    currentPositionView = view * currentPosition;
-                    currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
-                    currentDepthView = currentDistanceView - currentPositionView.z;
-
-                    // determine whether we hit geometry within acceptable thickness and not the sky box
-                    if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness && currentPosition != vec4(1.0))
+                    
+                    // determine whether we're on geometry (not sky box)
+                    vec3 currentNormal = texture(normalPlusTexture, currentUV.xy).xyz;
+                    if (currentNormal != vec3(1.0))
                     {
-                        hit1 = 1;
-                        search1 = search0 + (search1 - search0) * 0.5;
-                        continue;
+                        // determine whether we hit geometry within acceptable thickness and not the sky box
+                        currentPositionView = view * texture(positionTexture, currentUV.xy);
+                        currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
+                        currentDepthView = currentDistanceView - currentPositionView.z;
+                        if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                        {
+                            hit1 = 1;
+                            search1 = search0 + (search1 - search0) * 0.5;
+                            continue;
+                        }
                     }
 
                     // otherwise continue in the same direction
