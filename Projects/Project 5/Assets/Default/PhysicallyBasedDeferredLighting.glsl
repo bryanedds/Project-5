@@ -245,15 +245,15 @@ void main()
         color = color + emission * albedo.rgb;
 
         // apply screen-space reflection when surface slope isn't too great
-        float reflectionDistanceMax = 16;
-        float reflectionFineness = 0.1;
-        float reflectionRayThickness = 0.5;
-        float reflectionSurfaceSlopeMax = 0.2;
-        int reflectionStepsMax = 128;
-        int reflectionRefinements = 8;
+        float reflectionFineness = 0.2;
+        float reflectionRayThickness = 1.0;
+        float reflectionDistanceMax = 64; // in view space
+        float reflectionSurfaceSlopeMax = 0.1;
+        int reflectionStepsMax = 256;
+        int reflectionRefinements = 5;
         reflectionFineness = clamp(reflectionFineness, 0.0, 1.0); // clamp user-defined values
         float surfaceSlope = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        if (surfaceSlope <= reflectionSurfaceSlopeMax) // ignore surfaces with slope >= ~36.87 degrees
+        if (surfaceSlope <= reflectionSurfaceSlopeMax)
         {
             // compute view values
             mat3 view3 = mat3(view);
@@ -326,7 +326,7 @@ void main()
                 currentPositionView = view * texture(positionTexture, currentUV.xy);
                 currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                 currentDepthView = currentDistanceView - currentPositionView.z;
-
+            
                 // determine whether we hit within acceptable thickness, otherwise continue refining
                 if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
                 {
@@ -347,7 +347,7 @@ void main()
 
             // compute ssr visibility
             float visibility =
-                //hit1 * // filter out when specific hit not found
+                hit1 * // filter out when specific hit not found
                 specularAvg * // filter out as specularity descreases
                 (1.0 - surfaceSlope) * // filter out as slope increases
                 (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection angles toward eye
@@ -357,7 +357,9 @@ void main()
             currentUV.a = visibility;
 
             // write ssr and color composision
-            frag = texture(albedoTexture, currentUV.xy) * currentUV.a + vec4(color, 1.0) * (1.0 - currentUV.a);
+            if (hit0 == 0.0) frag = vec4(1.0, 0.0, 0.0, 0.0);
+            else if (hit1 == 0.0) frag = vec4(0.0, 0.0, 1.0, 0.0);
+            else frag = texture(albedoTexture, currentUV.xy) * currentUV.a + vec4(color, 1.0) * (1.0 - currentUV.a);
         }
         else frag = vec4(color, 1.0); // write color
     }
