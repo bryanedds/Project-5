@@ -246,8 +246,9 @@ void main()
 
         // apply screen-space reflection when surface slope isn't too great
         float reflectionFineness = 0.2;
-        float reflectionRayThickness = 1.0;
-        float reflectionDistanceMax = 64; // in view space
+        float reflectionRayThickness = 0.5;
+        float reflectionDistanceMax = 64;
+        float reflectionDepthMax = 4096.0;
         float reflectionSurfaceSlopeMax = 0.1;
         int reflectionStepsMax = 256;
         int reflectionRefinements = 5;
@@ -306,8 +307,10 @@ void main()
                 currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
-                // determine whether we hit within acceptable thickness, otherwise loop
-                if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                // determine whether we hit within acceptable thickness and not the sky box, otherwise loop
+                if (currentDepthView < 0.0 &&
+                    currentDepthView > -reflectionRayThickness &&
+                    currentPositionView.z > -reflectionDepthMax)
                 {
                     hit0 = 1;
                     break;
@@ -342,7 +345,7 @@ void main()
             }
 
             // compute specular average
-            float specularAvg = (specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0;
+            float specularAvg = (specularSubterm.r + specularSubterm.g + specularSubterm.b) / 3.0; // TODO: figure out how to make this the proper specularity.
             currentUV.b = specularAvg;
 
             // compute ssr visibility
@@ -357,9 +360,10 @@ void main()
             currentUV.a = visibility;
 
             // write ssr and color composision
-            if (hit0 == 0.0) frag = vec4(1.0, 0.0, 0.0, 0.0);
-            else if (hit1 == 0.0) frag = vec4(0.0, 0.0, 1.0, 0.0);
-            else frag = texture(albedoTexture, currentUV.xy) * currentUV.a + vec4(color, 1.0) * (1.0 - currentUV.a);
+            //if (hit0 == 0.0) frag = vec4(1.0, 0.0, 0.0, 0.0);
+            //else if (hit1 == 0.0) frag = vec4(0.0, 0.0, 1.0, 0.0);
+            //else
+            frag = texture(albedoTexture, currentUV.xy) * currentUV.a + vec4(color, 1.0) * (1.0 - currentUV.a);
         }
         else frag = vec4(color, 1.0); // write color
     }
