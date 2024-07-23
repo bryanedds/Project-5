@@ -304,42 +304,47 @@ void main()
                 // step fragment
                 currentFrag += stepAmount;
                 currentUV.xy = currentFrag / texSize;
-                currentPositionView = view * texture(positionTexture, currentUV.xy);
+                vec4 currentPosition = texture(positionTexture, currentUV.xy);
+                currentPositionView = view * currentPosition;
                 search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
                 currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
                 currentDepthView = currentDistanceView - currentPositionView.z;
 
-                // determine whether we hit within acceptable thickness and not the sky box, otherwise loop
-                if (currentDepthView < 0.0 &&
-                    currentDepthView > -reflectionRayThickness &&
-                    currentPositionView.z > -reflectionDepthMax)
+                // determine whether we hit geometry within acceptable thickness and not the sky box
+                if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness && currentPosition != vec4(1.0))
                 {
                     hit0 = 1;
                     break;
                 }
-                else search0 = search1;
+
+                // otherwise loop
+                search0 = search1;
             }
 
-            // perform refinements within last walk
-            search1 = search0 + (search1 - search0) * 0.5;
-            reflectionRefinements *= hit0;
-            for (int i = 0; i < reflectionRefinements; ++i)
+            // refine when hit occurred
+            if (hit0 == 1)
             {
-                // refine fragment
-                currentFrag = mix(startFrag, stopFrag, search1);
-                currentUV.xy = currentFrag / texSize;
-                currentPositionView = view * texture(positionTexture, currentUV.xy);
-                currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
-                currentDepthView = currentDistanceView - currentPositionView.z;
-            
-                // determine whether we hit within acceptable thickness, otherwise continue refining
-                if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                // perform refinements within last walk
+                search1 = search0 + (search1 - search0) * 0.5;
+                for (int i = 0; i < reflectionRefinements; ++i)
                 {
-                    hit1 = 1;
-                    search1 = search0 + (search1 - search0) * 0.5;
-                }
-                else
-                {
+                    // refine fragment
+                    currentFrag = mix(startFrag, stopFrag, search1);
+                    currentUV.xy = currentFrag / texSize;
+                    vec4 currentPosition = texture(positionTexture, currentUV.xy);
+                    currentPositionView = view * currentPosition;
+                    currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
+                    currentDepthView = currentDistanceView - currentPositionView.z;
+
+                    // determine whether we hit geometry within acceptable thickness and not the sky box
+                    if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness && currentPosition != vec4(1.0))
+                    {
+                        hit1 = 1;
+                        search1 = search0 + (search1 - search0) * 0.5;
+                        continue;
+                    }
+
+                    // otherwise continue in the same direction
                     float temp = search1;
                     search1 = search1 + (search1 - search0) * 0.5;
                     search0 = temp;
@@ -352,7 +357,7 @@ void main()
 
             // compute ssr visibility
             float visibility =
-                hit1 * // filter out when specific hit not found
+                hit1 * // filter out when refinement hit not found
                 specularAvg * // filter out as specularity descreases
                 (1.0 - surfaceSlope) * // filter out as slope increases
                 (1.0 - max(dot(-positionViewNormal, reflectionView), 0.0)) * // filter out as reflection angles toward eye
