@@ -244,12 +244,12 @@ void main()
         float reflectionDepthMax = 24.0;
         float reflectionDistanceMax = 24.0;
         int reflectionStepsMax = 320;
-        int reflectionRefinements = 9;
+        int reflectionRefinements = 10;
         float reflectionSurfaceSlopeMax = 0.1;
         float reflectionRayThickness = 0.5;
         float reflectionFilterCutoff = 0.8;
         float reflectionEdgeCutoffHorizontal = 0.05;
-        float reflectionEdgeCutoffVertical = 0.25;
+        float reflectionEdgeCutoffVertical = 0.2;
         reflectionFineness = clamp(reflectionFineness, 0.0, 1.0); // clamp user-defined values
 
         // apply screen-space reflection fragment when isn't too deep and surface slope isn't too great
@@ -346,7 +346,7 @@ void main()
                         {
                             hit1 = 1;
                             search1 = search0 + (search1 - search0) * 0.5;
-                            continue;
+                            break;
                         }
                     }
 
