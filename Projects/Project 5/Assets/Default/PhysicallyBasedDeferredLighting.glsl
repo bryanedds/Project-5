@@ -246,7 +246,8 @@ void main()
         int reflectionStepsMax = 320;
         int reflectionRefinements = 10;
         float reflectionSurfaceSlopeMax = 0.1;
-        float reflectionRayThickness = 0.5;
+        float reflectionRayThicknessMarch = 0.5;
+        float reflectionRayThicknessRefinement = 0.1;
         float reflectionFilterCutoff = 0.8;
         float reflectionEdgeCutoffHorizontal = 0.05;
         float reflectionEdgeCutoffVertical = 0.2;
@@ -297,22 +298,22 @@ void main()
             float search1 = 0.0;
             float currentDistanceView = 0.0;
             float currentDepthView = 0.0;
-            for (int i = 0; i < min(int(stepLength), reflectionStepsMax); ++i)
+            for (int i = 0; i < int(stepLength) && currentUV.x >= 0.0 && currentUV.x <= 1.0 && currentUV.y >= 0.0 && currentUV.y <= 1.0; ++i)
             {
                 // step fragment
                 currentFrag += stepAmount;
                 currentUV = currentFrag / texSize;
 
-                // determine whether we're on geometry (not sky box)
+                // determine whether we're in geometry (not sky box)
                 vec4 currentPosition = texture(positionTexture, currentUV);
                 if (currentPosition.w == 1.0)
                 {
                     // determine whether we hit geometry within acceptable thickness
                     currentPositionView = view * texture(positionTexture, currentUV);
                     search1 = clamp(mix((currentFrag.y - startFrag.y) / marchVertical, (currentFrag.x - startFrag.x) / marchHorizonal, shouldMarchHorizontal), 0.0, 1.0);
-                    currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
-                    currentDepthView = currentDistanceView - currentPositionView.z;
-                    if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                    currentDistanceView = -startView.z * -stopView.z / mix(-stopView.z, -startView.z, search1); // uses perspective correct interpolation for depth
+                    currentDepthView = currentDistanceView - -currentPositionView.z;
+                    if (currentDepthView >= 0.0 && currentDepthView <= reflectionRayThicknessMarch)
                     {
                         hit0 = 1;
                         break;
@@ -334,19 +335,19 @@ void main()
                     currentFrag = mix(startFrag, stopFrag, search1);
                     currentUV = currentFrag / texSize;
 
-                    // determine whether we're on geometry (not sky box)
+                    // determine whether we're in geometry (not sky box)
                     vec4 currentPosition = texture(positionTexture, currentUV);
                     if (currentPosition.w == 1.0)
                     {
                         // determine whether we hit geometry within acceptable thickness
                         currentPositionView = view * texture(positionTexture, currentUV);
-                        currentDistanceView = startView.z * stopView.z / mix(stopView.z, startView.z, search1); // uses perspective correct interpolation for depth
-                        currentDepthView = currentDistanceView - currentPositionView.z;
-                        if (currentDepthView < 0.0 && currentDepthView > -reflectionRayThickness)
+                        currentDistanceView = -startView.z * -stopView.z / mix(-stopView.z, -startView.z, search1); // uses perspective correct interpolation for depth
+                        currentDepthView = currentDistanceView - -currentPositionView.z;
+                        if (currentDepthView >= 0.0 && currentDepthView <= reflectionRayThicknessRefinement)
                         {
                             hit1 = 1;
                             search1 = search0 + (search1 - search0) * 0.5;
-                            break;
+                            continue;
                         }
                     }
 
@@ -357,20 +358,30 @@ void main()
                 }
             }
 
-            // compute specular weight in favor of screen-space reflection
-            specularWeight =
-                hit1 * // filter out when refinement hit not found
-                (1.0 - surfaceSlope) * // filter out as slope increases
-                (1.0 - smoothstep(reflectionFilterCutoff, 1.0, max(dot(-positionViewNormal, reflectionView), 0.0))) * // filter out as reflection angles toward eye
-                (1.0 - smoothstep(reflectionFilterCutoff, 1.0, positionView.z / -reflectionDepthMax)) * // filter out as fragment reaches max depth
-                (1.0 - smoothstep(reflectionFilterCutoff, 1.0, length(currentPositionView - positionView) / reflectionDistanceMax)) * // filter out as reflection point reaches max distance from fragment
-                smoothstep(0.0, reflectionEdgeCutoffHorizontal, min(currentUV.x, 1.0 - currentUV.x)) *
-                smoothstep(0.0, reflectionEdgeCutoffVertical, min(currentUV.y, 1.0 - currentUV.y));
-            specularWeight = clamp(specularWeight, 0.0, 1.0);
-
-            // compute specular color
+            // compute screen-space specular color and weight
             float specularPower = (1.0 - roughness); // TODO: figure out how to make this the proper specular power (and give it its proper name).
-            specularSS = vec3(texture(albedoTexture, currentUV).rgb * specularPower);
+            //if (hit0 == 0)
+            //{
+            //    specularSS = vec3(1.0, 0.0, 0.0) * specularPower;
+            //    specularWeight = 1.0;
+            //}
+            //else if (hit1 == 0)
+            //{
+            //    specularSS = vec3(0.0, 0.0, 1.0) * specularPower;
+            //    specularWeight = 1.0;
+            //}
+            //else
+            {
+                specularSS = vec3(texture(albedoTexture, currentUV).rgb * specularPower);
+                specularWeight =
+                    hit1 * // filter out when refinement hit not found
+                    //(1.0 - smoothstep(0.0, 0.5, abs(dot(vec3(view[0][2], view[1][2], view[2][2]), vec3(0.0, 1.0, 0.0))))) * // filter out as look angles vertically
+                    (1.0 - smoothstep(reflectionFilterCutoff, 1.0, positionView.z / -reflectionDepthMax)) * // filter out as fragment reaches max depth
+                    (1.0 - smoothstep(reflectionFilterCutoff, 1.0, length(currentPositionView - positionView) / reflectionDistanceMax)) * // filter out as reflection point reaches max distance from fragment
+                    smoothstep(0.0, reflectionEdgeCutoffHorizontal, min(currentUV.x, 1.0 - currentUV.x)) *
+                    smoothstep(0.0, reflectionEdgeCutoffVertical, min(currentUV.y, 1.0 - currentUV.y));
+                specularWeight = clamp(specularWeight, 0.0, 1.0);
+            }
         }
 
         // compute specular term
