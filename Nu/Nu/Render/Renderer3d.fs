@@ -450,7 +450,20 @@ type [<SymbolicExpansion>] Lighting3dConfig =
       SsaoIntensity : single
       SsaoBias : single
       SsaoRadius : single
-      SsaoDistanceMax : single }
+      SsaoDistanceMax : single
+      SsrEnabled : bool
+      SsrDetail : single
+      SsrDepthMax : single
+      SsrDistanceMax : single
+      SsrRefinementsMax : int
+      SsrRoughnessMax : single
+      SsrSurfaceSlopeMax : single
+      SsrRayThicknessMarch : single
+      SsrRayThicknessRefinement : single
+      SsrFilterCutoff : single
+      SsrEdgeCutoffHorizontal : single
+      SsrEdgeCutoffVertical : single
+      SsrLightColor : Color }
 
     static member defaultConfig =
         { LightCutoffMargin = Constants.Render.LightCutoffMarginDefault
@@ -459,20 +472,35 @@ type [<SymbolicExpansion>] Lighting3dConfig =
           SsaoIntensity = Constants.Render.SsaoIntensityDefault
           SsaoBias = Constants.Render.SsaoBiasDefault
           SsaoRadius = Constants.Render.SsaoRadiusDefault
-          SsaoDistanceMax = Constants.Render.SsaoDistanceMaxDefault }
+          SsaoDistanceMax = Constants.Render.SsaoDistanceMaxDefault
+          SsrEnabled = Constants.Render.SsrEnabledDefault
+          SsrDetail = Constants.Render.SsrDetailDefault
+          SsrDepthMax = Constants.Render.SsrDepthMaxDefault
+          SsrDistanceMax = Constants.Render.SsrDistanceMaxDefault
+          SsrRefinementsMax = Constants.Render.SsrRefinementsMaxDefault
+          SsrRoughnessMax = Constants.Render.SsrRoughnessMaxDefault
+          SsrSurfaceSlopeMax = Constants.Render.SsrSurfaceSlopeMaxDefault
+          SsrRayThicknessMarch = Constants.Render.SsrRayThicknessMarchDefault
+          SsrRayThicknessRefinement = Constants.Render.SsrRayThicknessRefinementDefault
+          SsrFilterCutoff = Constants.Render.SsrFilterCutoffDefault
+          SsrEdgeCutoffHorizontal = Constants.Render.SsrEdgeCutoffHorizontalDefault
+          SsrEdgeCutoffVertical = Constants.Render.SsrEdgeCutoffVerticalDefault
+          SsrLightColor = Constants.Render.SsrLightColorDefault }
 
 /// Configures 3d renderer.
 type [<SymbolicExpansion>] Renderer3dConfig =
     { AnimatedModelOcclusionPrePassEnabled : bool
       LightMappingEnabled : bool
       SsaoEnabled : bool
-      SsaoSampleCount : int }
+      SsaoSampleCount : int
+      SsrEnabled : bool }
 
     static member defaultConfig =
         { AnimatedModelOcclusionPrePassEnabled = Constants.Render.AnimatedModelOcclusionPrePassEnabledDefault
           LightMappingEnabled = Constants.Render.LightMappingEnabledDefault
           SsaoEnabled = Constants.Render.SsaoEnabledDefault
-          SsaoSampleCount = Constants.Render.SsaoSampleCountDefault }
+          SsaoSampleCount = Constants.Render.SsaoSampleCountDefault
+          SsrEnabled = Constants.Render.SsrEnabledDefault }
 
 /// A message to the 3d renderer.
 type RenderMessage3d =
@@ -2668,8 +2696,12 @@ type [<ReferenceEquality>] GlRenderer3d =
         OpenGL.Hl.Assert ()
 
         // deferred render lighting quad to filter buffer
+        let ssrLightColor = Array.take 3 (renderer.LightingConfig.SsrLightColor.ToArray ())
         OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredLightingSurface
             (eyeCenter, viewRelativeArray, rasterProjectionArray, renderer.LightingConfig.LightCutoffMargin, lightAmbientColor, lightAmbientBrightness, renderer.LightingConfig.ShadowBiasAcne, renderer.LightingConfig.ShadowBiasBleed,
+             (if renderer.RendererConfig.SsrEnabled && renderer.LightingConfig.SsrEnabled then 1 else 0),
+             renderer.LightingConfig.SsrDetail, renderer.LightingConfig.SsrDepthMax, renderer.LightingConfig.SsrDistanceMax, renderer.LightingConfig.SsrRefinementsMax, renderer.LightingConfig.SsrRoughnessMax, renderer.LightingConfig.SsrSurfaceSlopeMax,
+             renderer.LightingConfig.SsrRayThicknessMarch, renderer.LightingConfig.SsrRayThicknessRefinement, renderer.LightingConfig.SsrFilterCutoff, renderer.LightingConfig.SsrEdgeCutoffHorizontal, renderer.LightingConfig.SsrEdgeCutoffVertical, ssrLightColor,
              positionTexture, albedoTexture, materialTexture, normalPlusTexture, renderer.BrdfTexture, irradianceTexture, environmentFilterTexture, ssaoTextureFiltered, shadowTextures,
              lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightDirectionals, lightConeInners, lightConeOuters, lightShadowIndices, lightsCount, shadowMatrices,
              renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedDeferredLightingShader)
