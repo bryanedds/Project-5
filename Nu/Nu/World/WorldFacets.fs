@@ -907,7 +907,7 @@ type FillBarFacet () =
          define Entity.FillInset 0.0f
          define Entity.FillColor (Color (1.0f, 0.0f, 0.0f, 1.0f))
          define Entity.FillImage Assets.Default.White
-         define Entity.BorderColor (Color (0.0f, 0.0f, 0.0f, 1.0f))
+         define Entity.BorderColor (Color (1.0f, 1.0f, 1.0f, 1.0f))
          define Entity.BorderImage Assets.Default.Border]
 
     override this.Render (_, entity, world) =
@@ -917,7 +917,7 @@ type FillBarFacet () =
         let perimeter = transform.Perimeter // gui currently ignores rotation
         let horizon = transform.Horizon
         let mutable borderTransform = Transform.makeDefault transform.PerimeterCentered
-        borderTransform.Position <- perimeter.Min
+        borderTransform.Position <- perimeter.Center
         borderTransform.Size <- perimeter.Size
         borderTransform.Offset <- transform.Offset
         borderTransform.Elevation <- transform.Elevation + 0.5f
@@ -943,8 +943,8 @@ type FillBarFacet () =
         // fill sprite
         let fillSize = perimeter.Size
         let fillInset = fillSize.X * entity.GetFillInset world * 0.5f
-        let fillPosition = perimeter.Min + v3 fillInset fillInset 0.0f
         let fillWidth = (fillSize.X - fillInset * 2.0f) * entity.GetFill world
+        let fillPosition = perimeter.Left + v3 (fillWidth * 0.5f) 0.0f 0.0f + v3 fillInset 0.0f 0.0f
         let fillHeight = fillSize.Y - fillInset * 2.0f
         let fillSize = v3 fillWidth fillHeight 0.0f
         let mutable fillTransform = Transform.makeDefault transform.PerimeterCentered
@@ -2285,7 +2285,7 @@ type StaticBillboardFacet () =
         else [||]
 
 [<AutoOpen>]
-module BasicStaticBillboardEmitterFaceExtensions =
+module BasicStaticBillboardEmitterFacetExtensions =
     type Entity with
         member this.GetEmitterMaterialProperties world : MaterialProperties = this.Get (nameof this.EmitterMaterialProperties) world
         member this.SetEmitterMaterialProperties (value : MaterialProperties) world = this.Set (nameof this.EmitterMaterialProperties) value world
@@ -2299,9 +2299,9 @@ module BasicStaticBillboardEmitterFaceExtensions =
         member this.GetEmitterShadowOffset world : single = this.Get (nameof this.EmitterShadowOffset) world
         member this.SetEmitterShadowOffset (value : single) world = this.Set (nameof this.EmitterShadowOffset) value world
         member this.EmitterShadowOffset = lens (nameof this.EmitterShadowOffset) this this.GetEmitterShadowOffset this.SetEmitterShadowOffset
-        member this.GetEmitterRenderType world : RenderType = this.Get (nameof this.EmitterRenderType) world
-        member this.SetEmitterRenderType (value : RenderType) world = this.Set (nameof this.EmitterRenderType) value world
-        member this.EmitterRenderType = lens (nameof this.EmitterRenderType) this this.GetEmitterRenderType this.SetEmitterRenderType
+        member this.GetEmitterRenderStyle world : RenderStyle = this.Get (nameof this.EmitterRenderStyle) world
+        member this.SetEmitterRenderStyle (value : RenderStyle) world = this.Set (nameof this.EmitterRenderStyle) value world
+        member this.EmitterRenderStyle = lens (nameof this.EmitterRenderStyle) this this.GetEmitterRenderStyle this.SetEmitterRenderStyle
 
 /// Augments an entity with basic static billboard emitter.
 type BasicStaticBillboardEmitterFacet () =
@@ -2322,6 +2322,7 @@ type BasicStaticBillboardEmitterFacet () =
         match tryMakeEmitter entity world with
         | Some emitter ->
             let mutable transform = entity.GetTransform world
+            let renderType = match entity.GetEmitterRenderStyle world with Deferred -> DeferredRenderType | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
             { emitter with
                 Body =
                     { Position = transform.Position
@@ -2333,7 +2334,8 @@ type BasicStaticBillboardEmitterFacet () =
                 Absolute = transform.Absolute
                 Material = entity.GetEmitterMaterial world
                 ParticleSeed = entity.GetBasicParticleSeed world
-                Constraint = entity.GetEmitterConstraint world }
+                Constraint = entity.GetEmitterConstraint world
+                RenderType = renderType }
         | None ->
             Particles.BasicStaticBillboardEmitter.makeEmpty
                 world.GameTime
@@ -2377,8 +2379,9 @@ type BasicStaticBillboardEmitterFacet () =
         let world = mapEmitter (fun emitter -> if emitter.ShadowOffset <> emitterShadowOffset then { emitter with ShadowOffset = emitterShadowOffset } else emitter) evt.Subscriber world
         (Cascade, world)
 
-    static let handleEmitterRenderTypeChange evt world =
-        let emitterRenderType = evt.Data.Value :?> RenderType
+    static let handleEmitterRenderStyleChange evt world =
+        let emitterRenderStyle = evt.Data.Value :?> RenderStyle
+        let emitterRenderType = match emitterRenderStyle with Deferred -> DeferredRenderType | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
         let world = mapEmitter (fun emitter -> if emitter.RenderType <> emitterRenderType then { emitter with RenderType = emitterRenderType } else emitter) evt.Subscriber world
         (Cascade, world)
 
@@ -2461,6 +2464,7 @@ type BasicStaticBillboardEmitterFacet () =
          define Entity.BasicParticleSeed { Life = Particles.Life.make GameTime.zero (GameTime.ofSeconds 1.0f); Body = Particles.Body.defaultBody; Size = v3Dup 0.25f; Offset = v3Zero; Inset = box2Zero; Color = Color.One; Emission = Color.Zero; Flip = FlipNone }
          define Entity.EmitterConstraint Particles.Constraint.empty
          define Entity.EmitterStyle "BasicStaticBillboardEmitter"
+         define Entity.EmitterRenderStyle (Forward (0.0f, 0.0f))
          define Entity.EmitterShadowEnabled true
          define Entity.EmitterShadowOffset Constants.Engine.ParticleShadowOffsetDefault
          nonPersistent Entity.ParticleSystem Particles.ParticleSystem.empty]
@@ -2475,7 +2479,7 @@ type BasicStaticBillboardEmitterFacet () =
         let world = World.sense handleEmitterMaterialPropertiesChange entity.EmitterMaterialProperties.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
         let world = World.sense handleEmitterMaterialChange entity.EmitterMaterial.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
         let world = World.sense handleEmitterShadowOffsetChange entity.EmitterShadowOffset.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
-        let world = World.sense handleEmitterRenderTypeChange entity.EmitterRenderType.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
+        let world = World.sense handleEmitterRenderStyleChange entity.EmitterRenderStyle.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
         let world = World.sense handleEmitterLifeTimeOptChange entity.EmitterLifeTimeOpt.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
         let world = World.sense handleParticleLifeTimeMaxOptChange entity.ParticleLifeTimeMaxOpt.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world
         let world = World.sense handleParticleRateChange entity.ParticleRate.ChangeEvent entity (nameof BasicStaticBillboardEmitterFacet) world

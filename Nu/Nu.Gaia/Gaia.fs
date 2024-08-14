@@ -65,6 +65,7 @@ module Gaia =
     let mutable private OpenProjectFilePath = null // this will be initialized on start
     let mutable private OpenProjectEditMode = "Title"
     let mutable private OpenProjectImperativeExecution = false
+    let mutable private CloseProjectImperativeExecution = false
     let mutable private NewProjectName = "My Game"
     let mutable private NewProjectType = "Empty"
     let mutable private NewGroupDispatcherName = nameof GroupDispatcher
@@ -395,8 +396,8 @@ Size=400,400
 Collapsed=0
 
 [Window][Close project... *EDITOR RESTART REQUIRED!*]
-Pos=769,504
-Size=381,71
+Pos=716,510
+Size=463,94
 Collapsed=0
 
 [Window][Editor restart required.]
@@ -2659,14 +2660,14 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 let mutable ssrRefinementsMax = lighting3dConfig.SsrRefinementsMax
                 let mutable ssrRoughnessMax = lighting3dConfig.SsrRoughnessMax
                 let mutable ssrSurfaceSlopeMax = lighting3dConfig.SsrSurfaceSlopeMax
-                let mutable ssrRayThicknessMarch = lighting3dConfig.SsrRayThicknessMarch
-                let mutable ssrRayThicknessRefinement = lighting3dConfig.SsrRayThicknessRefinement
+                let mutable ssrRayThickness = lighting3dConfig.SsrRayThickness
                 let mutable ssrRoughnessCutoff = lighting3dConfig.SsrRoughnessCutoff
                 let mutable ssrDepthCutoff = lighting3dConfig.SsrDepthCutoff
                 let mutable ssrDistanceCutoff = lighting3dConfig.SsrDistanceCutoff
                 let mutable ssrEdgeCutoffHorizontal = lighting3dConfig.SsrEdgeCutoffHorizontal
                 let mutable ssrEdgeCutoffVertical = lighting3dConfig.SsrEdgeCutoffVertical
                 let mutable ssrLightColor = let color = lighting3dConfig.SsrLightColor in color.Vector4
+                let mutable ssrLightBrightness = lighting3dConfig.SsrLightBrightness
                 lighting3dChanged <- ImGui.SliderFloat ("Light Cutoff Margin", &lightCutoffMargin, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                 lighting3dChanged <- ImGui.InputText ("Shadow Bias Acne", &shadowBiasAcneStr, 4096u) || lighting3dChanged; focusProperty ()
                 lighting3dChanged <- ImGui.SliderFloat ("Shadow Bias Bleed", &shadowBiasBleed, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
@@ -2682,14 +2683,14 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                     lighting3dChanged <- ImGui.SliderInt ("Ssr Refinements Max", &ssrRefinementsMax, 0, 32) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Roughness Max", &ssrRoughnessMax, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Surface Slope Max", &ssrSurfaceSlopeMax, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
-                    lighting3dChanged <- ImGui.SliderFloat ("Ssr Ray Thickness March", &ssrRayThicknessMarch, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
-                    lighting3dChanged <- ImGui.SliderFloat ("Ssr Ray Thickness Refinement", &ssrRayThicknessRefinement, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
+                    lighting3dChanged <- ImGui.SliderFloat ("Ssr Ray Thickness", &ssrRayThickness, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Roughness Cutoff", &ssrRoughnessCutoff, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Depth Cutoff", &ssrDepthCutoff, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Distance Cutoff", &ssrDistanceCutoff, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Edge Cutoff Horizontal", &ssrEdgeCutoffHorizontal, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.SliderFloat ("Ssr Edge Cutoff Vertical", &ssrEdgeCutoffVertical, 0.0f, 1.0f) || lighting3dChanged; focusProperty ()
                     lighting3dChanged <- ImGui.ColorEdit4 ("Ssr Light Color", &ssrLightColor) || lighting3dChanged; focusProperty ()
+                    lighting3dChanged <- ImGui.SliderFloat ("Ssr Light Brightness", &ssrLightBrightness, 0.0f, 32.0f) || lighting3dChanged; focusProperty ()
                 if lighting3dChanged then
                     let lighting3dConfig =
                         { LightCutoffMargin = lightCutoffMargin
@@ -2706,14 +2707,14 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                           SsrRefinementsMax = ssrRefinementsMax
                           SsrRoughnessMax = ssrRoughnessMax
                           SsrSurfaceSlopeMax = ssrSurfaceSlopeMax
-                          SsrRayThicknessMarch = ssrRayThicknessMarch
-                          SsrRayThicknessRefinement = ssrRayThicknessRefinement
+                          SsrRayThickness = ssrRayThickness
                           SsrRoughnessCutoff = ssrRoughnessCutoff
                           SsrDepthCutoff = ssrDepthCutoff
                           SsrDistanceCutoff = ssrDistanceCutoff
                           SsrEdgeCutoffHorizontal = ssrEdgeCutoffHorizontal
                           SsrEdgeCutoffVertical = ssrEdgeCutoffVertical
-                          SsrLightColor = Color ssrLightColor }
+                          SsrLightColor = Color ssrLightColor
+                          SsrLightBrightness = ssrLightBrightness }
                     setProperty lighting3dConfig propertyDescriptor simulant world
                 else world
             | _ ->
@@ -4240,10 +4241,12 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             let newFileName = NewProjectName + ".fsproj"
             let newProject = PathF.GetFullPath (newProjectDir + "/" + newFileName)
             let validName = not (String.IsNullOrWhiteSpace NewProjectName) && Array.notExists (fun char -> NewProjectName.Contains (string char)) (PathF.GetInvalidPathChars ())
-            if not validName then ImGui.Text "Invalid project name!"
             let validDirectory = not (Directory.Exists newProjectDir)
-            if not validDirectory then ImGui.Text "Project already exists!"
-            if validName && validDirectory && (ImGui.Button "Create" || ImGui.IsKeyReleased ImGuiKey.Enter) then
+            if not validName then
+                ImGui.Text "Invalid project name!"
+            elif not validDirectory then
+                ImGui.Text "Project already exists!"
+            elif ImGui.Button "Create" || ImGui.IsKeyReleased ImGuiKey.Enter then
 
                 // choose a template, ensuring it exists
                 let slnDir = PathF.GetFullPath (programDir + "/../../../../..")
@@ -4377,21 +4380,26 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         if ImGui.FileDialog (&ShowOpenProjectFileDialog, ProjectFileDialogState) then
             OpenProjectFilePath <- ProjectFileDialogState.FilePath
 
-    let private imGuiCloseProjectDialog () =
+    let private imGuiCloseProjectDialog (world : World) =
         let title = "Close project... *EDITOR RESTART REQUIRED!*"
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
         if ImGui.BeginPopupModal (title, &ShowCloseProjectDialog) then
             ImGui.Text "Close the project and use Gaia in its default state?"
+            ImGui.Checkbox ("Proceed w/ Imperative Execution (faster, but no Undo / Redo)", &CloseProjectImperativeExecution) |> ignore<bool>
             if ImGui.Button "Okay" || ImGui.IsKeyReleased ImGuiKey.Enter then
                 ShowCloseProjectDialog <- false
-                let gaiaState = GaiaState.defaultState
+                let gaiaState = { GaiaState.defaultState with ProjectImperativeExecution = CloseProjectImperativeExecution }
                 let gaiaFilePath = (Assembly.GetEntryAssembly ()).Location
                 let gaiaDirectory = PathF.GetDirectoryName gaiaFilePath
                 try File.WriteAllText (gaiaDirectory + "/" + Constants.Gaia.StateFilePath, printGaiaState gaiaState)
                     Directory.SetCurrentDirectory gaiaDirectory
                     ShowRestartDialog <- true
-                with _ -> Log.info "Could not clear editor state and close project."
-            if ImGui.IsKeyReleased ImGuiKey.Escape then ShowCloseProjectDialog <- false
+                with _ ->
+                    CloseProjectImperativeExecution <- world.Imperative
+                    Log.info "Could not clear editor state and close project."
+            if ImGui.IsKeyReleased ImGuiKey.Escape then
+                CloseProjectImperativeExecution <- world.Imperative
+                ShowCloseProjectDialog <- false
             ImGui.EndPopup ()
 
     let private imGuiNewGroupDialog world =
@@ -4788,7 +4796,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                         if ShowNewProjectDialog then imGuiNewProjectDialog world
                         if ShowOpenProjectDialog && not ShowOpenProjectFileDialog then imGuiOpenProjectDialog world
                         elif ShowOpenProjectFileDialog then imGuiOpenProjectFileDialog ()
-                        if ShowCloseProjectDialog then imGuiCloseProjectDialog ()
+                        if ShowCloseProjectDialog then imGuiCloseProjectDialog world
                         let world = if ShowNewGroupDialog then imGuiNewGroupDialog world else world
                         let world = if ShowOpenGroupDialog then imGuiOpenGroupDialog world else world
                         let world = if ShowSaveGroupDialog then imGuiSaveGroupDialog world else world
@@ -4924,6 +4932,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
     let rec private runWithCleanUp gaiaState targetDir_ screen world =
         OpenProjectFilePath <- gaiaState.ProjectDllPath
         OpenProjectImperativeExecution <- gaiaState.ProjectImperativeExecution
+        CloseProjectImperativeExecution <- gaiaState.ProjectImperativeExecution
         Snaps2dSelected <- gaiaState.Snaps2dSelected
         Snaps2d <- gaiaState.Snaps2d
         Snaps3d <- gaiaState.Snaps3d

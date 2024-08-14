@@ -353,14 +353,14 @@ module PhysicallyBased =
           SsrRefinementsMaxUniform : int
           SsrRoughnessMaxUniform : int
           SsrSurfaceSlopeMaxUniform : int
-          SsrRayThicknessMarchUniform : int
-          SsrRayThicknessRefinementUniform : int
+          SsrRayThicknessUniform : int
           SsrRoughnessCutoffUniform : int
           SsrDepthCutoffUniform : int
           SsrDistanceCutoffUniform : int
           SsrEdgeCutoffHorizontalUniform : int
           SsrEdgeCutoffVerticalUniform : int
           SsrLightColorUniform : int
+          SsrLightBrightnessUniform : int
           PositionTextureUniform : int
           AlbedoTextureUniform : int
           MaterialTextureUniform : int
@@ -1643,14 +1643,14 @@ module PhysicallyBased =
         let ssrRefinementsMax = Gl.GetUniformLocation (shader, "ssrRefinementsMax")
         let ssrRoughnessMax = Gl.GetUniformLocation (shader, "ssrRoughnessMax")
         let ssrSurfaceSlopeMax = Gl.GetUniformLocation (shader, "ssrSurfaceSlopeMax")
-        let ssrRayThicknessMarch = Gl.GetUniformLocation (shader, "ssrRayThicknessMarch")
-        let ssrRayThicknessRefinement = Gl.GetUniformLocation (shader, "ssrRayThicknessRefinement")
+        let ssrRayThickness = Gl.GetUniformLocation (shader, "ssrRayThickness")
         let ssrRoughnessCutoff = Gl.GetUniformLocation (shader, "ssrRoughnessCutoff")
         let ssrDepthCutoff = Gl.GetUniformLocation (shader, "ssrDepthCutoff")
         let ssrDistanceCutoff = Gl.GetUniformLocation (shader, "ssrDistanceCutoff")
         let ssrEdgeCutoffHorizontal = Gl.GetUniformLocation (shader, "ssrEdgeCutoffHorizontal")
         let ssrEdgeCutoffVertical = Gl.GetUniformLocation (shader, "ssrEdgeCutoffVertical")
         let SsrLightColor = Gl.GetUniformLocation (shader, "ssrLightColor")
+        let SsrLightBrightness = Gl.GetUniformLocation (shader, "ssrLightBrightness")
         let positionTextureUniform = Gl.GetUniformLocation (shader, "positionTexture")
         let albedoTextureUniform = Gl.GetUniformLocation (shader, "albedoTexture")
         let materialTextureUniform = Gl.GetUniformLocation (shader, "materialTexture")
@@ -1694,14 +1694,14 @@ module PhysicallyBased =
           SsrRefinementsMaxUniform = ssrRefinementsMax
           SsrRoughnessMaxUniform = ssrRoughnessMax
           SsrSurfaceSlopeMaxUniform = ssrSurfaceSlopeMax
-          SsrRayThicknessMarchUniform = ssrRayThicknessMarch
-          SsrRayThicknessRefinementUniform = ssrRayThicknessRefinement
+          SsrRayThicknessUniform = ssrRayThickness
           SsrRoughnessCutoffUniform = ssrRoughnessCutoff
           SsrDepthCutoffUniform = ssrDepthCutoff
           SsrDistanceCutoffUniform = ssrDistanceCutoff
           SsrEdgeCutoffHorizontalUniform = ssrEdgeCutoffHorizontal
           SsrEdgeCutoffVerticalUniform = ssrEdgeCutoffVertical
           SsrLightColorUniform = SsrLightColor
+          SsrLightBrightnessUniform = SsrLightBrightness
           PositionTextureUniform = positionTextureUniform
           AlbedoTextureUniform = albedoTextureUniform
           MaterialTextureUniform = materialTextureUniform
@@ -2631,14 +2631,14 @@ module PhysicallyBased =
          ssrRefinementsMax : int,
          ssrRoughnessMax : single,
          ssrSurfaceSlopeMax : single,
-         ssrRayThicknessMarch : single,
-         ssrRayThicknessRefinement : single,
+         ssrRayThickness : single,
          ssrRoughnessCutoff : single,
          ssrDepthCutoff : single,
          ssrDistanceCutoff : single,
          ssrEdgeCutoffHorizontal : single,
          ssrEdgeCutoffVertical : single,
          ssrLightColor : single array,
+         ssrLightBrightness : single,
          positionTexture : Texture.Texture,
          albedoTexture : Texture.Texture,
          materialTexture : Texture.Texture,
@@ -2681,14 +2681,14 @@ module PhysicallyBased =
         Gl.Uniform1 (shader.SsrRefinementsMaxUniform, ssrRefinementsMax)
         Gl.Uniform1 (shader.SsrRoughnessMaxUniform, ssrRoughnessMax)
         Gl.Uniform1 (shader.SsrSurfaceSlopeMaxUniform, ssrSurfaceSlopeMax)
-        Gl.Uniform1 (shader.SsrRayThicknessMarchUniform, ssrRayThicknessMarch)
-        Gl.Uniform1 (shader.SsrRayThicknessRefinementUniform, ssrRayThicknessRefinement)
+        Gl.Uniform1 (shader.SsrRayThicknessUniform, ssrRayThickness)
         Gl.Uniform1 (shader.SsrRoughnessCutoffUniform, ssrRoughnessCutoff)
         Gl.Uniform1 (shader.SsrDepthCutoffUniform, ssrDepthCutoff)
         Gl.Uniform1 (shader.SsrDistanceCutoffUniform, ssrDistanceCutoff)
         Gl.Uniform1 (shader.SsrEdgeCutoffHorizontalUniform, ssrEdgeCutoffHorizontal)
         Gl.Uniform1 (shader.SsrEdgeCutoffVerticalUniform, ssrEdgeCutoffVertical)
         Gl.Uniform3 (shader.SsrLightColorUniform, ssrLightColor)
+        Gl.Uniform1 (shader.SsrLightBrightnessUniform, ssrLightBrightness)
         Gl.Uniform1 (shader.PositionTextureUniform, 0)
         Gl.Uniform1 (shader.AlbedoTextureUniform, 1)
         Gl.Uniform1 (shader.MaterialTextureUniform, 2)
