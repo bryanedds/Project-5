@@ -5,7 +5,7 @@ open Prime
 open Nu
 
 type CharacterMessage =
-    | WeaponCollide of BodyCollisionData
+    | WeaponPenetrate of BodyPenetrationData
     | WeaponSeparateExplicit of BodySeparationExplicitData
     | WeaponSeparateImplicit of BodySeparationImplicitData
     | UpdateInputKey of KeyboardKeyData
@@ -68,7 +68,7 @@ type CharacterDispatcher (character : Character) =
              Entity.Sensor == true
              Entity.NavShape == EmptyNavShape
              Entity.Pickable == false
-             Entity.BodyCollisionEvent =|> fun evt -> WeaponCollide evt.Data
+             Entity.BodyPenetrationEvent =|> fun evt -> WeaponPenetrate evt.Data
              Entity.BodySeparationExplicitEvent =|> fun evt -> WeaponSeparateExplicit evt.Data
              Entity.BodySeparationImplicitEvent =|> fun evt -> WeaponSeparateImplicit evt.Data]]
 
@@ -99,12 +99,12 @@ type CharacterDispatcher (character : Character) =
             let signals = if attackedCharacters.Count > 0 then PublishAttacks attackedCharacters :> Signal :: signals else signals
             withSignals signals character
 
-        | WeaponCollide collisionData ->
-            match collisionData.BodyShapeCollidee.BodyId.BodySource with
-            | :? Entity as collidee when collidee.Is<CharacterDispatcher> world && collidee <> entity ->
-                let collideeCharacter = collidee.GetCharacter world
-                if character.CharacterType <> collideeCharacter.CharacterType then
-                    let character = { character with WeaponCollisions = Set.add collidee character.WeaponCollisions }
+        | WeaponPenetrate penetrationData ->
+            match penetrationData.BodyShapePenetratee.BodyId.BodySource with
+            | :? Entity as penetratee when penetratee.Is<CharacterDispatcher> world && penetratee <> entity ->
+                let penetrateeCharacter = penetratee.GetCharacter world
+                if character.CharacterType <> penetrateeCharacter.CharacterType then
+                    let character = { character with WeaponCollisions = Set.add penetratee character.WeaponCollisions }
                     just character
                 else just character
             | _ -> just character

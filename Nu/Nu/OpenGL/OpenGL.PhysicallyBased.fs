@@ -352,13 +352,14 @@ module PhysicallyBased =
           SsrDetailUniform : int
           SsrRefinementsMaxUniform : int
           SsrRayThicknessUniform : int
+          SsrTowardEyeCutoffUniform : int
           SsrDepthCutoffUniform : int
-          SsrDistanceCutoffUniform : int
-          SsrRoughnessCutoffUniform : int
-          SsrSlopeCutoffUniform : int
-          SsrRoughnessCutoffMarginUniform : int
           SsrDepthCutoffMarginUniform : int
+          SsrDistanceCutoffUniform : int
           SsrDistanceCutoffMarginUniform : int
+          SsrRoughnessCutoffUniform : int
+          SsrRoughnessCutoffMarginUniform : int
+          SsrSlopeCutoffUniform : int
           SsrSlopeCutoffMarginUniform : int
           SsrEdgeHorizontalMarginUniform : int
           SsrEdgeVerticalMarginUniform : int
@@ -1622,7 +1623,7 @@ module PhysicallyBased =
           SsaoDistanceMax = ssaoDistanceMax
           SsaoSampleCount = ssaoSampleCount
           PhysicallyBasedDeferredSsaoShader = shader }
-
+          
     /// Create a physically-based shader for the lighting pass of deferred rendering.
     let CreatePhysicallyBasedDeferredLightingShader (shaderFilePath : string) =
 
@@ -1639,22 +1640,23 @@ module PhysicallyBased =
         let lightAmbientBrightnessUniform = Gl.GetUniformLocation (shader, "lightAmbientBrightness")
         let lightShadowBiasAcneUniform = Gl.GetUniformLocation (shader, "lightShadowBiasAcne")
         let lightShadowBiasBleedUniform = Gl.GetUniformLocation (shader, "lightShadowBiasBleed")
-        let ssrEnabled = Gl.GetUniformLocation (shader, "ssrEnabled")
-        let ssrDetail = Gl.GetUniformLocation (shader, "ssrDetail")
-        let ssrRefinementsMax = Gl.GetUniformLocation (shader, "ssrRefinementsMax")
-        let ssrRayThickness = Gl.GetUniformLocation (shader, "ssrRayThickness")
-        let ssrDepthCutoff = Gl.GetUniformLocation (shader, "ssrDepthCutoff")
-        let ssrDistanceCutoff = Gl.GetUniformLocation (shader, "ssrDistanceCutoff")
-        let ssrRoughnessCutoff = Gl.GetUniformLocation (shader, "ssrRoughnessCutoff")
-        let ssrSlopeCutoff = Gl.GetUniformLocation (shader, "ssrSlopeCutoff")
-        let ssrRoughnessCutoffMargin = Gl.GetUniformLocation (shader, "ssrRoughnessCutoffMargin")
-        let ssrDepthCutoffMargin = Gl.GetUniformLocation (shader, "ssrDepthCutoffMargin")
-        let ssrDistanceCutoffMargin = Gl.GetUniformLocation (shader, "ssrDistanceCutoffMargin")
-        let ssrSlopeCutoffMargin = Gl.GetUniformLocation (shader, "ssrSlopeCutoffMargin")
-        let ssrEdgeHorizontalMargin = Gl.GetUniformLocation (shader, "ssrEdgeHorizontalMargin")
-        let ssrEdgeVerticalMargin = Gl.GetUniformLocation (shader, "ssrEdgeVerticalMargin")
-        let SsrLightColor = Gl.GetUniformLocation (shader, "ssrLightColor")
-        let SsrLightBrightness = Gl.GetUniformLocation (shader, "ssrLightBrightness")
+        let ssrEnabledUniform = Gl.GetUniformLocation (shader, "ssrEnabled")
+        let ssrDetailUniform = Gl.GetUniformLocation (shader, "ssrDetail")
+        let ssrRefinementsMaxUniform = Gl.GetUniformLocation (shader, "ssrRefinementsMax")
+        let ssrRayThicknessUniform = Gl.GetUniformLocation (shader, "ssrRayThickness")
+        let ssrTowardEyeCutoffUniform = Gl.GetUniformLocation (shader, "ssrTowardEyeCutoff")
+        let ssrDepthCutoffUniform = Gl.GetUniformLocation (shader, "ssrDepthCutoff")
+        let ssrDepthCutoffMarginUniform = Gl.GetUniformLocation (shader, "ssrDepthCutoffMargin")
+        let ssrDistanceCutoffUniform = Gl.GetUniformLocation (shader, "ssrDistanceCutoff")
+        let ssrDistanceCutoffMarginUniform = Gl.GetUniformLocation (shader, "ssrDistanceCutoffMargin")
+        let ssrRoughnessCutoffUniform = Gl.GetUniformLocation (shader, "ssrRoughnessCutoff")
+        let ssrRoughnessCutoffMarginUniform = Gl.GetUniformLocation (shader, "ssrRoughnessCutoffMargin")
+        let ssrSlopeCutoffUniform = Gl.GetUniformLocation (shader, "ssrSlopeCutoff")
+        let ssrSlopeCutoffMarginUniform = Gl.GetUniformLocation (shader, "ssrSlopeCutoffMargin")
+        let ssrEdgeHorizontalMarginUniform = Gl.GetUniformLocation (shader, "ssrEdgeHorizontalMargin")
+        let ssrEdgeVerticalMarginUniform = Gl.GetUniformLocation (shader, "ssrEdgeVerticalMargin")
+        let ssrLightColorUniform = Gl.GetUniformLocation (shader, "ssrLightColor")
+        let ssrLightBrightnessUniform = Gl.GetUniformLocation (shader, "ssrLightBrightness")
         let positionTextureUniform = Gl.GetUniformLocation (shader, "positionTexture")
         let albedoTextureUniform = Gl.GetUniformLocation (shader, "albedoTexture")
         let materialTextureUniform = Gl.GetUniformLocation (shader, "materialTexture")
@@ -1691,22 +1693,23 @@ module PhysicallyBased =
           LightAmbientBrightnessUniform = lightAmbientBrightnessUniform
           LightShadowBiasAcneUniform = lightShadowBiasAcneUniform
           LightShadowBiasBleedUniform = lightShadowBiasBleedUniform
-          SsrEnabledUniform = ssrEnabled
-          SsrDetailUniform = ssrDetail
-          SsrRefinementsMaxUniform = ssrRefinementsMax
-          SsrRayThicknessUniform = ssrRayThickness
-          SsrDepthCutoffUniform = ssrDepthCutoff
-          SsrDistanceCutoffUniform = ssrDistanceCutoff
-          SsrRoughnessCutoffUniform = ssrRoughnessCutoff
-          SsrSlopeCutoffUniform = ssrSlopeCutoff
-          SsrRoughnessCutoffMarginUniform = ssrRoughnessCutoffMargin
-          SsrDepthCutoffMarginUniform = ssrDepthCutoffMargin
-          SsrDistanceCutoffMarginUniform = ssrDistanceCutoffMargin
-          SsrSlopeCutoffMarginUniform = ssrSlopeCutoffMargin
-          SsrEdgeHorizontalMarginUniform = ssrEdgeHorizontalMargin
-          SsrEdgeVerticalMarginUniform = ssrEdgeVerticalMargin
-          SsrLightColorUniform = SsrLightColor
-          SsrLightBrightnessUniform = SsrLightBrightness
+          SsrEnabledUniform = ssrEnabledUniform
+          SsrDetailUniform = ssrDetailUniform
+          SsrRefinementsMaxUniform = ssrRefinementsMaxUniform
+          SsrRayThicknessUniform = ssrRayThicknessUniform
+          SsrTowardEyeCutoffUniform = ssrTowardEyeCutoffUniform
+          SsrDepthCutoffUniform = ssrDepthCutoffUniform
+          SsrDepthCutoffMarginUniform = ssrDepthCutoffMarginUniform
+          SsrDistanceCutoffUniform = ssrDistanceCutoffUniform
+          SsrDistanceCutoffMarginUniform = ssrDistanceCutoffMarginUniform
+          SsrRoughnessCutoffUniform = ssrRoughnessCutoffUniform
+          SsrRoughnessCutoffMarginUniform = ssrRoughnessCutoffMarginUniform
+          SsrSlopeCutoffUniform = ssrSlopeCutoffUniform
+          SsrSlopeCutoffMarginUniform = ssrSlopeCutoffMarginUniform
+          SsrEdgeHorizontalMarginUniform = ssrEdgeHorizontalMarginUniform
+          SsrEdgeVerticalMarginUniform = ssrEdgeVerticalMarginUniform
+          SsrLightColorUniform = ssrLightColorUniform
+          SsrLightBrightnessUniform = ssrLightBrightnessUniform
           PositionTextureUniform = positionTextureUniform
           AlbedoTextureUniform = albedoTextureUniform
           MaterialTextureUniform = materialTextureUniform
@@ -2636,13 +2639,14 @@ module PhysicallyBased =
          ssrDetail : single,
          ssrRefinementsMax : int,
          ssrRayThickness : single,
+         ssrTowardEyeCutoff : single,
          ssrDepthCutoff : single,
-         ssrDistanceCutoff : single,
-         ssrRoughnessCutoff : single,
-         ssrSlopeCutoff : single,
-         ssrRoughnessCutoffMargin : single,
          ssrDepthCutoffMargin : single,
+         ssrDistanceCutoff : single,
          ssrDistanceCutoffMargin : single,
+         ssrRoughnessCutoff : single,
+         ssrRoughnessCutoffMargin : single,
+         ssrSlopeCutoff : single,
          ssrSlopeCutoffMargin : single,
          ssrEdgeHorizontalMargin : single,
          ssrEdgeVerticalMargin : single,
@@ -2687,13 +2691,14 @@ module PhysicallyBased =
         Gl.Uniform1 (shader.SsrDetailUniform, ssrDetail)
         Gl.Uniform1 (shader.SsrRefinementsMaxUniform, ssrRefinementsMax)
         Gl.Uniform1 (shader.SsrRayThicknessUniform, ssrRayThickness)
+        Gl.Uniform1 (shader.SsrTowardEyeCutoffUniform, ssrTowardEyeCutoff)
         Gl.Uniform1 (shader.SsrDepthCutoffUniform, ssrDepthCutoff)
-        Gl.Uniform1 (shader.SsrDistanceCutoffUniform, ssrDistanceCutoff)
-        Gl.Uniform1 (shader.SsrRoughnessCutoffUniform, ssrRoughnessCutoff)
-        Gl.Uniform1 (shader.SsrSlopeCutoffUniform, ssrSlopeCutoff)
-        Gl.Uniform1 (shader.SsrRoughnessCutoffMarginUniform, ssrRoughnessCutoffMargin)
         Gl.Uniform1 (shader.SsrDepthCutoffMarginUniform, ssrDepthCutoffMargin)
+        Gl.Uniform1 (shader.SsrDistanceCutoffUniform, ssrDistanceCutoff)
         Gl.Uniform1 (shader.SsrDistanceCutoffMarginUniform, ssrDistanceCutoffMargin)
+        Gl.Uniform1 (shader.SsrRoughnessCutoffUniform, ssrRoughnessCutoff)
+        Gl.Uniform1 (shader.SsrRoughnessCutoffMarginUniform, ssrRoughnessCutoffMargin)
+        Gl.Uniform1 (shader.SsrSlopeCutoffUniform, ssrSlopeCutoff)
         Gl.Uniform1 (shader.SsrSlopeCutoffMarginUniform, ssrSlopeCutoffMargin)
         Gl.Uniform1 (shader.SsrEdgeHorizontalMarginUniform, ssrEdgeHorizontalMargin)
         Gl.Uniform1 (shader.SsrEdgeVerticalMarginUniform, ssrEdgeVerticalMargin)
