@@ -123,8 +123,7 @@
     [Lighting3dConfigDispatcher
      [[Lighting3dConfig
        [[LightCutoffMargin 0.333]
-        [ShadowBiasAcne 2E-07]
-        [ShadowBiasBleed 0.5]
+        [LightShadowExponent 85]
         [SsaoIntensity 1.35]
         [SsaoBias 0.025]
         [SsaoRadius 0.125]
