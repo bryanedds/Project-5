@@ -124,6 +124,7 @@
      [[Lighting3dConfig
        [[LightCutoffMargin 0.333]
         [LightShadowExponent 85]
+        [LightShadowDensity 7]
         [SsaoIntensity 1.35]
         [SsaoBias 0.025]
         [SsaoRadius 0.125]
