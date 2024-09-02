@@ -130,7 +130,7 @@
         [SsaoRadius 0.125]
         [SsaoDistanceMax 0.125]
         [SsvfEnabled True]
-        [SsvfSteps 80]
+        [SsvfSteps 48]
         [SsvfAsymmetry 0.5]
         [SsvfIntensity 1]
         [SsrEnabled True]
