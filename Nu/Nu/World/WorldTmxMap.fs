@@ -318,6 +318,7 @@ module TmxMap =
               CollisionMask = Physics.categorizeCollisionMask collisionMask
               Sensor = false
               Observable = observable
+              Awake = false
               BodyIndex = bodyIndex }
         bodyProperties
 
@@ -424,6 +425,7 @@ module TmxMap =
                                   RenderOperation2d =
                                     RenderTiles
                                         { Transform = transform
+                                          ClipOpt = ValueNone // TODO: implement clipping for tile maps.
                                           Color = tileMapColor
                                           Emission = tileMapEmission
                                           MapSize = Vector2i (tileMap.Width, tileMap.Height)

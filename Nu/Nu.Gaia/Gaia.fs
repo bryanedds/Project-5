@@ -25,8 +25,6 @@ open Nu
 // Custom properties in order of priority:                                          //
 //  Enums                                                                           //
 //  Flag Enums                                                                      //
-//  Layout                                                                          //
-//  Animation                                                                       //
 //  CollisionMask                                                                   //
 //  CollisionCategories                                                             //
 //  CollisionDetection                                                              //
@@ -99,7 +97,7 @@ module Gaia =
     let mutable private Snaps3d = Constants.Gaia.Snaps3dDefault
     let mutable private SnapDrag = 0.1f
     let mutable private AlternativeEyeTravelInput = false
-    let mutable private PhysicsReregisterWorkaround = true
+    let mutable private ReloadPhysicsAssetsWorkaround = true
     let mutable private EntityHierarchySearchStr = ""
     let mutable private EntityHierarchyFilterPropagationSources = false
     let mutable private AssetViewerSearchStr = ""
@@ -449,7 +447,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         GaiaState.make
             projectDllPath editModeOpt freshlyLoaded OpenProjectImperativeExecution EditWhileAdvancing
             DesiredEye2dCenter DesiredEye3dCenter DesiredEye3dRotation (World.getMasterSoundVolume world) (World.getMasterSongVolume world)            
-            Snaps2dSelected Snaps2d Snaps3d NewEntityElevation NewEntityDistance AlternativeEyeTravelInput PhysicsReregisterWorkaround
+            Snaps2dSelected Snaps2d Snaps3d NewEntityElevation NewEntityDistance AlternativeEyeTravelInput ReloadPhysicsAssetsWorkaround
 
     let private printGaiaState gaiaState =
         PrettyPrinter.prettyPrintSymbol (valueToSymbol gaiaState) PrettyPrinter.defaultPrinter
@@ -620,10 +618,6 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         Seq.filter (fun entity -> entity.Has<FreezerFacet> world) |>
         Seq.fold (fun world freezer -> freezer.SetFrozen false world) world
 
-    let private reregisterPhysics world =
-        let world = snapshot ReregisterPhysics world
-        World.reregisterPhysics world
-
     let private synchronizeNav world =
         let world = snapshot SynchronizeNav world
         // TODO: sync nav 2d when it's available.
@@ -719,6 +713,18 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                             let fieldValue = field.GetValue obj
                             scan fieldValue
         scan root
+
+    let private makeContext focusPropertyOpt unfocusPropertyOpt =
+        { Snapshot = snapshot
+          FocusProperty = match focusPropertyOpt with Some focus -> focus | None -> fun () -> ()
+          UnfocusProperty = match unfocusPropertyOpt with Some unfocus -> unfocus | None -> fun () -> ()
+          SearchAssetViewer = fun () -> searchAssetViewer ()
+          PropertyValueStrPreviousRef = ref PropertyValueStrPrevious
+          DragDropPayloadOpt = DragDropPayloadOpt
+          SnapDrag = SnapDrag
+          SelectedScreen = SelectedScreen
+          SelectedGroup = SelectedGroup
+          SelectedEntityOpt = SelectedEntityOpt }
 
     (* Nu Event Handling Functions *)
 
@@ -1233,7 +1239,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
     let private toggleAdvancing (world : World) =
         let wasAdvancing = world.Advancing
         let world = snapshot (if wasAdvancing then Halt else Advance) world
-        let world = if PhysicsReregisterWorkaround && not wasAdvancing then World.reregisterPhysics world else world // HACK: reregister physics as an automatic workaround for #856.
+        let world = if ReloadPhysicsAssetsWorkaround && not wasAdvancing then World.reloadPhysicsAssets world else world // HACK: reload physics assets as an automatic workaround for #856.
         let world = World.setAdvancing (not world.Advancing) world
         world
 
@@ -1576,7 +1582,6 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             elif ImGui.IsKeyPressed ImGuiKey.O && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then ShowOpenProjectDialog <- true; world
             elif ImGui.IsKeyPressed ImGuiKey.F && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then freezeEntities world
             elif ImGui.IsKeyPressed ImGuiKey.T && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then thawEntities world
-            elif ImGui.IsKeyPressed ImGuiKey.P && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then reregisterPhysics world
             elif ImGui.IsKeyPressed ImGuiKey.N && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then synchronizeNav world
             elif ImGui.IsKeyPressed ImGuiKey.L && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then rerenderLightMaps world
             elif not (ImGui.GetIO ()).WantCaptureKeyboardGlobal || entityHierarchyFocused then
@@ -1674,7 +1679,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                         else
                             if ImGui.MenuItem "Make Entity Family Static" then trySetSelectedEntityFamilyStatic true world else world
                     | Some _ | None -> world
-                let operation = ContextHierarchy { Snapshot = snapshot }
+                let operation = HierarchyContext { EditContext = makeContext None None }
                 let world = World.editGame operation Game world
                 let world = World.editScreen operation SelectedScreen world
                 let world = World.editGroup operation SelectedGroup world
@@ -1863,11 +1868,10 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         (propertyDescriptor : PropertyDescriptor)
         (simulant : Simulant)
         (world : World) =
-        let propertyValueStrPreviousRef = ref PropertyValueStrPrevious
         let propertyValue = getProperty propertyDescriptor simulant world
-        let (focused, changed, propertyValue) = World.imGuiEditPropertyRecord searchAssetViewer SnapDrag propertyValueStrPreviousRef DragDropPayloadOpt SelectedScreen SelectedGroup headered propertyDescriptor.PropertyName propertyDescriptor.PropertyType propertyValue
-        PropertyValueStrPrevious <- propertyValueStrPreviousRef.Value
-        if focused then focusProperty ()
+        let context = makeContext (Some focusProperty) None
+        let (changed, propertyValue) = World.imGuiEditPropertyRecord headered propertyDescriptor.PropertyName propertyDescriptor.PropertyType propertyValue context world
+        PropertyValueStrPrevious <- context.PropertyValueStrPreviousRef.Value
         if changed then setProperty propertyValue propertyDescriptor simulant world else world
 
     let private imGuiEditProperty
@@ -1877,11 +1881,10 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         (propertyDescriptor : PropertyDescriptor)
         (simulant : Simulant)
         (world : World) =
-        let propertyValueStrPreviousRef = ref PropertyValueStrPrevious
         let propertyValue = getProperty propertyDescriptor simulant world
-        let (focused, changed, propertyValue) = World.imGuiEditProperty searchAssetViewer SnapDrag propertyValueStrPreviousRef DragDropPayloadOpt SelectedScreen SelectedGroup propertyDescriptor.PropertyName propertyDescriptor.PropertyType propertyValue
-        PropertyValueStrPrevious <- propertyValueStrPreviousRef.Value
-        if focused then focusProperty ()
+        let context = makeContext (Some focusProperty) None
+        let (changed, propertyValue) = World.imGuiEditProperty propertyDescriptor.PropertyName propertyDescriptor.PropertyType propertyValue context world
+        PropertyValueStrPrevious <- context.PropertyValueStrPreviousRef.Value
         if changed then setProperty propertyValue propertyDescriptor simulant world else world
 
     let private imGuiEditEntityAppliedTypes (entity : Entity) world =
@@ -2004,10 +2007,9 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                     let mutable replaced = false
                                     let replaceProperty =
                                         ReplaceProperty
-                                            { Snapshot = snapshot
-                                              FocusProperty = fun world -> focusProperty (); world
-                                              IndicateReplaced = fun world -> replaced <- true; world
-                                              PropertyDescriptor = propertyDescriptor }
+                                            { IndicateReplaced = fun () -> replaced <- true
+                                              PropertyDescriptor = propertyDescriptor
+                                              EditContext = makeContext (Some focusProperty) None }
                                     let world = World.edit replaceProperty simulant world
                                     if not replaced then
                                         if  FSharpType.IsRecord propertyDescriptor.PropertyType ||
@@ -2020,10 +2022,9 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                     let mutable replaced = false
                                     let replaceProperty =
                                         ReplaceProperty
-                                            { Snapshot = snapshot
-                                              FocusProperty = fun world -> focusProperty (); world
-                                              IndicateReplaced = fun world -> replaced <- true; world
-                                              PropertyDescriptor = propertyDescriptor }
+                                            { IndicateReplaced = fun () -> replaced <- true
+                                              PropertyDescriptor = propertyDescriptor
+                                              EditContext = makeContext (Some focusProperty) None }
                                     let world = World.edit replaceProperty simulant world
                                     if not replaced
                                     then imGuiEditProperty getPropertyValue setPropertyValue focusProperty propertyDescriptor simulant world
@@ -2052,9 +2053,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                         world
                 else world)
                 world propertyDescriptorses.Pairs
-        let appendProperties =
-            { Snapshot = snapshot
-              UnfocusProperty = fun world -> focusPropertyOpt None world; world }
+        let unfocusProperty () = focusPropertyOpt None world
+        let appendProperties : AppendProperties = { EditContext = makeContext None (Some unfocusProperty) }
         World.edit (AppendProperties appendProperties) simulant world
 
     let private imGuiViewportManipulation world =
@@ -2071,11 +2071,11 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             let projectionMatrix = viewport.Projection3d
             let projection = projectionMatrix.ToArray ()
             let operation =
-                OverlayViewport
-                    { Snapshot = snapshot
-                      ViewportView = viewport.View3d (false, World.getEye3dCenter world, World.getEye3dRotation world)
+                ViewportOverlay
+                    { ViewportView = viewport.View3d (false, World.getEye3dCenter world, World.getEye3dRotation world)
                       ViewportProjection = projectionMatrix
-                      ViewportBounds = box2 v2Zero io.DisplaySize }
+                      ViewportBounds = box2 v2Zero io.DisplaySize
+                      EditContext = makeContext None None }
             let world = World.editGame operation Game world
             let world = World.editScreen operation SelectedScreen world
             let world = World.editGroup operation SelectedGroup world
@@ -2083,11 +2083,11 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 match SelectedEntityOpt with
                 | Some entity when entity.GetExists world && entity.GetIs3d world ->
                     let operation =
-                        OverlayViewport
-                            { Snapshot = snapshot
-                              ViewportView = viewport.View3d (entity.GetAbsolute world, World.getEye3dCenter world, World.getEye3dRotation world)
+                        ViewportOverlay
+                            { ViewportView = viewport.View3d (entity.GetAbsolute world, World.getEye3dCenter world, World.getEye3dRotation world)
                               ViewportProjection = projectionMatrix
-                              ViewportBounds = box2 v2Zero io.DisplaySize }
+                              ViewportBounds = box2 v2Zero io.DisplaySize
+                              EditContext = makeContext None None }
                     World.editEntity operation entity world
                 | Some _ | None -> world
 
@@ -2273,7 +2273,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 | Some _ | None -> world
 
             // view manipulation
-            // NOTE: this code is the current failed attempt to integrate ImGuizmo view manipulation as reported here - https://github.com/CedricGuillemet/ImGuizmo/issues/304
+            // NOTE: this code is the current failed attempt to integrate ImGuizmo view manipulation as reported in #867.
             //if not io.WantCaptureMouseMinus then
             //    let eyeCenter = (World.getEye3dCenter world |> Matrix4x4.CreateTranslation).ToArray ()
             //    let eyeRotation = (World.getEye3dRotation world |> Matrix4x4.CreateFromQuaternion).ToArray ()
@@ -2352,7 +2352,6 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                         if ImGui.BeginMenu "Screen" then
                             let world = if ImGui.MenuItem ("Thaw Entities", "Ctrl+Shift+T") then freezeEntities world else world
                             let world = if ImGui.MenuItem ("Freeze Entities", "Ctrl+Shift+F") then freezeEntities world else world
-                            let world = if ImGui.MenuItem ("Reregister Physics", "Ctrl+Shift+P") then reregisterPhysics world else world
                             let world = if ImGui.MenuItem ("Rebuild Navigation", "Ctrl+Shift+N") then synchronizeNav world else world
                             let world = if ImGui.MenuItem ("Rerender Light Maps", "Ctrl+Shift+L") then rerenderLightMaps world else world
                             ImGui.EndMenu ()
@@ -3207,17 +3206,17 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             ImGui.Text "Input"
             ImGui.Checkbox ("Alternative Eye Travel Input", &AlternativeEyeTravelInput) |> ignore<bool>
             ImGui.Text "Misc"
-            ImGui.Checkbox ("Physics Reregister Workaround", &PhysicsReregisterWorkaround) |> ignore<bool>
+            ImGui.Checkbox ("Reload Physics Assets Workaround", &ReloadPhysicsAssetsWorkaround) |> ignore<bool>
             ImGui.End ()
 
     let private imGuiAssetViewerWindow () =
         if ImGui.Begin "Asset Viewer" then
+            ImGui.SetNextItemWidth -1.0f
+            let searchActivePrevious = not (String.IsNullOrWhiteSpace AssetViewerSearchStr)
             if AssetViewerSearchRequested then
                 ImGui.SetKeyboardFocusHere ()
                 AssetViewerSearchStr <- ""
                 AssetViewerSearchRequested <- false
-            ImGui.SetNextItemWidth -1.0f
-            let searchActivePrevious = not (String.IsNullOrWhiteSpace AssetViewerSearchStr)
             ImGui.InputTextWithHint ("##assetViewerSearchStr", "[enter search text]", &AssetViewerSearchStr, 4096u) |> ignore<bool>
             let searchActiveCurrent = not (String.IsNullOrWhiteSpace AssetViewerSearchStr)
             let searchDeactivated = searchActivePrevious && not searchActiveCurrent
@@ -3721,7 +3720,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             if ImGui.Button "Show in Hierarchy" then
                 ShowSelectedEntity <- true
                 ShowEntityContextMenu <- false
-            let operation = ContextViewport { Snapshot = snapshot; RightClickPosition = RightClickPosition }
+            let operation = ViewportContext { RightClickPosition = RightClickPosition; EditContext = makeContext None None }
             let world = World.editGame operation Game world
             let world = World.editScreen operation SelectedScreen world
             let world = World.editGroup operation SelectedGroup world
@@ -3932,7 +3931,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 let absolute = entity.GetAbsolute world
                 let bounds = entity.GetBounds world
                 let elevation = Single.MaxValue
-                let transform = Transform.makePerimeter bounds v3Zero elevation absolute
+                let transform = Transform.makePerimeter absolute bounds v3Zero elevation
                 let image = Assets.Default.HighlightSprite
                 World.enqueueRenderMessage2d
                     (LayeredOperation2d
@@ -3943,6 +3942,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                             RenderSprite
                                 { Transform = transform
                                   InsetOpt = ValueNone
+                                  ClipOpt = ValueNone
                                   Image = image
                                   Color = Color.One
                                   Blend = Transparent

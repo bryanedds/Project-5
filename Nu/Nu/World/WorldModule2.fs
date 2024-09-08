@@ -805,13 +805,14 @@ module WorldModule2 =
 
         /// Send a message to the subsystems to reload their existing assets.
         static member reloadExistingAssets world =
+            let world = World.reloadPhysicsAssets world
             let world = World.reloadRenderAssets2d world
             let world = World.reloadRenderAssets3d world
             let world = World.reloadAudioAssets world
             let world = World.reloadSymbols world
             world
 
-        /// Attempt to reload the asset graph.
+        /// Attempt to reload asset graph, build assets, then reload built assets.
         /// Currently does not support reloading of song assets, and possibly others that are
         /// locked by the engine's subsystems.
         static member tryReloadAssetGraph inputDirectory outputDirectory refinementDirectory world =
@@ -837,7 +838,7 @@ module WorldModule2 =
                 | Left error -> (Left error, world)
             with exn -> (Left (scstring exn), World.switch world)
 
-        /// Reload asset graph, build assets, then reload built assets.
+        /// Attempt to reload asset graph, build assets, then reload built assets.
         /// Currently does not support reloading of song assets, and possibly others that are
         /// locked by the engine's subsystems.
         static member tryReloadAssets world =
@@ -1070,20 +1071,17 @@ module WorldModule2 =
                         if entity.GetExists world && entity.GetSelected world then
                             let center = bodyTransformMessage.Center
                             if not (Single.IsNaN center.X) then
-                                let rotation = bodyTransformMessage.Rotation
-                                let linearVelocity = bodyTransformMessage.LinearVelocity
-                                let angularVelocity = bodyTransformMessage.AngularVelocity
-                                let physicsMotion = entity.GetPhysicsMotion world
-                                if physicsMotion = ManualMotion || bodyId.BodyIndex <> Constants.Physics.InternalIndex then
+                                let world = entity.SetXtensionPropertyWithoutEvent "AwakeTimeStamp" world.UpdateTime world
+                                if  entity.GetPhysicsMotion world = ManualMotion ||
+                                    bodyId.BodyIndex <> Constants.Physics.InternalIndex then
                                     let transformData =
                                         { BodyCenter = center
-                                          BodyRotation = rotation
-                                          BodyLinearVelocity = linearVelocity
-                                          BodyAngularVelocity = angularVelocity }
-                                    let transformAddress = entity.BodyTransformEvent
+                                          BodyRotation = bodyTransformMessage.Rotation
+                                          BodyLinearVelocity = bodyTransformMessage.LinearVelocity
+                                          BodyAngularVelocity = bodyTransformMessage.AngularVelocity }
                                     let eventTrace = EventTrace.debug "World" "processIntegrationMessage" "" EventTrace.empty
-                                    World.publishPlus transformData transformAddress eventTrace Nu.Game.Handle false false world
-                                else entity.ApplyPhysics center rotation linearVelocity angularVelocity world
+                                    World.publishPlus transformData entity.BodyTransformEvent eventTrace Nu.Game.Handle false false world
+                                else entity.ApplyPhysics center bodyTransformMessage.Rotation bodyTransformMessage.LinearVelocity bodyTransformMessage.AngularVelocity world
                             else world
                         else world
                     | _ -> world
@@ -1374,6 +1372,7 @@ module WorldModule2 =
                             RenderSprite
                                 { Transform = transform
                                   InsetOpt = ValueNone
+                                  ClipOpt = ValueNone
                                   Image = dissolveImage
                                   Color = color
                                   Blend = Transparent
@@ -1998,7 +1997,7 @@ module EntityDispatcherModule2 =
         static member Properties =
             [define Entity.Presence Omnipresent
              define Entity.Absolute true
-             define Entity.DisabledColor Constants.Gui.DisabledColor
+             define Entity.DisabledColor Constants.Gui.DisabledColorDefault
              define Entity.Layout Manual
              define Entity.LayoutMargin v2Zero
              define Entity.LayoutOrder 0
