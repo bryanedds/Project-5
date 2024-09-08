@@ -30,6 +30,9 @@ cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Metrics/Assets/Default/"
 rm -f "Projects/Nelmish/Assets/Default/*"
 cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Nelmish/Assets/Default/"
 
+rm -f "Projects/Project 5/Assets/Default/*"
+cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Project 5/Assets/Default/"
+
 rm -f "Projects/Terra Firma/Assets/Default/*"
 cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Terra Firma/Assets/Default/"
 

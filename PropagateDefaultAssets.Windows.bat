@@ -30,6 +30,9 @@ copy Nu\Nu.Gaia\Assets\Default\*, "Projects\Metrics\Assets\Default" /Y
 del "Projects\Nelmish\Assets\Default\*" /Q
 copy Nu\Nu.Gaia\Assets\Default\*, "Projects\Nelmish\Assets\Default" /Y
 
+del "Projects\Project 5\Assets\Default\*" /Q
+copy Nu\Nu.Gaia\Assets\Default\*, "Projects\Project 5\Assets\Default" /Y
+
 del "Projects\Terra Firma\Assets\Default\*" /Q
 copy Nu\Nu.Gaia\Assets\Default\*, "Projects\Terra Firma\Assets\Default" /Y
 
