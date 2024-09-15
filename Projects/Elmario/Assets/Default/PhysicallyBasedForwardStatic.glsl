@@ -24,14 +24,14 @@ const vec2 TEX_COORDS_OFFSET_FILTERS_2[TEX_COORDS_OFFSET_VERTS] =
 uniform mat4 view;
 uniform mat4 projection;
 
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec2 texCoords;
-layout (location = 2) in vec3 normal;
-layout (location = 3) in mat4 model;
-layout (location = 7) in vec4 texCoordsOffset;
-layout (location = 8) in vec4 albedo;
-layout (location = 9) in vec4 material;
-layout (location = 10) in vec4 heightPlus;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec2 texCoords;
+layout(location = 2) in vec3 normal;
+layout(location = 3) in mat4 model;
+layout(location = 7) in vec4 texCoordsOffset;
+layout(location = 8) in vec4 albedo;
+layout(location = 9) in vec4 material;
+layout(location = 10) in vec4 heightPlus;
 
 out vec4 positionOut;
 out vec2 texCoordsOut;
@@ -67,11 +67,11 @@ const int SHADOWS_MAX = 16;
 const float SHADOW_FOV_MAX = 2.1;
 const float SHADOW_SEAM_INSET = 0.001;
 const vec4 SSVF_DITHERING[4] =
-vec4[4](
-    vec4(0.0, 0.5, 0.125, 0.625),
-    vec4(0.75, 0.22, 0.875, 0.375),
-    vec4(0.1875, 0.6875, 0.0625, 0.5625),
-    vec4(0.9375, 0.4375, 0.8125, 0.3125));
+    vec4[4](
+        vec4(0.0, 0.5, 0.125, 0.625),
+        vec4(0.75, 0.22, 0.875, 0.375),
+        vec4(0.1875, 0.6875, 0.0625, 0.5625),
+        vec4(0.9375, 0.4375, 0.8125, 0.3125));
 
 uniform vec3 eyeCenter;
 uniform float lightCutoffMargin;
@@ -79,6 +79,8 @@ uniform vec3 lightAmbientColor;
 uniform float lightAmbientBrightness;
 uniform float lightShadowExponent;
 uniform float lightShadowDensity;
+uniform float lightShadowBleedFilter;
+uniform float lightShadowVarianceMin;
 uniform int ssvfEnabled;
 uniform int ssvfSteps;
 uniform float ssvfAsymmetry;
@@ -221,6 +223,26 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
     return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+float computeShadowScalar(vec4 position, bool lightDirectional, float lightConeOuter, mat4 shadowMatrix, sampler2D shadowTexture)
+{
+    vec4 positionShadow = shadowMatrix * position;
+    vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
+    if (shadowTexCoordsProj.x >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.y >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.z >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
+    {
+        vec2 shadowTexCoords = shadowTexCoordsProj.xy * 0.5 + 0.5;
+        float shadowZ = !lightDirectional ? shadowTexCoordsProj.z * 0.5 + 0.5 : shadowTexCoordsProj.z;
+        float shadowZExp = exp(-lightShadowExponent * shadowZ);
+        float shadowDepthExp = texture(shadowTexture, shadowTexCoords).y;
+        float shadowScalar = clamp(shadowZExp * shadowDepthExp, 0.0, 1.0);
+        shadowScalar = pow(shadowScalar, lightShadowDensity);
+        shadowScalar = lightConeOuter > SHADOW_FOV_MAX ? fadeShadowScalar(shadowTexCoords, shadowScalar) : shadowScalar;
+        return shadowScalar;
+    }
+    return 1.0;
+}
+
 vec3 computeFogAccumDirectional(vec4 position, int lightIndex)
 {
     vec3 result = vec3(0.0);
@@ -317,13 +339,15 @@ void main()
     // compute light accumulation
     vec3 n = normalize(toWorld * (texture(normalTexture, texCoords).xyz * 2.0 - 1.0));
     vec3 v = normalize(eyeCenter - position.xyz);
+    float nDotV = max(dot(n, v), 0.0);
     vec3 f0 = mix(vec3(0.04), albedo.rgb, metallic); // if dia-electric (plastic) use f0 of 0.04f and if metal, use the albedo color as f0.
     vec3 lightAccum = vec3(0.0);
     for (int i = 0; i < lightsCount; ++i)
     {
         // per-light radiance
+        bool lightDirectional = lightDirectionals[i] == 1;
         vec3 l, h, radiance;
-        if (lightDirectionals[i] == 0)
+        if (!lightDirectional)
         {
             vec3 d = lightOrigins[i] - position.xyz;
             l = normalize(d);
@@ -351,42 +375,27 @@ void main()
 
         // shadow scalar
         int shadowIndex = lightShadowIndices[i];
-        float shadowScalar = 1.0;
-        if (shadowIndex >= 0)
-        {
-            vec4 positionShadow = shadowMatrices[shadowIndex] * position;
-            vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
-            vec2 shadowTexCoords = vec2(shadowTexCoordsProj.x, shadowTexCoordsProj.y) * 0.5 + 0.5;
-            if (shadowTexCoordsProj.x >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
-                shadowTexCoordsProj.y >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
-                shadowTexCoordsProj.z >= -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
-            {
-                float shadowZ = shadowTexCoordsProj.z;
-                float shadowZExp = exp(-lightShadowExponent * shadowZ);
-                float shadowDepthExp = texture(shadowTextures[shadowIndex], shadowTexCoords.xy).g;
-                shadowScalar = clamp(shadowZExp * shadowDepthExp, 0.0, 1.0);
-                shadowScalar = pow(shadowScalar, lightShadowDensity);
-                shadowScalar = lightConeOuters[i] > SHADOW_FOV_MAX ? fadeShadowScalar(shadowTexCoords, shadowScalar) : shadowScalar;
-            }
-        }
+        float shadowScalar =
+            shadowIndex >= 0 ?
+            computeShadowScalar(position, lightDirectional, lightConeOuters[i], shadowMatrices[shadowIndex], shadowTextures[shadowIndex]) :
+            1.0;
 
         // cook-torrance brdf
+        float hDotV = max(dot(h, v), 0.0);
         float ndf = distributionGGX(n, h, roughness);
         float g = geometrySchlick(n, v, l, roughness);
-        vec3 f = fresnelSchlick(max(dot(h, v), 0.0), f0);
+        vec3 f = fresnelSchlick(hDotV, f0);
 
         // compute specularity
         vec3 numerator = ndf * g * f;
-        float denominator = 4.0 * max(dot(n, v), 0.0) * max(dot(n, l), 0.0) + 0.0001; // add epsilon to prevent division by zero
+        float nDotL = max(dot(n, l), 0.0);
+        float denominator = 4.0 * nDotV * nDotL + 0.0001; // add epsilon to prevent division by zero
         vec3 specular = numerator / denominator;
 
         // compute diffusion
         vec3 kS = f;
         vec3 kD = vec3(1.0) - kS;
         kD *= 1.0 - metallic;
-
-        // compute light scalar
-        float nDotL = max(dot(n, l), 0.0);
 
         // add to outgoing lightAccum
         lightAccum += (kD * albedo.rgb / PI + specular) * radiance * nDotL * shadowScalar;
@@ -436,14 +445,14 @@ void main()
     vec3 lightAmbientSpecular = lightAmbientDiffuse * ambientOcclusion;
 
     // compute diffuse term
-    vec3 f = fresnelSchlickRoughness(max(dot(n, v), 0.0), f0, roughness);
+    vec3 f = fresnelSchlickRoughness(nDotV, f0, roughness);
     vec3 kS = f;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
     vec3 diffuse = kD * irradiance * albedo.rgb * lightAmbientDiffuse;
 
     // compute specular term
-    vec2 environmentBrdf = texture(brdfTexture, vec2(max(dot(n, v), 0.0), roughness)).rg;
+    vec2 environmentBrdf = texture(brdfTexture, vec2(nDotV, roughness)).rg;
     vec3 specular = environmentFilter * (f * environmentBrdf.x + environmentBrdf.y) * lightAmbientSpecular;
 
     // compute directional fog accumulation from sun light when desired
@@ -454,6 +463,6 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / GAMMA));
 
-    // write
+    // write fragment
     frag = vec4(color, albedo.a);
 }
