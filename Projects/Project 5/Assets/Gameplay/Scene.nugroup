@@ -24,7 +24,7 @@
      []]
     [SkyBoxDispatcher
      [[Absolute True]
-      [AmbientBrightness 0.325]
+      [AmbientBrightness 0.2]
       [MountOpt [Some ^]]
       [Name SkyBox]
       [Presence Omnipresent]
@@ -117,6 +117,27 @@
       [Presence Omnipresent]
       [ProbeBounds
        [[-24.83 -8.41 -15.15] [29.779999 28.899998 30.039997]]]
+      [Size [0.25 0.25 0.25]]
+      [Static True]]
+     []]
+    [Light3dDispatcher
+     [[Brightness 2.5]
+      [DesireShadows True]
+      [LightCutoff 4.3]
+      [MountOpt [Some ^]]
+      [Name Light3dSanctum]
+      [Position [-7.72 3.27 0]]
+      [PositionLocal [-7.72 3.27 0]]
+      [Size [0.25 0.25 0.25]]]
+     []]
+    [LightProbe3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name LightProbe3dSanctum]
+      [Position [-7.763825 1.4708124 -0.06507908]]
+      [PositionLocal [-7.763825 1.4708124 -0.06507908]]
+      [Presence Omnipresent]
+      [ProbeBounds
+       [[-10.56 -0.14 -2.65] [5.4700003 4.67 5.280015]]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
@@ -74580,13 +74601,4 @@
         [Static True]
         [Visible False]
         [VisibleLocal False]]
-       []]]]]]
-  [LightProbe3dDispatcher
-   [[Name LightProbe3d-0001]
-    [Position [-7.763825 1.4708124 -0.06507908]]
-    [Presence Omnipresent]
-    [ProbeBounds
-     [[-10.54 -0.14 -2.65] [5.45 4.67 5.280015]]]
-    [Size [0.25 0.25 0.25]]
-    [Static True]]
-   []]]]
+       []]]]]]]]
