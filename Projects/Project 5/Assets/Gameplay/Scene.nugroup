@@ -74580,4 +74580,13 @@
         [Static True]
         [Visible False]
         [VisibleLocal False]]
-       []]]]]]]]
+       []]]]]]
+  [LightProbe3dDispatcher
+   [[Name LightProbe3d-0001]
+    [Position [-7.763825 1.4708124 -0.06507908]]
+    [Presence Omnipresent]
+    [ProbeBounds
+     [[-10.54 -0.14 -2.65] [5.45 4.67 5.280015]]]
+    [Size [0.25 0.25 0.25]]
+    [Static True]]
+   []]]]
