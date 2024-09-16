@@ -1972,7 +1972,7 @@ type SkyBoxFacet () =
          define Entity.Presence Omnipresent
          define Entity.Static true
          define Entity.AmbientColor Color.White
-         define Entity.AmbientBrightness 1.0f
+         define Entity.AmbientBrightness 0.5f
          define Entity.Color Color.White
          define Entity.Brightness 1.0f
          define Entity.CubeMap Assets.Default.SkyBoxMap]
@@ -2030,6 +2030,8 @@ type LightProbe3dFacet () =
          define Entity.LightProbe true
          define Entity.Presence Omnipresent
          define Entity.Static true
+         define Entity.AmbientColor Color.White
+         define Entity.AmbientBrightness 0.5f
          define Entity.ProbeBounds (box3 (v3Dup Constants.Render.LightProbeSizeDefault * -0.5f) (v3Dup Constants.Render.LightProbeSizeDefault))
          nonPersistent Entity.ProbeStale false]
 
@@ -2041,8 +2043,10 @@ type LightProbe3dFacet () =
         let id = entity.GetId world
         let enabled = entity.GetEnabled world
         let position = entity.GetPosition world
+        let ambientColor = entity.GetAmbientColor world
+        let ambientBrightness = entity.GetAmbientBrightness world
         let bounds = entity.GetProbeBounds world
-        World.enqueueRenderMessage3d (RenderLightProbe3d { LightProbeId = id; Enabled = enabled; Origin = position; Bounds = bounds; RenderPass = renderPass }) world
+        World.enqueueRenderMessage3d (RenderLightProbe3d { LightProbeId = id; Enabled = enabled; Origin = position; AmbientColor = ambientColor; AmbientBrightness = ambientBrightness; Bounds = bounds; RenderPass = renderPass }) world
 
     override this.RayCast (ray, entity, world) =
         let intersectionOpt = ray.Intersects (entity.GetBounds world)
@@ -2056,9 +2060,8 @@ type LightProbe3dFacet () =
         match op with
         | AppendProperties append ->
             let world =
-                if ImGui.Button "Rerender Light Map" then
-                    let world = append.EditContext.Snapshot RerenderLightMap world
-                    entity.SetProbeStale true world
+                if ImGui.Button "Rerender Light Map"
+                then entity.SetProbeStale true world // this isn't undoable
                 else world
             let world =
                 if ImGui.Button "Recenter in Probe Bounds" then
@@ -2101,6 +2104,7 @@ type Light3dFacet () =
 
     static member Properties =
         [define Entity.Size (v3Dup 0.25f)
+         define Entity.Static true
          define Entity.Light true
          define Entity.Color Color.White
          define Entity.Brightness Constants.Render.BrightnessDefault

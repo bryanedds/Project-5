@@ -33,8 +33,6 @@ uniform vec3 eyeCenter;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float lightCutoffMargin;
-uniform vec3 lightAmbientColor;
-uniform float lightAmbientBrightness;
 uniform float lightShadowExponent;
 uniform float lightShadowDensity;
 uniform float lightShadowBleedFilter;
@@ -65,6 +63,7 @@ uniform sampler2D albedoTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D normalPlusTexture;
 uniform sampler2D brdfTexture;
+uniform sampler2D ambientTexture;
 uniform sampler2D irradianceTexture;
 uniform sampler2D environmentFilterTexture;
 uniform sampler2D ssaoTexture;
@@ -359,6 +358,7 @@ void main()
         vec3 normal = texture(normalPlusTexture, texCoordsOut).xyz;
 
         // retrieve data from intermediate buffers
+        vec4 ambientColorAndBrightness = texture(ambientTexture, texCoordsOut);
         vec3 irradiance = texture(irradianceTexture, texCoordsOut).rgb;
         vec3 environmentFilter = texture(environmentFilterTexture, texCoordsOut).rgb;
         float ssao = texture(ssaoTexture, texCoordsOut).r;
@@ -433,18 +433,20 @@ void main()
             lightAccum += (kD * albedo / PI + specular) * radiance * nDotL * shadowScalar;
         }
 
-        // compute light ambient terms
-        // NOTE: lightAmbientSpecular gets an additional ao multiply for some specular occlusion.
+        // compute ambient terms
+        // NOTE: ambientSpecular gets an additional ao multiply for some specular occlusion.
         // TODO: use a better means of computing specular occlusion as this one isn't very effective.
-        vec3 lightAmbientDiffuse = lightAmbientColor * lightAmbientBrightness * ambientOcclusion;
-        vec3 lightAmbientSpecular = lightAmbientDiffuse * ambientOcclusion;
+        vec3 ambientColor = ambientColorAndBrightness.rgb;
+        float ambientBrightness = ambientColorAndBrightness.a;
+        vec3 ambientDiffuse = ambientColor * ambientBrightness * ambientOcclusion;
+        vec3 ambientSpecular = ambientDiffuse * ambientOcclusion;
 
         // compute diffuse term
         vec3 f = fresnelSchlickRoughness(nDotV, f0, roughness);
         vec3 kS = f;
         vec3 kD = 1.0 - kS;
         kD *= 1.0 - metallic;
-        vec3 diffuse = kD * irradiance * albedo * lightAmbientDiffuse;
+        vec3 diffuse = kD * irradiance * albedo * ambientDiffuse;
 
         // compute specular term and weight from screen-space
         vec3 forward = vec3(view[0][2], view[1][2], view[2][2]);
@@ -466,7 +468,7 @@ void main()
         // compute specular term
         vec2 environmentBrdf = texture(brdfTexture, vec2(nDotV, roughness)).rg;
         vec3 specularEnvironmentSubterm = f * environmentBrdf.x + environmentBrdf.y;
-        vec3 specularEnvironment = environmentFilter * specularEnvironmentSubterm * lightAmbientSpecular;
+        vec3 specularEnvironment = environmentFilter * specularEnvironmentSubterm * ambientSpecular;
         vec3 specular = (1.0 - specularScreenWeight) * specularEnvironment + specularScreenWeight * specularScreen;
 
         // write lighting values

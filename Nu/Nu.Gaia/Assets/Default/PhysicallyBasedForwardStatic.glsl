@@ -67,11 +67,11 @@ const int SHADOWS_MAX = 16;
 const float SHADOW_FOV_MAX = 2.1;
 const float SHADOW_SEAM_INSET = 0.001;
 const vec4 SSVF_DITHERING[4] =
-    vec4[4](
-        vec4(0.0, 0.5, 0.125, 0.625),
-        vec4(0.75, 0.22, 0.875, 0.375),
-        vec4(0.1875, 0.6875, 0.0625, 0.5625),
-        vec4(0.9375, 0.4375, 0.8125, 0.3125));
+vec4[4](
+    vec4(0.0, 0.5, 0.125, 0.625),
+    vec4(0.75, 0.22, 0.875, 0.375),
+    vec4(0.1875, 0.6875, 0.0625, 0.5625),
+    vec4(0.9375, 0.4375, 0.8125, 0.3125));
 
 uniform vec3 eyeCenter;
 uniform float lightCutoffMargin;
@@ -101,6 +101,8 @@ uniform sampler2D shadowTextures[SHADOWS_MAX];
 uniform vec3 lightMapOrigins[LIGHT_MAPS_MAX];
 uniform vec3 lightMapMins[LIGHT_MAPS_MAX];
 uniform vec3 lightMapSizes[LIGHT_MAPS_MAX];
+uniform vec3 lightMapAmbientColors[LIGHT_MAPS_MAX];
+uniform float lightMapAmbientBrightnesses[LIGHT_MAPS_MAX];
 uniform int lightMapsCount;
 uniform vec3 lightOrigins[LIGHTS_MAX];
 uniform vec3 lightDirections[LIGHTS_MAX];
@@ -407,17 +409,23 @@ void main()
     if (lm1 != -1 && !inBounds(position.xyz, lightMapMins[lm1], lightMapSizes[lm1])) { lm1 = lm2; lm2 = -1; }
     if (lm2 != -1 && !inBounds(position.xyz, lightMapMins[lm2], lightMapSizes[lm2])) lm2 = -1;
 
-    // compute irradiance and environment filter terms
+    // compute light mapping terms
+    vec3 ambientColor = vec3(0.0);
+    float ambientBrightness = 0.0;
     vec3 irradiance = vec3(0.0);
     vec3 environmentFilter = vec3(0.0);
     if (lm1 == -1 && lm2 == -1)
     {
+        ambientColor = lightAmbientColor;
+        ambientBrightness = lightAmbientBrightness;
         irradiance = texture(irradianceMap, n).rgb;
         vec3 r = reflect(-v, n);
         environmentFilter = textureLod(environmentFilterMap, r, roughness * REFLECTION_LOD_MAX).rgb;
     }
     else if (lm2 == -1)
     {
+        ambientColor = lightMapAmbientColors[lm1];
+        ambientBrightness = lightMapAmbientBrightnesses[lm1];
         irradiance = texture(irradianceMaps[lm1], n).rgb;
         vec3 r = parallaxCorrection(environmentFilterMaps[lm1], lightMapOrigins[lm1], lightMapMins[lm1], lightMapSizes[lm1], position.xyz, n);
         environmentFilter = textureLod(environmentFilterMaps[lm1], r, roughness * REFLECTION_LOD_MAX).rgb;
@@ -426,6 +434,14 @@ void main()
     {
         // compute blending
         float ratio = computeDepthRatio(lightMapMins[lm1], lightMapSizes[lm1], lightMapMins[lm2], lightMapSizes[lm2], position.xyz, n);
+
+        // compute blended ambient values
+        vec3 ambientColor1 = lightMapAmbientColors[lm1];
+        vec3 ambientColor2 = lightMapAmbientColors[lm2];
+        float ambientBrightness1 = lightMapAmbientBrightnesses[lm1];
+        float ambientBrightness2 = lightMapAmbientBrightnesses[lm2];
+        ambientColor = mix(ambientColor1, ambientColor2, ratio);
+        ambientBrightness = mix(ambientBrightness1, ambientBrightness2, ratio);
 
         // compute blended irradiance
         vec3 irradiance1 = texture(irradianceMaps[lm1], n).rgb;
@@ -440,20 +456,20 @@ void main()
         environmentFilter = mix(environmentFilter1, environmentFilter2, ratio);
     }
 
-    // compute light ambient terms
-    vec3 lightAmbientDiffuse = lightAmbientColor * lightAmbientBrightness * ambientOcclusion;
-    vec3 lightAmbientSpecular = lightAmbientDiffuse * ambientOcclusion;
+    // compute ambient terms
+    vec3 ambientDiffuse = ambientColor * ambientBrightness * ambientOcclusion;
+    vec3 ambientSpecular = ambientDiffuse * ambientOcclusion;
 
     // compute diffuse term
     vec3 f = fresnelSchlickRoughness(nDotV, f0, roughness);
     vec3 kS = f;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 diffuse = kD * irradiance * albedo.rgb * lightAmbientDiffuse;
+    vec3 diffuse = kD * irradiance * albedo.rgb * ambientDiffuse;
 
     // compute specular term
     vec2 environmentBrdf = texture(brdfTexture, vec2(nDotV, roughness)).rg;
-    vec3 specular = environmentFilter * (f * environmentBrdf.x + environmentBrdf.y) * lightAmbientSpecular;
+    vec3 specular = environmentFilter * (f * environmentBrdf.x + environmentBrdf.y) * ambientSpecular;
 
     // compute directional fog accumulation from sun light when desired
     vec3 fogAccum = ssvfEnabled == 1 ? computeFogAccumDirectional(position, 0) : vec3(0.0);
