@@ -1,0 +1,876 @@
+[GroupDispatcher
+ [[Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
+  [Name Group]
+  [Persistent True]
+  [Visible True]]
+ [[Entity3dDispatcher
+   [[Name EndlessHallway]]
+   [[RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-1.25 0 1.25]]
+      [PositionLocal [-1.25 0 1.25]]
+      [PropagatedDescriptorOpt
+       [Some
+        [RigidModelDispatcher
+         [[BodyShape
+           [StaticModelShape
+            [[Gameplay floor] True None None]]]
+          [MountOpt [Some ^]]
+          [Name Hall]
+          [Offset [1.2499987 0 -1.2499988]]
+          [Position [-1.25 0 1.25]]
+          [PositionLocal [-1.25 0 1.25]]
+          [Size [2.4999974 1.3172522E-06 2.4999976]]
+          [StaticModel [Gameplay floor]]]
+         [[RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay wall] True None None]]]
+            [MountOpt [Some ^]]
+            [Name WallA]
+            [Offset [1.2496585 1.7500011 -7.301569E-07]]
+            [Pickable False]
+            [Position [-1.25 0 1.25]]
+            [Size [2.5000017 3.5000021 0.46322292]]
+            [StaticModel [Gameplay wall]]]
+           []]
+          [RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay wall] True None None]]]
+            [MountOpt [Some ^]]
+            [Name WallB]
+            [Offset [1.2496585 1.7500011 -7.301569E-07]]
+            [Pickable False]
+            [Position [-1.25 0 -1.25]]
+            [PositionLocal [0 0 -2.5]]
+            [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+            [Size [2.5000017 3.5000021 0.46322292]]
+            [StaticModel [Gameplay wall]]]
+           []]
+          [RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay ceiling] True None None]]]
+            [MountOpt [Some ^]]
+            [Name Ceiling]
+            [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+            [Pickable False]
+            [Position [0 3.5 0]]
+            [PositionLocal [1.25 3.5 -1.25]]
+            [Size [2.5000005 5.9259696E-07 2.5000002]]
+            [StaticModel [Gameplay ceiling]]]
+           []]]]]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-1.25 0 1.25]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-1.25 0 -1.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [0 3.5 0]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0018]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-3.75 0 1.25]]
+      [PositionLocal [-3.75 0 1.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 1.25]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 -1.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [-2.5 3.5 0]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0019]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [1.25 0 1.25]]
+      [PositionLocal [1.25 0 1.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [1.25 0 1.25]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [1.25 0 -1.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [2.5 3.5 0]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0020]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [3.75 0 1.25]]
+      [PositionLocal [3.75 0 1.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [3.75 0 1.25]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [3.75 0 -1.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [5 3.5 0]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0024]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-3.75 0 -1.25]]
+      [PositionLocal [-3.75 0 -1.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Rotation [0 0.70710665 0 0.7071069]]
+      [RotationLocal [0 0.7071067 0 0.7071068]]
+      [Scale [0.9999999 1 0.9999999]]
+      [ScaleLocal [0.99999994 1 0.99999994]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 -1.25]]
+        [Rotation [0 0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-6.2499995 0 -1.2500008]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [-4.999999 3.5 -2.5000002]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Rotation [0 0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0027]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-3.75 0 -3.75]]
+      [PositionLocal [-3.75 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 -3.75]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 -6.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [-2.5 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0028]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-1.25 0 -3.75]]
+      [PositionLocal [-1.25 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-1.25 0 -3.75]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-1.25 0 -6.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [0 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0029]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [1.25 0 -3.75]]
+      [PositionLocal [1.25 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [1.25 0 -3.75]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [1.25 0 -6.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [2.5 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0030]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [3.75 0 -3.75]]
+      [PositionLocal [3.75 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [3.75 0 -3.75]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [3.75 0 -6.25]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [5 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Hall-0032]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [6.25 0 -3.75]]
+      [PositionLocal [6.25 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Hall]]
+      [Rotation [0 -0.70710665 0 0.7071069]]
+      [RotationLocal [0 -0.7071067 0 0.7071068]]
+      [Scale [0.9999999 1 0.9999999]]
+      [ScaleLocal [0.99999994 1 0.99999994]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [6.25 0 -3.75]]
+        [Rotation [0 -0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [8.75 0 -3.750001]]
+        [PositionLocal [0 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 -0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [7.5 3.5 -2.5000007]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Rotation [0 -0.70710665 0 0.7071069]]
+        [Scale [0.9999998 1 0.9999998]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Corner]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [6.25 0 1.25]]
+      [PositionLocal [6.25 0 1.25]]
+      [PropagatedDescriptorOpt
+       [Some
+        [RigidModelDispatcher
+         [[BodyShape
+           [StaticModelShape
+            [[Gameplay floor] True None None]]]
+          [MountOpt [Some ^]]
+          [Name Corner]
+          [Offset [1.2499987 0 -1.2499988]]
+          [Position [6.25 0 1.25]]
+          [PositionLocal [6.25 0 1.25]]
+          [Size [2.4999974 1.3172522E-06 2.4999976]]
+          [StaticModel [Gameplay floor]]]
+         [[RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay wall] True None None]]]
+            [MountOpt [Some ^]]
+            [Name WallA]
+            [Offset [1.2496585 1.7500011 -7.301569E-07]]
+            [Pickable False]
+            [Position [6.25 0 1.25]]
+            [Size [2.5000017 3.5000021 0.46322292]]
+            [StaticModel [Gameplay wall]]]
+           []]
+          [RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay wall] True None None]]]
+            [MountOpt [Some ^]]
+            [Name WallB]
+            [Offset [1.2496585 1.7500011 -7.301569E-07]]
+            [Pickable False]
+            [Position [8.75 0 -1.25]]
+            [PositionLocal [2.5 0 -2.5]]
+            [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+            [Rotation [0 -0.7071067 0 0.7071068]]
+            [RotationLocal [0 -0.70710677 0 0.70710677]]
+            [Scale [0.99999994 1 0.99999994]]
+            [Size [2.5000017 3.5000021 0.46322292]]
+            [StaticModel [Gameplay wall]]]
+           []]
+          [RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay ceiling] True None None]]]
+            [MountOpt [Some ^]]
+            [Name Ceiling]
+            [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+            [Pickable False]
+            [Position [7.5 3.5 0]]
+            [PositionLocal [1.25 3.5 -1.25]]
+            [Size [2.5000005 5.9259696E-07 2.5000002]]
+            [StaticModel [Gameplay ceiling]]]
+           []]]]]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [6.25 0 1.25]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [8.75 0 -1.25]]
+        [PositionLocal [2.5 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 -0.7071067 0 0.7071068]]
+        [RotationLocal [0 -0.70710677 0 0.70710677]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [7.5 3.5 0]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Corner-0001]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [8.75 0 -3.75]]
+      [PositionLocal [8.75 0 -3.75]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Corner]]
+      [Rotation [0 0.7071067 0 0.7071068]]
+      [RotationLocal [0 0.7071067 0 0.7071068]]
+      [ScaleLocal [0.99999994 1 0.99999994]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [8.75 0 -3.75]]
+        [Rotation [0 0.70710665 0 0.7071069]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [6.250001 0 -6.25]]
+        [PositionLocal [2.5 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 -5.9604645E-08 0 1]]
+        [RotationLocal [0 -0.70710677 0 0.70710677]]
+        [Scale [0.9999999 1 0.9999999]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [7.5000005 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Rotation [0 0.70710665 0 0.7071069]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Corner-0002]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-3.75 0 -6.25]]
+      [PositionLocal [-3.75 0 -6.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Corner]]
+      [Rotation [0 1 0 4.371139E-08]]
+      [RotationLocal [0 1 0 4.371139E-08]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.75 0 -6.25]]
+        [Rotation [0 1 0 4.371139E-08]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-6.25 0 -3.7500002]]
+        [PositionLocal [2.5 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 0.70710677 0 0.70710677]]
+        [RotationLocal [0 -0.70710677 0 0.70710677]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [-5 3.5 -5]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Rotation [0 1 0 4.371139E-08]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]
+    [RigidModelDispatcher
+     [[BodyShape
+       [StaticModelShape
+        [[Gameplay floor] True None None]]]
+      [MountOpt [Some ^]]
+      [Name Corner-0003]
+      [Offset [1.2499987 0 -1.2499988]]
+      [Position [-6.25 0 -1.25]]
+      [PositionLocal [-6.25 0 -1.25]]
+      [PropagationSourceOpt [Some Game/Gameplay/Group/EndlessHallway/Corner]]
+      [Rotation [0 -0.7071067 0 0.7071068]]
+      [RotationLocal [0 -0.7071067 0 0.7071068]]
+      [ScaleLocal [0.99999994 1 0.99999994]]
+      [Size [2.4999974 1.3172522E-06 2.4999976]]
+      [StaticModel [Gameplay floor]]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallA]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-6.25 0 -1.25]]
+        [Rotation [0 -0.70710665 0 0.7071069]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall] True None None]]]
+        [MountOpt [Some ^]]
+        [Name WallB]
+        [Offset [1.2496585 1.7500011 -7.301569E-07]]
+        [Pickable False]
+        [Position [-3.7499998 0 1.2499993]]
+        [PositionLocal [2.5 0 -2.5]]
+        [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
+        [Rotation [0 1 0 -1.192093E-07]]
+        [RotationLocal [0 -0.70710677 0 0.70710677]]
+        [Scale [0.9999999 1 0.9999999]]
+        [Size [2.5000017 3.5000021 0.46322292]]
+        [StaticModel [Gameplay wall]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay ceiling] True None None]]]
+        [MountOpt [Some ^]]
+        [Name Ceiling]
+        [Offset [3.5762787E-07 2.2179267E-07 -2.3841858E-07]]
+        [Pickable False]
+        [Position [-5 3.5 -3.5762787E-07]]
+        [PositionLocal [1.25 3.5 -1.25]]
+        [Rotation [0 -0.70710665 0 0.7071069]]
+        [Scale [0.99999994 1 0.99999994]]
+        [Size [2.5000005 5.9259696E-07 2.5000002]]
+        [StaticModel [Gameplay ceiling]]]
+       []]]]]]]]
