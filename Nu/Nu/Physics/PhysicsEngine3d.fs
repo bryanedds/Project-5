@@ -355,16 +355,8 @@ type [<ReferenceEquality>] PhysicsEngine3d =
             if  staticModelSurfaceShape.SurfaceIndex > -1 &&
                 staticModelSurfaceShape.SurfaceIndex < staticModel.Surfaces.Length then
                 let surface = staticModel.Surfaces.[staticModelSurfaceShape.SurfaceIndex]
-                let transform =
-                    match staticModelSurfaceShape.TransformOpt with
-                    | Some transform ->
-                        Affine.make
-                            (transform.Translation.Transform surface.SurfaceMatrix)
-                            (transform.Rotation * surface.SurfaceMatrix.Rotation)
-                            (transform.Scale.Transform surface.SurfaceMatrix)
-                    | None -> Affine.makeFromMatrix surface.SurfaceMatrix
                 let geometry = surface.PhysicallyBasedGeometry
-                let geometryShape = { Vertices = geometry.Vertices; Convex = staticModelSurfaceShape.Convex; TransformOpt = Some transform; PropertiesOpt = staticModelSurfaceShape.PropertiesOpt }
+                let geometryShape = { Vertices = geometry.Vertices; Convex = staticModelSurfaceShape.Convex; TransformOpt = staticModelSurfaceShape.TransformOpt; PropertiesOpt = staticModelSurfaceShape.PropertiesOpt }
                 PhysicsEngine3d.attachGeometryShape bodySource bodyProperties geometryShape compoundShape centerMassInertiaDisposes physicsEngine
             else centerMassInertiaDisposes
         | None -> centerMassInertiaDisposes
