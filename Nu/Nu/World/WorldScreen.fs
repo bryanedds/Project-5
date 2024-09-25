@@ -476,7 +476,7 @@ module WorldScreenModule =
                 let rcBuilderConfig = RcBuilderConfig (rcConfig, geomProvider.GetMeshBoundsMin (), geomProvider.GetMeshBoundsMax ())
                 let rcBuilder = RcBuilder ()
                 let rcBuilderResult = rcBuilder.Build (geomProvider, rcBuilderConfig, false)
-                if notNull rcBuilderResult.MeshDetail then // NOTE: not sure why, but I think this is an indication of nav mesh build failure.
+                if notNull rcBuilderResult.MeshDetail then // NOTE: not sure why, but null here seems to be an indication of nav mesh build failure.
                     let navBuilderResultData = NavBuilderResultData.make rcBuilderResult
                     let dtCreateParams = DemoNavMeshBuilder.GetNavMeshCreateParams (geomProvider, config.CellSize, config.CellHeight, config.AgentHeight, config.AgentRadius, config.AgentClimbMax, rcBuilderResult)
                     match DtNavMeshBuilder.CreateNavMeshData dtCreateParams with
@@ -524,7 +524,7 @@ module WorldScreenModule =
             let rebuild =
                 match (nav3d.Nav3dBodiesOldOpt, nav3d.Nav3dConfigOldOpt) with
                 | (Some bodiesOld, Some configOld) -> nav3d.Nav3dBodies =/= bodiesOld || nav3d.Nav3dConfig =/= configOld
-                | (None, Some _) | (Some _, None) -> Log.infoOnce "Unexpected 3d navigation state; navigation rebuild declined."; false
+                | (None, Some _) | (Some _, None) -> Log.warnOnce "Unexpected 3d navigation state; navigation rebuild declined."; false
                 | (None, None) -> nav3d.Nav3dBodies.Count <> 0
             if rebuild then
                 let bodies = nav3d.Nav3dBodies.Values
@@ -536,7 +536,7 @@ module WorldScreenModule =
                             Nav3dConfigOldOpt = Some nav3d.Nav3dConfig
                             Nav3dMeshOpt = Some navMesh }
                     World.setScreenNav3d nav3d screen world |> snd'
-                | None -> Log.info "Unable to build 3d navigation mesh."; world
+                | None -> Log.error "Unable to build 3d navigation mesh. It has been found that making the navigation ground at 0 Y can cause unknown failures (see issue #876). Ensure your navigable ground level is Y >= 1.0f."; world
             else world
 
         /// Query the given screen's 3d navigation information if it exists.
