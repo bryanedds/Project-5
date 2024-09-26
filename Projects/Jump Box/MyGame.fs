@@ -25,7 +25,7 @@ type MyGameDispatcher () =
     // here we handle running the game
     override this.Run (myGame, _, world) =
 
-        // declare screen
+        // declare screen and group
         let (_, world) = World.beginScreen "Screen" true Vanilla [] world
         let world = World.beginGroup "Group" [] world
 
@@ -57,7 +57,7 @@ type MyGameDispatcher () =
         let world = if myGame.Collisions >= 25 then World.doText "Full!" [Entity.Text .= "Full!"] world else world
         let world = World.endPanel world
 
-        // finish declaring screen
+        // finish declaring group and screen
         let world = World.endGroup world
         let world = World.endScreen world
 
