@@ -1,0 +1,16 @@
+[RigidModelDispatcher
+ [[BodyShape
+   [StaticModelShape
+    [[Gameplay wall] True None None]]]
+  [MountOpt [Some ^]]
+  [Name Wall]
+  [Offset [1.2496585 1.7500011 -7.301569E-07]]
+  [Pickable False]
+  [Position [-5 0 -2.5000002]]
+  [PositionLocal [0 0 -2.5]]
+  [Rotation [0 0.7071067 0 0.7071068]]
+  [Scale [0.99999994 1 0.99999994]]
+  [Size [2.5000017 3.5000021 0.46322292]]
+  [Static True]
+  [StaticModel [Gameplay wall]]]
+ []]

@@ -20,3 +20,4 @@ module Assets =
     module Gameplay =
 
         let PackageName = "Gameplay"
+        let Sophie = asset<AnimatedModel> PackageName "Sophie"

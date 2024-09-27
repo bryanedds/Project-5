@@ -1,37 +1,58 @@
-[StaticModelDispatcher
- [[Name Corner]
-  [Position [13.5 1.5 -0.5]]
-  [Size [2.4999948 1.3172522E-06 2.499995]]
+[RigidModelDispatcher
+ [[BodyShape
+   [StaticModelShape
+    [[Gameplay floor] True None None]]]
+  [MountOpt [Some ^]]
+  [Name StaticModel-0007]
+  [Offset [1.2499987 0 -1.2499988]]
+  [Position [5 0 -5]]
+  [PositionLocal [5 0 -5]]
+  [Size [2.4999974 1.3172522E-06 2.4999976]]
+  [Static True]
   [StaticModel [Gameplay floor]]]
- [[StaticModelDispatcher
-   [[MountOpt [Some ^]]
+ [[RigidModelDispatcher
+   [[BodyShape
+     [StaticModelShape
+      [[Gameplay wall] True None None]]]
+    [MountOpt [Some ^]]
     [Name WallA]
-    [Offset [3.5762787E-07 1.7500006 -8.940697E-08]]
+    [Offset [1.2496585 1.7500011 -7.301569E-07]]
     [Pickable False]
-    [Position [13.5 1.5 0.75]]
-    [PositionLocal [0 0 1.25]]
-    [Size [2.500002 3.5000014 0.4632241]]
+    [Position [5 0 -7.5]]
+    [PositionLocal [0 0 -2.5]]
+    [Size [2.5000017 3.5000021 0.46322292]]
+    [Static True]
     [StaticModel [Gameplay wall]]]
    []]
-  [StaticModelDispatcher
-   [[MountOpt [Some ^]]
+  [RigidModelDispatcher
+   [[BodyShape
+     [StaticModelShape
+      [[Gameplay wall] True None None]]]
+    [MountOpt [Some ^]]
     [Name WallB]
-    [Offset [3.5762787E-07 1.7500006 -8.940697E-08]]
+    [Offset [1.2496585 1.7500011 -7.301569E-07]]
     [Pickable False]
-    [Position [14.75 1.5 -0.5]]
-    [PositionLocal [1.25 0 0]]
+    [Position [7.5 0 -5]]
+    [PositionLocal [2.5 0 0]]
     [PropagationSourceOpt [Some Game/Gameplay/Group/Floor/WallA]]
-    [Rotation [0 0.70710677 0 0.70710677]]
+    [Rotation [0 0.7071067 0 0.7071068]]
     [RotationLocal [0 0.70710677 0 0.70710677]]
-    [Size [2.500002 3.5000014 0.4632241]]
+    [Scale [0.99999994 1 0.99999994]]
+    [Size [2.5000017 3.5000021 0.46322292]]
+    [Static True]
     [StaticModel [Gameplay wall]]]
    []]
-  [StaticModelDispatcher
-   [[MountOpt [Some ^]]
+  [RigidModelDispatcher
+   [[BodyShape
+     [StaticModelShape
+      [[Gameplay ceiling] True None None]]]
+    [MountOpt [Some ^]]
     [Name Ceiling]
+    [Offset [1.25 3.035124E-07 -1.2499999]]
     [Pickable False]
-    [Position [13.5 5 -0.5]]
+    [Position [5 3.5 -5]]
     [PositionLocal [0 3.5 0]]
-    [Size [2.4999948 1.3172522E-06 2.499995]]
+    [Size [2.5 7.9672594E-07 2.4999998]]
+    [Static True]
     [StaticModel [Gameplay ceiling]]]
    []]]]
