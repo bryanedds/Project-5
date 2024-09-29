@@ -3,14 +3,17 @@ echo "Propagating default assets..."
 rm -f Nu/Nu.Pipe/Assets/Default/*
 cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Pipe/Assets/Default/
 
-rm -f Nu/Nu.Pipe/Assets/Default/*
-cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Pipe/Assets/Default/
+rm -f Nu/Nu.Template.ImNui.Empty/Assets/Default/*
+cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.ImNui.Empty/Assets/Default/
 
-rm -f Nu/Nu.Template.Empty/Assets/Default/*
-cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.Empty/Assets/Default/
+rm -f Nu/Nu.Template.ImNui.Game/Assets/Default/*
+cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.ImNui.Game/Assets/Default/
 
-rm -f Nu/Nu.Template.Game/Assets/Default/*
-cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.Game/Assets/Default/
+rm -f Nu/Nu.Template.Mmcc.Empty/Assets/Default/*
+cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.Mmcc.Empty/Assets/Default/
+
+rm -f Nu/Nu.Template.Mmcc.Game/Assets/Default/*
+cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Template.Mmcc.Game/Assets/Default/
 
 rm -f Nu/Nu.Tests/Assets/Default/*
 cp -f Nu/Nu.Gaia/Assets/Default/* Nu/Nu.Tests/Assets/Default/
@@ -23,6 +26,9 @@ cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Breakout Mmcc/Assets/Default/"
 
 rm -f "Projects/Metrics/Assets/Default/*"
 cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Metrics/Assets/Default/"
+
+rm -f "Projects/Jump Box/Assets/Default/*"
+cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Jump Box/Assets/Default/"
 
 rm -f "Projects/Nelmish/Assets/Default/*"
 cp -f Nu/Nu.Gaia/Assets/Default/* "Projects/Nelmish/Assets/Default/"
