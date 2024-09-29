@@ -8,21 +8,17 @@ type GameplayState =
     | Playing
     | Quitting
 
-// this is our MMCC model type representing gameplay.
-// this model representation uses update time, that is, time based on number of engine updates.
+// this is our ImNui model type representing gameplay.
 type Gameplay =
-    { GameplayTime : int64
-      GameplayState : GameplayState }
+    { GameplayState : GameplayState }
 
     // this represents the gameplay model in an unutilized state, such as when the gameplay screen is not selected.
     static member empty =
-        { GameplayTime = 0L
-          GameplayState = Quitting }
+        { GameplayState = Quitting }
 
     // this represents the gameplay model in its initial state, such as when gameplay starts.
     static member initial =
-        { Gameplay.empty with
-            GameplayState = Playing }
+        { GameplayState = Playing }
 
 // this extends the Screen API to expose the Gameplay model as well as the Quit event.
 [<AutoOpen>]
@@ -94,8 +90,4 @@ type GameplayDispatcher () =
             | (true, world) -> ({ gameplay with GameplayState = Quitting }, world)
             | (false, world) -> (gameplay, world)
         let world = World.endGroup world
-
-        // advance gameplay time
-        let gameDelta = world.GameDelta
-        let gameplay = { gameplay with GameplayTime = gameplay.GameplayTime + gameDelta.Updates }
         (gameplay, world)
