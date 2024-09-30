@@ -49,11 +49,14 @@ type GameplayDispatcher () =
                 let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
 
                 // declare player
-                let (_, world) = World.doCharacter3d "Player" [Entity.AnimatedModel .= Assets.Gameplay.Sophie; Entity.Position .= v3 1.0f 0.0f -1.0f] world
-
-                // move player
+                let (_, world) =
+                    World.doCharacter3d "Player"
+                        [Entity.Position .= v3 1.0f 0.0f -1.0f
+                         Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
                 let player = world.RecentEntity
                 let playerBodyId = player.GetBodyId world
+
+                // move player
                 let playerSpeed = 1.8f * world.GameDelta.Seconds
                 let playerRotation = player.GetRotation world
                 let playerVelocity =

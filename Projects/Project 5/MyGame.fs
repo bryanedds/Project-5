@@ -23,7 +23,7 @@ module MyGameExtensions =
 // this is the dispatcher that customizes the top-level behavior of our game.
 type MyGameDispatcher () =
     inherit GameDispatcher<MyGame> (Splash)
-    
+
     // here we handle running the game
     override this.Run (myGame, _, world) =
 
