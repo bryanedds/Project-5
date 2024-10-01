@@ -52,6 +52,7 @@ type GameplayDispatcher () =
                 let (_, world) =
                     World.doCharacter3d "Player"
                         [Entity.Position .= v3 1.0f 0.0f -1.0f
+                         Entity.Size .= v3 1.5f 2.0f 1.5f
                          Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
                 let player = world.RecentEntity
                 let playerBodyId = player.GetBodyId world
@@ -77,7 +78,7 @@ type GameplayDispatcher () =
                     if world.Advancing then
                         let position = player.GetPosition world
                         let rotation = player.GetRotation world
-                        let world = World.setEye3dCenter (position + v3Up * 1.75f - rotation.Forward * 2.0f) world
+                        let world = World.setEye3dCenter (position + v3Up * 1.8f - rotation.Forward * 1.0f + rotation.Right * 0.25f) world
                         let world = World.setEye3dRotation rotation world
                         world
                     else world
