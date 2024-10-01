@@ -64,7 +64,7 @@
      []]
     [Nav3dConfigDispatcher
      [[MountOpt [Some ^]]
-      [Name Nav3dConfig-0039]
+      [Name Nav3dConfig]
       [Pickable False]
       [Size [0 0 0]]]
      []]]]
@@ -73,7 +73,7 @@
    [[LightProbe3dDispatcher
      [[AmbientBrightness 0.15]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0030]
+      [Name LightProbe3d]
       [Position [1 1.7 -1]]
       [PositionLocal [1 1.7 -1]]
       [Presence Omnipresent]
