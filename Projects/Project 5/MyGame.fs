@@ -51,10 +51,14 @@ type MyGameDispatcher () =
         let world = World.endScreen world
 
         // declare gameplay screen
-        let (result, world) = World.beginScreen<GameplayDispatcher> Simulants.Gameplay.Name (myGame = Gameplay) (Dissolve (Constants.Dissolve.Default, None)) [] world
+        let (results, world) = World.beginScreen<GameplayDispatcher> Simulants.Gameplay.Name (myGame = Gameplay) (Dissolve (Constants.Dissolve.Default, None)) [] world
         let world =
-            if FQueue.contains Select result
-            then Simulants.Gameplay.SetGameplay { Simulants.Gameplay.GetGameplay world with GameplayState = Playing } world
+            if FQueue.contains Select results
+            then Simulants.Gameplay.SetGameplay Gameplay.initial world
+            else world
+        let world =
+            if FQueue.contains Deselecting results
+            then Simulants.Gameplay.SetGameplay Gameplay.empty world
             else world
         let myGame =
             if Simulants.Gameplay.GetSelected world && (Simulants.Gameplay.GetGameplay world).GameplayState = Quitting

@@ -71,7 +71,7 @@
   [Entity3dDispatcher
    [[Name LivingRoom] [Pickable False]]
    [[LightProbe3dDispatcher
-     [[AmbientBrightness 0.15]
+     [[AmbientBrightness 0.1]
       [MountOpt [Some ^]]
       [Name LightProbe3d]
       [Position [1 1.7 -1]]
@@ -1544,7 +1544,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay wall] True None None]]]
+            [[Gameplay wall_vertical] True None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -1833,7 +1833,7 @@
         [Scale [1.5 1.5 1.5]]
         [ScaleLocal [1.5 1.5 1.5]]
         [Size [0.75007164 0.035737142 0.72031116]]
-        [StaticModel [Gameplay fabric_lace1]]]
+        [StaticModel [Gameplay fabric_lace2]]]
        []]
       [StaticModelDispatcher
        [[MountOpt [Some ^]]
@@ -1905,8 +1905,8 @@
         [MountOpt [Some ^]]
         [Name Plant2]
         [Offset [-0.018692851 0.42877907 0.023207143]]
-        [Position [-3.7 0.87 -1]]
-        [PositionLocal [-3.7 0.87 -1]]
+        [Position [-3.77 0.87 -1]]
+        [PositionLocal [-3.77 0.87 -1]]
         [Size [0.530542 0.85755813 0.48581663]]
         [Static True]
         [StaticModel [Gameplay plant2]]]
@@ -1954,6 +1954,106 @@
         [ScaleLocal [2.15 2.15 2.15]]
         [Size [0.75007164 0.035737142 0.72031116]]
         [StaticModel [Gameplay fabric_lace3]]]
+       []]]]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Columns]
+      [Pickable False]]
+     [[RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall_column] True None None]]]
+        [MaterialProperties
+         [[AlbedoOpt
+           [Some [1 1 1 1]]]
+          [RoughnessOpt None]
+          [MetallicOpt None]
+          [AmbientOcclusionOpt None]
+          [EmissionOpt None]
+          [HeightOpt None]
+          [IgnoreLightMapsOpt None]
+          [OpaqueDistanceOpt None]]]
+        [MountOpt [Some ^]]
+        [Name RigidModel-0028]
+        [Offset [0.021652281 1.7500001 0.0045556724]]
+        [Position [-2.6 0 4.9]]
+        [PositionLocal [-2.6 0 4.9]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Architecture/Column]]
+        [Size [0.5978668 3.5000005 0.58322096]]
+        [Static True]
+        [StaticModel [Gameplay wall_column]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall_column] True None None]]]
+        [MaterialProperties
+         [[AlbedoOpt
+           [Some [1 1 1 1]]]
+          [RoughnessOpt None]
+          [MetallicOpt None]
+          [AmbientOcclusionOpt None]
+          [EmissionOpt None]
+          [HeightOpt None]
+          [IgnoreLightMapsOpt None]
+          [OpaqueDistanceOpt None]]]
+        [MountOpt [Some ^]]
+        [Name RigidModel-0030]
+        [Offset [0.021652281 1.7500001 0.0045556724]]
+        [Position [7.4 0 2.4]]
+        [PositionLocal [7.4 0 2.4]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Architecture/Column]]
+        [Size [0.5978668 3.5000005 0.58322096]]
+        [Static True]
+        [StaticModel [Gameplay wall_column]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall_column] True None None]]]
+        [MaterialProperties
+         [[AlbedoOpt
+           [Some [1 1 1 1]]]
+          [RoughnessOpt None]
+          [MetallicOpt None]
+          [AmbientOcclusionOpt None]
+          [EmissionOpt None]
+          [HeightOpt None]
+          [IgnoreLightMapsOpt None]
+          [OpaqueDistanceOpt None]]]
+        [MountOpt [Some ^]]
+        [Name RigidModel-0031]
+        [Offset [0.021652281 1.7500001 0.0045556724]]
+        [Position [7.4 0 -2.4]]
+        [PositionLocal [7.4 0 -2.4]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Architecture/Column]]
+        [Size [0.5978668 3.5000005 0.58322096]]
+        [Static True]
+        [StaticModel [Gameplay wall_column]]]
+       []]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall_column] True None None]]]
+        [MaterialProperties
+         [[AlbedoOpt
+           [Some [1 1 1 1]]]
+          [RoughnessOpt None]
+          [MetallicOpt None]
+          [AmbientOcclusionOpt None]
+          [EmissionOpt None]
+          [HeightOpt None]
+          [IgnoreLightMapsOpt None]
+          [OpaqueDistanceOpt None]]]
+        [MountOpt [Some ^]]
+        [Name RigidModel-0033]
+        [Offset [0.021652281 1.7500001 0.0045556724]]
+        [Position [-4.9 0 -5.1]]
+        [PositionLocal [-4.9 0 -5.1]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Architecture/Column]]
+        [Size [0.5978668 3.5000005 0.58322096]]
+        [Static True]
+        [StaticModel [Gameplay wall_column]]]
        []]]]]]
   [Entity3dDispatcher
    [[Name Palettes]]
@@ -3012,4 +3112,52 @@
           [Size [2.5019999 7.9684514E-07 2.5019996]]
           [Static True]
           [StaticModel [Gameplay ceiling]]]
-         []]]]]]]]]]
+         []]]]
+      [RigidModelDispatcher
+       [[BodyShape
+         [StaticModelShape
+          [[Gameplay wall_column] True None None]]]
+        [MaterialProperties
+         [[AlbedoOpt
+           [Some [1 1 1 1]]]
+          [RoughnessOpt None]
+          [MetallicOpt None]
+          [AmbientOcclusionOpt None]
+          [EmissionOpt None]
+          [HeightOpt None]
+          [IgnoreLightMapsOpt None]
+          [OpaqueDistanceOpt None]]]
+        [MountOpt [Some ^]]
+        [Name Column]
+        [Offset [0.021652281 1.7500001 0.0045556724]]
+        [Position [-13.5 0 7.75]]
+        [PositionLocal [-0.25 0 0.75]]
+        [PropagatedDescriptorOpt
+         [Some
+          [RigidModelDispatcher
+           [[BodyShape
+             [StaticModelShape
+              [[Gameplay wall_column] True None None]]]
+            [MaterialProperties
+             [[AlbedoOpt
+               [Some [1 1 1 1]]]
+              [RoughnessOpt None]
+              [MetallicOpt None]
+              [AmbientOcclusionOpt None]
+              [EmissionOpt None]
+              [HeightOpt None]
+              [IgnoreLightMapsOpt None]
+              [OpaqueDistanceOpt None]]]
+            [MountOpt [Some ^]]
+            [Name Column]
+            [Offset [0.021652281 1.7500001 0.0045556724]]
+            [Position [-13.5 0 7.75]]
+            [PositionLocal [-0.25 0 0.75]]
+            [Size [0.5978668 3.5000005 0.58322096]]
+            [Static True]
+            [StaticModel [Gameplay wall_column]]]
+           []]]]
+        [Size [0.5978668 3.5000005 0.58322096]]
+        [Static True]
+        [StaticModel [Gameplay wall_column]]]
+       []]]]]]]]
