@@ -8,8 +8,6 @@
    [[Light3dDispatcher
      [[Brightness 1]
       [DesireShadows True]
-      [Enabled False]
-      [EnabledLocal False]
       [LightCutoff 9]
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
@@ -18,7 +16,9 @@
       [PositionLocal [0 8 0]]
       [Presence Omnipresent]
       [Size [0.25 0.25 0.25]]
-      [Static True]]
+      [Static True]
+      [Visible False]
+      [VisibleLocal False]]
      []]
     [SkyBoxDispatcher
      [[Absolute True]
@@ -1614,7 +1614,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay wall] True None None]]]
+            [[Gameplay wall_vertical] True None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -1842,7 +1842,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay wall] True None None]]]
+            [[Gameplay wall_vertical] True None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -2013,7 +2013,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay wall] True None None]]]
+            [[Gameplay wall_vertical] True None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -2596,7 +2596,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[Gameplay wall] True None None]]]
+                [[Gameplay wall_vertical] True None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -2657,7 +2657,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay wall] True None None]]]
+            [[Gameplay wall_vertical] True None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
