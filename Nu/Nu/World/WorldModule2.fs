@@ -1974,6 +1974,11 @@ module EntityDispatcherModule2 =
         (is2d, physical, lightProbe, light, makeInitial : World -> 'model) =
         inherit EntityDispatcher (is2d, physical, lightProbe, light)
 
+#if DEBUG
+        static let modelHasValueType =
+            typeof<'model>.IsValueType
+#endif
+
         new (is2d, physical, lightProbe, light, initial : 'model) =
             EntityDispatcher<'model> (is2d, physical, lightProbe, light, fun _ -> initial)
 
@@ -2013,9 +2018,14 @@ module EntityDispatcherModule2 =
             let model = entity.GetModelGeneric<'model> world
             let context = world.ContextImNui
             let world = World.scopeEntity entity [] world
-            let (model, world) = this.Run (model, entity, world)
+            let (model', world) = this.Run (model, entity, world)
             let world = World.advanceContext entity.EntityAddress context world
-            this.SetModel model entity world
+#if DEBUG
+            let model'' = this.GetModel entity world
+            if modelHasValueType && objNeq model model'' || not modelHasValueType && refNeq model model'' then
+                Log.warnOnce "Model has been changed by another operation during the Run method. Any changes to the model outside of Run will be lost."
+#endif
+            this.SetModel model' entity world
 
         override this.Edit (operation, entity, world) =
             let model = entity.GetModelGeneric<'model> world
@@ -2452,6 +2462,11 @@ module GroupDispatcherModule =
     type [<AbstractClass>] GroupDispatcher<'model> (makeInitial : World -> 'model) =
         inherit GroupDispatcher ()
 
+#if DEBUG
+        static let modelHasValueType =
+            typeof<'model>.IsValueType
+#endif
+
         new (initial : 'model) =
             GroupDispatcher<'model> (fun _ -> initial)
 
@@ -2488,9 +2503,14 @@ module GroupDispatcherModule =
             let model = group.GetModelGeneric<'model> world
             let context = world.ContextImNui
             let world = World.scopeGroup group [] world
-            let (model, world) = this.Run (model, group, world)
+            let (model', world) = this.Run (model, group, world)
             let world = World.advanceContext group.GroupAddress context world
-            this.SetModel model group world
+#if DEBUG
+            let model'' = this.GetModel group world
+            if modelHasValueType && objNeq model model'' || not modelHasValueType && refNeq model model'' then
+                Log.warnOnce "Model has been changed by another operation during the Run method. Any changes to the model outside of Run will be lost."
+#endif
+            this.SetModel model' group world
 
         override this.Edit (operation, group, world) =
             let model = group.GetModelGeneric<'model> world
@@ -2719,6 +2739,11 @@ module ScreenDispatcherModule =
     type [<AbstractClass>] ScreenDispatcher<'model> (makeInitial : World -> 'model) =
         inherit ScreenDispatcher ()
 
+#if DEBUG
+        static let modelHasValueType =
+            typeof<'model>.IsValueType
+#endif
+
         new (initial : 'model) =
             ScreenDispatcher<'model> (fun _ -> initial)
 
@@ -2755,9 +2780,14 @@ module ScreenDispatcherModule =
             let model = screen.GetModelGeneric<'model> world
             let context = world.ContextImNui
             let world = World.scopeScreen screen [] world
-            let (model, world) = this.Run (model, screen, world)
+            let (model', world) = this.Run (model, screen, world)
             let world = World.advanceContext screen.ScreenAddress context world
-            this.SetModel model screen world
+#if DEBUG
+            let model'' = this.GetModel screen world
+            if modelHasValueType && objNeq model model'' || not modelHasValueType && refNeq model model'' then
+                Log.warnOnce "Model has been changed by another operation during the Run method. Any changes to the model outside of Run will be lost."
+#endif
+            this.SetModel model' screen world
 
         override this.Edit (operation, screen, world) =
             let model = screen.GetModelGeneric<'model> world
@@ -3008,6 +3038,11 @@ module GameDispatcherModule =
     type [<AbstractClass>] GameDispatcher<'model> (makeInitial : World -> 'model) =
         inherit GameDispatcher ()
 
+#if DEBUG
+        static let modelHasValueType =
+            typeof<'model>.IsValueType
+#endif
+
         new (initial : 'model) =
             GameDispatcher<'model> (fun _ -> initial)
 
@@ -3044,9 +3079,14 @@ module GameDispatcherModule =
             let model = game.GetModelGeneric<'model> world
             let context = world.ContextImNui
             let world = World.scopeGame [] world
-            let (model, world) = this.Run (model, game, world)
+            let (model', world) = this.Run (model, game, world)
             let world = World.advanceContext game.GameAddress context world
-            this.SetModel model game world
+#if DEBUG
+            let model'' = this.GetModel game world
+            if modelHasValueType && objNeq model model'' || not modelHasValueType && refNeq model model'' then
+                Log.warnOnce "Model has been changed by another operation during the Run method. Any changes to the model outside of Run will be lost."
+#endif
+            this.SetModel model' game world
 
         override this.Edit (operation, game, world) =
             let model = game.GetModelGeneric<'model> world
