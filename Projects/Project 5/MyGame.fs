@@ -24,6 +24,12 @@ module MyGameExtensions =
 type MyGameDispatcher () =
     inherit GameDispatcher<MyGame> (Splash)
 
+    // here we handle initializing the game
+    override this.Register (game, world) =
+        let world = base.Register (game, world)
+        let world = World.setRenderer3dConfig { Renderer3dConfig.defaultConfig with SsvfEnabled = true; SsrEnabled = true } world
+        world
+
     // here we handle running the game
     override this.Run (myGame, _, world) =
 
