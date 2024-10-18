@@ -90,10 +90,8 @@ type GameplayDispatcher () =
 
         // declare gui group
         let world = World.beginGroup "Gui" [] world
-        let (gameplay, world) =
-            match World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world with
-            | (true, world) -> ({ gameplay with GameplayState = Quitting }, world)
-            | (false, world) -> (gameplay, world)
+        let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
+        let gameplay = if clicked then { gameplay with GameplayState = Quitting } else gameplay
         let world = World.endGroup world
         (gameplay, world)
 
