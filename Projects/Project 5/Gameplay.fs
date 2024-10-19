@@ -7,43 +7,30 @@ open Nu
 type GameplayState =
     | Playing
     | Quitting
-
-// this is our ImNui model type representing gameplay.
-type Gameplay =
-    { GameplayState : GameplayState }
-
-    // this represents the gameplay model in an unutilized state, such as when the gameplay screen is not selected.
-    static member empty =
-        { GameplayState = Quitting }
-
-    // this represents the gameplay model in its initial state, such as when gameplay starts.
-    static member initial =
-        { GameplayState = Playing }
+    | Quit
 
 // this extends the Screen API to expose the Gameplay model as well as the Quit event.
 [<AutoOpen>]
 module GameplayExtensions =
     type Screen with
-        member this.GetGameplay world = this.GetModelGeneric<Gameplay> world
-        member this.SetGameplay value world = this.SetModelGeneric<Gameplay> value world
-        member this.Gameplay = this.ModelGeneric<Gameplay> ()
+        member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
+        member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
+        member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
-    inherit ScreenDispatcher<Gameplay> (Gameplay.empty)
+    inherit ScreenDispatcher ()
 
-    // here we define the screen's fallback model depending on whether screen is selected
-    override this.GetFallbackModel (_, screen, world) =
-        if screen.GetSelected world
-        then Gameplay.initial
-        else Gameplay.empty
+    // here we define default property values
+    static member Properties =
+        [define Screen.GameplayState Quit]
 
     // here we define the behavior of our gameplay
-    override this.Run (gameplay, screen, world) =
+    override this.Run (gameplay, world) =
 
         // declare scene group when selected
         let world =
-            if screen.GetSelected world then
+            if gameplay.GetSelected world then
 
                 // begin scene declaration
                 let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
@@ -91,9 +78,9 @@ type GameplayDispatcher () =
         // declare gui group
         let world = World.beginGroup "Gui" [] world
         let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
-        let gameplay = if clicked then { gameplay with GameplayState = Quitting } else gameplay
+        let world = if clicked then gameplay.SetGameplayState Quitting world else world
         let world = World.endGroup world
-        (gameplay, world)
+        world
 
     // this is a semantic fix-up that allows the editor to avoid creating an unused group. This is specific to the
     // ImNui API that is needed to patch a little semantic hole inherent in the immediate-mode programming idiom.
