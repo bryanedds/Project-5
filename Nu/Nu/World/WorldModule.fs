@@ -75,9 +75,18 @@ module WorldModule =
     let mutable internal unregister : Simulant -> World -> World =
         Unchecked.defaultof<_>
         
-    let mutable internal tryRunEntity : Entity -> World -> World =
+    let mutable internal runGame : Game -> World -> World =
         Unchecked.defaultof<_>
         
+    let mutable internal runScreen : Screen -> World -> World =
+        Unchecked.defaultof<_>
+        
+    let mutable internal runGroup : Group -> World -> World =
+        Unchecked.defaultof<_>
+        
+    let mutable internal runEntity : Entity -> World -> World =
+        Unchecked.defaultof<_>
+
     let mutable internal signal : obj -> Simulant -> World -> World =
         Unchecked.defaultof<_>
 
@@ -492,6 +501,9 @@ module WorldModule =
 
         static member internal setOverlayer overlayer world =
             World.mapAmbientState (AmbientState.setOverlayer overlayer) world
+
+        static member internal tryGetOverlayerPropertyValue propertyName propertyType overlayName facetNames world =
+            World.getOverlayerBy (Overlayer.tryGetPropertyValue propertyName propertyType overlayName facetNames) world
 
         /// Get overlay names.
         static member getOverlayNames world =
