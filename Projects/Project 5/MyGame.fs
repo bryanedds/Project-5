@@ -29,8 +29,7 @@ type MyGameDispatcher () =
         [define Game.GameState Splash]
 
     // here we handle initializing the game
-    override this.Register (game, world) =
-        let world = base.Register (game, world)
+    override this.Register (_, world) =
         let world = World.setRenderer3dConfig { Renderer3dConfig.defaultConfig with SsvfEnabled = true; SsrEnabled = true } world
         world
 
