@@ -177,8 +177,8 @@ module Gaia =
 
     (* Memoization *)
 
-    let ToSymbolMemo = new ForgetfulDictionary<struct (Type * obj), Symbol> (HashIdentity.FromFunctions hash objEq)
-    let OfSymbolMemo = new ForgetfulDictionary<struct (Type * Symbol), obj> (HashIdentity.Structural)
+    let ToSymbolMemo = ForgetfulDictionary<struct (Type * obj), Symbol> (HashIdentity.FromFunctions hash objEq)
+    let OfSymbolMemo = ForgetfulDictionary<struct (Type * Symbol), obj> HashIdentity.Structural
 
     (* Fsi Session *)
 
@@ -441,11 +441,11 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
 
     let private canEditWithMouse (world : World) =
         let io = ImGui.GetIO ()
-        not (io.WantCaptureMouseGlobal) && (world.Halted || EditWhileAdvancing)
+        not io.WantCaptureMouseGlobal && (world.Halted || EditWhileAdvancing)
 
     let private canEditWithKeyboard (world : World) =
         let io = ImGui.GetIO ()
-        not (io.WantCaptureKeyboardGlobal) && (world.Halted || EditWhileAdvancing)
+        not io.WantCaptureKeyboardGlobal && (world.Halted || EditWhileAdvancing)
 
     let private snapshot snapshotType world =
         Pasts <- (snapshotType, world) :: Pasts
@@ -1969,21 +1969,28 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         let propertyDescriptorses = propertyDescriptors |> Array.groupBy EntityPropertyDescriptor.getCategory |> Map.ofSeq
         let world =
             Seq.fold (fun world (propertyCategory, propertyDescriptors) ->
-                let world =
-                    if ImGui.CollapsingHeader (propertyCategory, ImGuiTreeNodeFlags.DefaultOpen ||| ImGuiTreeNodeFlags.OpenOnArrow) then
+                let (mountActive, modelUsed) =
+                    match simulant with
+                    | :? Entity as entity ->
                         let mountActive =
-                            match simulant with
-                            | :? Entity as entity ->
-                                match entity.GetMountOpt world with
-                                | Some mount ->
-                                    let parentAddress = Relation.resolve entity.EntityAddress mount
-                                    let parent = World.deriveFromAddress parentAddress
-                                    parent.Names.Length >= 4 && World.getExists parent world
-                                | None -> false
-                            | _ -> false
+                            match entity.GetMountOpt world with
+                            | Some mount ->
+                                let parentAddress = Relation.resolve entity.EntityAddress mount
+                                let parent = World.deriveFromAddress parentAddress
+                                parent.Names.Length >= 4 && World.getExists parent world
+                            | None -> false
+                        (mountActive, (entity.GetProperty Constants.Engine.ModelPropertyName world).PropertyType <> typeof<unit>)
+                    | :? Group as group -> (false, (group.GetProperty Constants.Engine.ModelPropertyName world).PropertyType <> typeof<unit>)
+                    | :? Screen as screen -> (false, (screen.GetProperty Constants.Engine.ModelPropertyName world).PropertyType <> typeof<unit>)
+                    | :? Game as game -> (false, (game.GetProperty Constants.Engine.ModelPropertyName world).PropertyType <> typeof<unit>)
+                    | _ -> failwithumf ()
+                let world =
+                    if  (propertyCategory <> "Basic Model Properties" || modelUsed) &&
+                        ImGui.CollapsingHeader (propertyCategory, ImGuiTreeNodeFlags.DefaultOpen ||| ImGuiTreeNodeFlags.OpenOnArrow) then
                         let propertyDescriptors =
                             propertyDescriptors |>
-                            Array.filter (fun pd -> SimulantPropertyDescriptor.getEditable pd simulant) |>
+                            Array.filter (fun pd ->
+                                SimulantPropertyDescriptor.getEditable pd simulant) |>
                             Array.filter (fun pd ->
                                 match pd.PropertyName with
                                 | nameof Entity.Position
@@ -1996,8 +2003,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                 | nameof Entity.DegreesLocal
                                 | nameof Entity.ScaleLocal
                                 | nameof Entity.ElevationLocal
-                                | nameof Entity.VisibleLocal
-                                | nameof Entity.EnabledLocal -> mountActive
+                                | nameof Entity.EnabledLocal
+                                | nameof Entity.VisibleLocal -> mountActive
                                 | _ -> true) |>
                             Array.sortBy (fun pd ->
                                 match pd.PropertyName with
@@ -3324,7 +3331,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
     let private imGuiNewProjectDialog world =
 
         // prompt user to create new project
-        let programDir = PathF.GetDirectoryName (Reflection.Assembly.GetEntryAssembly().Location)
+        let programDir = PathF.GetDirectoryName (Assembly.GetEntryAssembly().Location)
         let title = "Create Nu Project... *EDITOR RESTART REQUIRED!*"
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
         if ImGui.BeginPopupModal (title, &ShowNewProjectDialog) then
