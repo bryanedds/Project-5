@@ -6,7 +6,6 @@ open Nu
 
 type GameplayState =
     | Playing
-    | Quitting
     | Quit
 
 // this extends the Screen API to expose the Gameplay model as well as the Quit event.
@@ -78,7 +77,7 @@ type GameplayDispatcher () =
         // declare gui group
         let world = World.beginGroup "Gui" [] world
         let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
-        let world = if clicked then gameplay.SetGameplayState Quitting world else world
+        let world = if clicked then gameplay.SetGameplayState Quit world else world
         let world = World.endGroup world
         world
 
