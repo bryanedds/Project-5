@@ -122,6 +122,17 @@ type FeelerDispatcher () =
         [typeof<BackdroppableFacet>
          typeof<FeelerFacet>]
 
+/// Gives an entity the base behavior of a gui text box control.
+type TextBoxDispatcher () =
+    inherit GuiDispatcher ()
+
+    static member Facets =
+        [typeof<BackdroppableFacet>
+         typeof<TextBoxFacet>]
+
+    static member Properties =
+        [define Entity.BackdropImageOpt (Some Assets.Default.Label)]
+
 [<AutoOpen>]
 module FpsDispatcherExtensions =
     type Entity with
@@ -686,9 +697,9 @@ type Nav3dConfigDispatcher () =
                     Color (1.0f, 1.0f - height, height, 1.0f)
 
                 // draw edges and points
-                World.imGuiSegments3dPlus false nbrData.NavInteriorEdges 1.0f computeEdgeColor world
-                World.imGuiSegments3dPlus false nbrData.NavExteriorEdges 1.0f computeEdgeColor world
-                World.imGuiCircles3dPlus false nbrData.NavPoints 2.5f true computePointColor world
+                World.imGuiSegments3dPlus nbrData.NavInteriorEdges 1.0f computeEdgeColor world
+                World.imGuiSegments3dPlus nbrData.NavExteriorEdges 1.0f computeEdgeColor world
+                World.imGuiCircles3dPlus nbrData.NavPoints 2.5f true computePointColor world
                 world
 
             | None -> world

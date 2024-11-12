@@ -18,6 +18,7 @@ open ImGuizmoNET
 open ImPlotNET
 open Prime
 open Nu
+open Nu.Gaia
 
 //////////////////////////////////////////////////////////////////////////////////////
 // TODO:                                                                            //
@@ -812,7 +813,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 let eyeRotation = World.getEye3dRotation world
                 let entityPosition =
                     if atMouse then
-                        let ray = viewport.MouseToWorld3d (entity.GetAbsolute world, RightClickPosition, eyeCenter, eyeRotation)
+                        let ray = viewport.MouseToWorld3d (RightClickPosition, eyeCenter, eyeRotation)
                         let forward = eyeRotation.Forward
                         let plane = plane3 (eyeCenter + forward * NewEntityDistance) -forward
                         (ray.Intersection plane).Value
@@ -1324,8 +1325,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             // initialize event filter as not to flood the log
             let world = World.setEventFilter Constants.Gaia.EventFilter world
 
-            // run ImNui once to make sure initial simulants are created
-            let world = World.runImNui world
+            // process ImNui once to make sure initial simulants are created
+            let world = World.processSimulants world
 
             // apply any selected mode
             let world =
@@ -1336,8 +1337,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                     | (false, _) -> world
                 | None -> world
 
-            // run ImNui again to ensure simulants in new mode are created
-            let world = World.runImNui world
+            // process ImNui again to ensure simulants in new mode are created
+            let world = World.processSimulants world
 
             // figure out which screen to use
             let (screen, world) =
@@ -1626,6 +1627,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
 
     (* Top-Level Functions *)
 
+    // TODO: split this function up or at least apply intention blocks?
     let private imGuiEntity branch filtering (entity : Entity) world =
         let selected = match SelectedEntityOpt with Some selectedEntity -> entity = selectedEntity | None -> false
         let treeNodeFlags =
@@ -2133,7 +2135,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             let projection = projectionMatrix.ToArray ()
             let operation =
                 ViewportOverlay
-                    { ViewportView = viewport.View3d (false, World.getEye3dCenter world, World.getEye3dRotation world)
+                    { ViewportView = viewport.View3d (World.getEye3dCenter world, World.getEye3dRotation world)
                       ViewportProjection = projectionMatrix
                       ViewportBounds = box2 v2Zero io.DisplaySize
                       EditContext = makeContext None None }
@@ -2145,7 +2147,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                 | Some entity when entity.GetExists world && entity.GetIs3d world ->
                     let operation =
                         ViewportOverlay
-                            { ViewportView = viewport.View3d (entity.GetAbsolute world, World.getEye3dCenter world, World.getEye3dRotation world)
+                            { ViewportView = viewport.View3d (World.getEye3dCenter world, World.getEye3dRotation world)
                               ViewportProjection = projectionMatrix
                               ViewportBounds = box2 v2Zero io.DisplaySize
                               EditContext = makeContext None None }
@@ -2162,7 +2164,6 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                             (World.getEye3dCenter world,
                              World.getEye3dRotation world,
                              World.getEye3dFrustumView world,
-                             entity.GetAbsolute world,
                              (if not Snaps2dSelected && ImGui.IsCtrlUp () then Triple.fst Snaps3d else 0.0f),
                              &lightProbeBounds)
                     match manipulationResult with
@@ -2179,7 +2180,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             let world =
                 match SelectedEntityOpt with
                 | Some entity when entity.GetExists world && entity.GetIs3d world && not io.WantCaptureMouseLocal ->
-                    let viewMatrix = viewport.View3d (entity.GetAbsolute world, World.getEye3dCenter world, World.getEye3dRotation world)
+                    let viewMatrix = viewport.View3d (World.getEye3dCenter world, World.getEye3dRotation world)
                     let view = viewMatrix.ToArray ()
                     let affineMatrix = entity.GetAffineMatrix world
                     let affine = affineMatrix.ToArray ()
@@ -2574,7 +2575,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                         let world = snapshot (SetEditMode 0) world // snapshot before mode change
                                         selectEntityOpt None world
                                         let world = editModeFn world
-                                        let world = World.runImNui world
+                                        let world = World.processSimulants world
                                         let world = snapshot (SetEditMode 1) world // snapshot before after change
                                         world
                                     else world
@@ -3464,7 +3465,6 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             ImGui.EndPopup ()
 
     let private imGuiOpenProjectDialog world =
-
         let title = "Choose a project .dll... *EDITOR RESTART REQUIRED!*"
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
         if ImGui.BeginPopupModal (title, &ShowOpenProjectDialog) then
@@ -4062,8 +4062,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         if SList.notEmpty lightProbeModels then
             World.enqueueRenderMessage3d
                 (RenderStaticModels
-                    { Absolute = false
-                      StaticModels = lightProbeModels
+                    { StaticModels = lightProbeModels
                       StaticModel = Assets.Default.LightProbeModel
                       RenderType = DeferredRenderType
                       RenderPass = NormalPass })
@@ -4079,8 +4078,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
         if SList.notEmpty lightModels then
             World.enqueueRenderMessage3d
                 (RenderStaticModels
-                    { Absolute = false
-                      StaticModels = lightModels
+                    { StaticModels = lightModels
                       StaticModel = Assets.Default.LightbulbModel
                       RenderType = DeferredRenderType
                       RenderPass = NormalPass })
@@ -4112,14 +4110,12 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                   Flip = FlipNone }})
                     world
             else
-                let absolute = entity.GetAbsolute world
                 let bounds = entity.GetBounds world
                 let mutable boundsMatrix = Matrix4x4.CreateScale (bounds.Size + v3Dup 0.01f) // slightly bigger to eye to prevent z-fighting with selected entity
                 boundsMatrix.Translation <- bounds.Center
                 World.enqueueRenderMessage3d
                     (RenderStaticModel
-                        { Absolute = absolute
-                          ModelMatrix = boundsMatrix
+                        { ModelMatrix = boundsMatrix
                           Presence = Omnipresent
                           InsetOpt = None
                           MaterialProperties = MaterialProperties.defaultProperties

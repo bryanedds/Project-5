@@ -6,9 +6,7 @@ open System
 open System.Runtime.InteropServices
 open SDL2
 open Prime
-
-// for NativeInterop with KeyboardState
-#nowarn "9"
+#nowarn "9" // for NativeInterop with KeyboardState
 
 /// Describes a mouse button.
 type MouseButton =
@@ -125,9 +123,9 @@ module internal KeyboardState =
     let internal isKeyPressed key =
         match KeyboardStateCurrentOpt with
         | Some keyboardState ->
-            keyboardState.[int key] = byte 0 &&
+            keyboardState.[int key] = byte 1 &&
             match KeyboardStatePreviousOpt with
-            | Some keyboardState -> keyboardState.[int key] = byte 1
+            | Some keyboardState -> keyboardState.[int key] = byte 0
             | None -> false
         | None -> false
 

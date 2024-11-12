@@ -32,6 +32,10 @@ module WorldModule2 =
     let mutable private FramePaceIssues = 0
     let mutable private FramePaceChecks = 0
 
+    (* Cached ImNui Collections *)
+    let private ImNuiSimulantsToDestroy = List ()
+    let private SimulantImNuiComparer = Comparer<int64 * Simulant>.Create (fun (a, _) (b, _) -> a.CompareTo b)
+
     type World with
 
         static member internal rebuildQuadtree world =
@@ -98,7 +102,10 @@ module WorldModule2 =
                             let eventTrace = EventTrace.debug "World" "selectScreen" "Select" EventTrace.empty
                             World.publishPlus () screen.SelectEvent eventTrace screen false false world
                         else world
-                    | None -> World.setSelectedScreen screen world
+                    | None ->
+                        let world = World.setSelectedScreen screen world
+                        let eventTrace = EventTrace.debug "World" "selectScreen" "Select" EventTrace.empty
+                        World.publishPlus () screen.SelectEvent eventTrace screen false false world
                 World.setScreenTransitionStatePlus transitionState screen world
             | None -> World.setSelectedScreenOpt None world
 
@@ -400,7 +407,7 @@ module WorldModule2 =
                 match world.SimulantImNuis.TryGetValue screen.ScreenAddress with
                 | (true, screenImNui) -> (false, World.utilizeSimulantImNui screen.ScreenAddress screenImNui world)
                 | (false, _) ->
-                    let world = World.addSimulantImNui screen.ScreenAddress { SimulantInitializing = true; SimulantUtilized = true; Result = (FQueue.empty<ScreenResult>, zero) } world
+                    let world = World.addSimulantImNui screen.ScreenAddress { SimulantInitializing = true; SimulantUtilized = true; InitializationTime = Core.getTimeStampUnique (); Result = (FQueue.empty<ScreenResult>, zero) } world
                     let mapFstResult (mapper : ScreenResult FQueue -> ScreenResult FQueue) world =
                         let mapScreenImNui screenImNui =
                             let (screenResult, userResult) = screenImNui.Result :?> ScreenResult FQueue * 'r
@@ -442,7 +449,7 @@ module WorldModule2 =
             let world = World.mapSimulantImNui (fun simulantImNui -> { simulantImNui with Result = (FQueue.empty<ScreenResult>, zero) }) screen.ScreenAddress world
             (screenResult, userResult, world)
 
-        static member internal beginScreen8<'d when 'd :> ScreenDispatcher> transitionScreen setScreenSlide name select behavior groupFilePathOpt args world : ScreenResult FQueue * World =
+        static member inline private beginScreen8<'d when 'd :> ScreenDispatcher> transitionScreen setScreenSlide name select behavior groupFilePathOpt args world : ScreenResult FQueue * World =
             World.beginScreenPlus10<'d, unit> () (fun _ _ world -> world) transitionScreen setScreenSlide name select behavior groupFilePathOpt args world |> a_c
 
         /// End the ImNui declaration of a screen.
@@ -870,13 +877,13 @@ module WorldModule2 =
             for entity in entities2d do
                 let entityState = World.getEntityState entity world
                 let element = Quadelement.make entityState.VisibleSpatial entityState.StaticSpatial entity
-                Quadtree.addElement entityState.Presence entityState.Bounds.Box2 element quadtree
+                Quadtree.addElement entityState.PresenceSpatial entityState.Bounds.Box2 element quadtree
             if SList.notEmpty entities3d then
                 let octree = World.getOctree world
                 for entity in entities3d do
                     let entityState = World.getEntityState entity world
-                    let element = Octelement.make entityState.VisibleSpatial entityState.StaticSpatial entityState.LightProbe entityState.Light entityState.Presence entityState.Bounds entity
-                    Octree.addElement entityState.Presence entityState.Bounds element octree
+                    let element = Octelement.make entityState.VisibleSpatial entityState.StaticSpatial entityState.LightProbe entityState.Light entityState.PresenceSpatial entityState.Bounds entity
+                    Octree.addElement entityState.PresenceSpatial entityState.Bounds element octree
             world
                 
         static member internal evictScreenElements screen world =
@@ -886,13 +893,13 @@ module WorldModule2 =
             for entity in entities2d do
                 let entityState = World.getEntityState entity world
                 let element = Quadelement.make entityState.VisibleSpatial entityState.StaticSpatial entity
-                Quadtree.removeElement entityState.Presence entityState.Bounds.Box2 element quadtree
+                Quadtree.removeElement entityState.PresenceSpatial entityState.Bounds.Box2 element quadtree
             if SArray.notEmpty entities3d then
                 let octree = World.getOctree world
                 for entity in entities3d do
                     let entityState = World.getEntityState entity world
-                    let element = Octelement.make entityState.VisibleSpatial entityState.StaticSpatial entityState.LightProbe entityState.Light entityState.Presence entityState.Bounds entity
-                    Octree.removeElement entityState.Presence entityState.Bounds element octree
+                    let element = Octelement.make entityState.VisibleSpatial entityState.StaticSpatial entityState.LightProbe entityState.Light entityState.PresenceSpatial entityState.Bounds entity
+                    Octree.removeElement entityState.PresenceSpatial entityState.Bounds element octree
             world
 
         static member internal registerScreenPhysics only3dHack screen world =
@@ -1058,9 +1065,11 @@ module WorldModule2 =
             let taskletsNotRun = OMap.filter (fun simulant _ -> World.getExists simulant world) taskletsNotRun
             World.restoreTasklets taskletsNotRun world
 
-        static member private processImNui world =
-            WorldImNui.Reinitializing <- false
-            World.sweepImNui world
+        static member private processImNui (world : World) =
+            if world.Advancing then
+                WorldImNui.Reinitializing <- false
+                World.sweepSimulants world
+            else world
 
         static member private destroySimulants world =
             let destructionListRev = World.getDestructionListRev world
@@ -1379,10 +1388,10 @@ module WorldModule2 =
             let octree = World.getOctree world
             Octree.sweep octree
 
-        /// Run ImNui for a single frame.
-        /// Needed only as a hack for Gaia and other accompanying context to ensure ImGui simulants are created at a
-        /// meaningful time.
-        static member runImNui (world : World) =
+        /// Process ImNui for a single frame.
+        /// HACK: needed only as a hack for Gaia and other accompanying programs to ensure ImGui simulants are created at a
+        /// meaningful time. Do NOT call this in the course of normal operations!
+        static member processSimulants (world : World) =
 
             // use a finally block to free cached values
             try
@@ -1396,25 +1405,25 @@ module WorldModule2 =
                 World.getElements2dInPlay HashSet2dNormalCached world
                 world.Timers.UpdateGatherTimer.Stop ()
 
-                // run game
+                // process game
                 world.Timers.UpdateGameTimer.Restart ()
-                let world = World.runGame game world
+                let world = World.processGame game world
                 world.Timers.UpdateGameTimer.Stop ()
 
-                // run screen if any
+                // process screen if any
                 world.Timers.UpdateScreensTimer.Restart ()
-                let world = Option.fold (fun world (screen : Screen) -> if screen.GetExists world then World.runScreen screen world else world) world screenOpt
+                let world = Option.fold (fun world (screen : Screen) -> if screen.GetExists world then World.processScreen screen world else world) world screenOpt
                 world.Timers.UpdateScreensTimer.Stop ()
 
-                // update groups
+                // process groups
                 world.Timers.UpdateGroupsTimer.Restart ()
-                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world then World.runGroup group world else world) world groups
+                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world then World.processGroup group world else world) world groups
                 world.Timers.UpdateGroupsTimer.Stop ()
 
-                // update entities
+                // process entities
                 world.Timers.UpdateEntitiesTimer.Restart ()
-                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world then World.runEntity element.Entry world else world) world HashSet3dNormalCached
-                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world then World.runEntity element.Entry world else world) world HashSet2dNormalCached
+                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world then World.processEntity element.Entry world else world) world HashSet3dNormalCached
+                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world then World.processEntity element.Entry world else world) world HashSet2dNormalCached
                 world.Timers.UpdateEntitiesTimer.Stop ()
 
                 // fin
@@ -1425,38 +1434,50 @@ module WorldModule2 =
                 HashSet3dNormalCached.Clear ()
                 HashSet2dNormalCached.Clear ()
 
-        static member internal sweepImNui (world : World) =
-            if world.Advancing then
-                let world =
-                    OMap.fold (fun world simulantAddress simulantImNui ->
-                        if not simulantImNui.SimulantUtilized then
-                            let simulant = World.deriveFromAddress simulantAddress
-                            let world = World.destroy simulant world
-                            World.setSimulantImNuis (OMap.remove simulantAddress world.SimulantImNuis) world
+        static member internal sweepSimulants (world : World) =
+
+            // update simulant bookkeeping, collecting simulants to destroy in the process
+            let world =
+                SUMap.fold (fun world simulantAddress simulantImNui ->
+                    if not simulantImNui.SimulantUtilized then
+                        let simulant = World.deriveFromAddress simulantAddress
+                        ImNuiSimulantsToDestroy.Add (simulantImNui.InitializationTime, simulant)
+                        World.setSimulantImNuis (SUMap.remove simulantAddress world.SimulantImNuis) world
+                    else
+                        if world.Imperative then
+                            simulantImNui.SimulantUtilized <- false
+                            simulantImNui.SimulantInitializing <- false
+                            world
                         else
-                            if world.Imperative then
-                                simulantImNui.SimulantUtilized <- false
-                                simulantImNui.SimulantInitializing <- false
-                                world
-                            else
-                                let simulantImNuis = OMap.add simulantAddress { simulantImNui with SimulantUtilized = false; SimulantInitializing = false } world.SimulantImNuis
-                                World.setSimulantImNuis simulantImNuis world)
-                        world world.SimulantImNuis
-                let world =
-                    OMap.fold (fun world subscriptionKey subscriptionImNui ->
-                        if not subscriptionImNui.SubscriptionUtilized then
-                            let world = World.unsubscribe subscriptionImNui.SubscriptionId world
-                            World.setSubscriptionImNuis (OMap.remove subscriptionKey world.SubscriptionImNuis) world
+                            let simulantImNuis = SUMap.add simulantAddress { simulantImNui with SimulantUtilized = false; SimulantInitializing = false } world.SimulantImNuis
+                            World.setSimulantImNuis simulantImNuis world)
+                    world world.SimulantImNuis
+            ImNuiSimulantsToDestroy.Sort SimulantImNuiComparer
+
+            // destroy simulants
+            let world =
+                Seq.fold
+                    (fun world (_, simulant) -> World.destroy simulant world)
+                    world ImNuiSimulantsToDestroy
+            ImNuiSimulantsToDestroy.Clear ()
+
+            // update subscription bookkeeping
+            let world =
+                SUMap.fold (fun world subscriptionKey subscriptionImNui ->
+                    if not subscriptionImNui.SubscriptionUtilized then
+                        let world = World.unsubscribe subscriptionImNui.SubscriptionId world
+                        World.setSubscriptionImNuis (SUMap.remove subscriptionKey world.SubscriptionImNuis) world
+                    else
+                        if world.Imperative then
+                            subscriptionImNui.SubscriptionUtilized <- false
+                            world
                         else
-                            if world.Imperative then
-                                subscriptionImNui.SubscriptionUtilized <- false
-                                world
-                            else
-                                let simulantImNuis = OMap.add subscriptionKey { subscriptionImNui with SubscriptionUtilized = false } world.SubscriptionImNuis
-                                World.setSubscriptionImNuis simulantImNuis world)
-                        world world.SubscriptionImNuis
-                world
-            else world
+                            let simulantImNuis = SUMap.add subscriptionKey { subscriptionImNui with SubscriptionUtilized = false } world.SubscriptionImNuis
+                            World.setSubscriptionImNuis simulantImNuis world)
+                    world world.SubscriptionImNuis
+
+            // fin
+            world
 
         static member private preUpdateSimulants (world : World) =
 
@@ -1503,7 +1524,7 @@ module WorldModule2 =
 
                 // update game
                 world.Timers.UpdateGameTimer.Restart ()
-                let world = World.runGame game world
+                let world = World.processGame game world
                 let world = if advancing then World.updateGame game world else world
                 world.Timers.UpdateGameTimer.Stop ()
 
@@ -1511,7 +1532,7 @@ module WorldModule2 =
                 world.Timers.UpdateScreensTimer.Restart ()
                 let world =
                     Option.fold (fun world (screen : Screen) ->
-                        let world = if screen.GetExists world then World.runScreen screen world else world
+                        let world = if screen.GetExists world then World.processScreen screen world else world
                         let world = if advancing && screen.GetExists world then World.updateScreen screen world else world
                         world)
                         world screenOpt
@@ -1521,7 +1542,7 @@ module WorldModule2 =
                 world.Timers.UpdateGroupsTimer.Restart ()
                 let world =
                     Seq.fold (fun world (group : Group) ->
-                        let world = if group.GetExists world then World.runGroup group world else world
+                        let world = if group.GetExists world then World.processGroup group world else world
                         let world = if advancing && group.GetExists world then World.updateGroup group world else world
                         world)
                         world groups
@@ -1533,7 +1554,7 @@ module WorldModule2 =
                     Seq.fold (fun world (element : Entity Octelement) ->
                         let world =
                             if element.Entry.GetExists world
-                            then World.runEntity element.Entry world
+                            then World.processEntity element.Entry world
                             else world
                         let world =
                             if element.Entry.GetExists world && (advancing && not (element.Entry.GetStatic world) || element.Entry.GetAlwaysUpdate world)
@@ -1545,7 +1566,7 @@ module WorldModule2 =
                     Seq.fold (fun world (element : Entity Quadelement) ->
                         let world =
                             if element.Entry.GetExists world
-                            then World.runEntity element.Entry world
+                            then World.processEntity element.Entry world
                             else world
                         let world =
                             if element.Entry.GetExists world && (advancing && not (element.Entry.GetStatic world) || element.Entry.GetAlwaysUpdate world)
@@ -1658,7 +1679,7 @@ module WorldModule2 =
                     for element in hashSet do
                         if element.Static then
                             HashSet3dNormalCached.Add element |> ignore<bool>
-                | ShadowPass (_, shadowDirectional, _, shadowFrustum) -> World.getElements3dInViewFrustum (not shadowDirectional) true shadowFrustum HashSet3dNormalCached world
+                | ShadowPass (_, shadowLightType, _, shadowFrustum) -> World.getElements3dInViewFrustum (shadowLightType <> DirectionalLight) true shadowFrustum HashSet3dNormalCached world
                 | ReflectionPass (_, _) -> ()
                 match renderPass with
                 | NormalPass -> World.getElements2dInView HashSet2dNormalCached world
@@ -1738,16 +1759,18 @@ module WorldModule2 =
                 let lightBox = World.getLight3dBox world
                 let lights = World.getLights3dInBox lightBox HashSet3dShadowCached world // NOTE: this may not be the optimal way to query.
                 let eyeCenter = World.getEye3dCenter world
-                let sortableShadowPassDescriptors =
+                let shadowPassDescriptorsSortable =
                     [|for light in lights do
                         if light.GetDesireShadows world then
-                            let (directional, coneOuter) =
-                                match light.GetLightType world with
-                                | PointLight -> (false, MathF.TWO_PI)
-                                | SpotLight (_, coneOuter)-> (false, coneOuter)
-                                | DirectionalLight -> (true, 0.0f)
+                            let lightType = light.GetLightType world
                             let (shadowView, shadowProjection) =
-                                if not directional then
+                                match lightType with
+                                | PointLight ->
+                                    let shadowView = Matrix4x4.CreateTranslation (-light.GetPosition world)
+                                    let shadowCutoff = max (light.GetLightCutoff world) 0.1f
+                                    let shadowProjection = Matrix4x4.CreateOrthographic (shadowCutoff * 2.0f, shadowCutoff * 2.0f, -shadowCutoff, shadowCutoff)
+                                    (shadowView, shadowProjection)
+                                | SpotLight (_, coneOuter)->
                                     let shadowRotation = light.GetRotation world
                                     let mutable shadowView = Matrix4x4.CreateFromYawPitchRoll (0.0f, -MathF.PI_OVER_2, 0.0f) * Matrix4x4.CreateFromQuaternion shadowRotation
                                     shadowView.Translation <- light.GetPosition world
@@ -1756,7 +1779,7 @@ module WorldModule2 =
                                     let shadowCutoff = max (light.GetLightCutoff world) 0.1f
                                     let shadowProjection = Matrix4x4.CreatePerspectiveFieldOfView (shadowFov, 1.0f, Constants.Render.NearPlaneDistanceInterior, shadowCutoff)
                                     (shadowView, shadowProjection)
-                                else
+                                | DirectionalLight ->
                                     let shadowRotation = light.GetRotation world
                                     let mutable shadowView = Matrix4x4.CreateFromYawPitchRoll (0.0f, -MathF.PI_OVER_2, 0.0f) * Matrix4x4.CreateFromQuaternion shadowRotation
                                     shadowView.Translation <- light.GetPosition world
@@ -1776,20 +1799,38 @@ module WorldModule2 =
                                 | Imposter -> frustumImposter.Intersects shadowFrustum
                                 | Omnipresent -> true
                             if shadowInView then
-                                let directionalSort = if not directional then 1 else 0
+                                let directionalSort = if lightType = DirectionalLight then 1 else 0 // directional lights come first to attempt to grab the detailed shadow texture
                                 let distanceSquared = Vector3.DistanceSquared (eyeCenter, light.GetPosition world)
                                 struct (struct (directionalSort, distanceSquared), struct (shadowFrustum, light))|]
 
-                // render simulant shadows in descriptor sort order
-                let world =
-                    sortableShadowPassDescriptors |>
+                // sort shadow pass descriptors
+                let shadowPassDescriptors =
+                    shadowPassDescriptorsSortable |>
                     Array.sortBy fst' |>
-                    Array.tryTake Constants.Render.ShadowsMax |>
-                    Array.fold (fun world struct (struct (directionalSort, _), struct (shadowFrustum, light)) ->
-                        World.renderSimulantsInternal (ShadowPass (light.GetId world, isZero directionalSort, light.GetRotation world, shadowFrustum)) world)
-                        world
+                    Array.map snd'
 
-                // render simulants normally, remember to clear 3d shadow cache
+                // render simulant shadows
+                let mutable shadowTexturesCount = 0
+                let mutable shadowMapsCount = 0
+                let world =
+                    Array.fold (fun world struct (shadowFrustum, light : Entity) ->
+                        let lightType = light.GetLightType world
+                        match lightType with
+                        | PointLight ->
+                            if shadowMapsCount < Constants.Render.ShadowMapsMax then
+                                let world = World.renderSimulantsInternal (ShadowPass (light.GetId world, lightType, light.GetRotation world, shadowFrustum)) world
+                                shadowMapsCount <- inc shadowMapsCount
+                                world
+                            else world
+                        | SpotLight (_, _) | DirectionalLight ->
+                            if shadowTexturesCount < Constants.Render.ShadowTexturesMax then
+                                let world = World.renderSimulantsInternal (ShadowPass (light.GetId world, lightType, light.GetRotation world, shadowFrustum)) world
+                                shadowTexturesCount <- inc shadowTexturesCount
+                                world
+                            else world)
+                        world shadowPassDescriptors
+
+                // render simulants normally
                 World.renderSimulantsInternal NormalPass world
 
             // free cached values
@@ -2282,10 +2323,10 @@ module EntityDispatcherModule2 =
     type FacetImNui (physical, lightProbe, light) =
         inherit Facet (physical, lightProbe, light)
 
-        override this.Run (entity, world) =
+        override this.Process (entity, world) =
             let context = world.ContextImNui
             let world = World.scopeEntity entity [] world
-            let world = this.Run (entity, world)
+            let world = this.Process (entity, world)
             World.advanceContext entity.EntityAddress context world
 
 [<RequireQualifiedAccess>]
@@ -2328,7 +2369,7 @@ module EntityPropertyDescriptor =
         elif propertyName = "Material" then "Material Properties 2"
         elif propertyName = "NavShape" || propertyName = "Nav3dConfig" then "Navigation Properties"
         elif List.exists (fun (property : PropertyDefinition) -> propertyName = property.PropertyName) rigidBodyProperties then "Physics Properties"
-        else "~Misc. Properties~"
+        else "~ More Properties"
 
     let getEditable propertyDescriptor =
         let propertyName = propertyDescriptor.PropertyName
