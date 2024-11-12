@@ -25,7 +25,7 @@ type GameplayDispatcher () =
         [define Screen.GameplayState Quit]
 
     // here we define the behavior of our gameplay
-    override this.Run (gameplay, world) =
+    override this.Process (gameplay, world) =
 
         // declare scene group when selected
         let world =
@@ -35,14 +35,13 @@ type GameplayDispatcher () =
                 let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
 
                 // declare player
-                let (_, world) =
+                let (playerBodyId, _, world) =
                     World.doCharacter3d "Player"
                         [Entity.Position .= v3 1.0f 0.0f -1.0f
                          Entity.Size .= v3 1.5f 2.0f 1.5f
                          Entity.Offset .= v3 0.0f 1.0f 0.0f
                          Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
                 let player = world.RecentEntity
-                let playerBodyId = player.GetBodyId world
 
                 // move player
                 let playerSpeed = 1.8f * world.GameDelta.Seconds

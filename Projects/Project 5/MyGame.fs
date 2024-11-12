@@ -33,8 +33,8 @@ type MyGameDispatcher () =
         let world = World.setRenderer3dConfig { Renderer3dConfig.defaultConfig with SsvfEnabled = true; SsrEnabled = true } world
         world
 
-    // here we handle running the game
-    override this.Run (myGame, world) =
+    // here we define the game's top-level behavior
+    override this.Process (myGame, world) =
 
         // declare splash screen
         let (results, world) = World.beginScreen Simulants.Splash.Name (myGame.GetGameState world = Splash) (Slide (Constants.Dissolve.Default, Constants.Slide.Default, None, Simulants.Title)) [] world
