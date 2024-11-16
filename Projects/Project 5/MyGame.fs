@@ -22,7 +22,7 @@ module MyGameExtensions =
 
 // this is the dispatcher that customizes the top-level behavior of our game.
 type MyGameDispatcher () =
-    inherit GameDispatcher ()
+    inherit GameDispatcherImNui ()
 
     // here we define default property values
     static member Properties =
