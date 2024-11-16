@@ -817,9 +817,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                         let forward = eyeRotation.Forward
                         let plane = plane3 (eyeCenter + forward * NewEntityDistance) -forward
                         (ray.Intersection plane).Value
-                    elif not (entity.GetAbsolute world) then
-                        eyeCenter + v3Forward.Transform eyeRotation * NewEntityDistance
-                    else v3Zero
+                    else eyeCenter + v3Forward.Transform eyeRotation * NewEntityDistance
                 let attributes = entity.GetAttributesInferred world
                 entityTransform.Position <- entityPosition
                 entityTransform.Size <- attributes.SizeInferred
@@ -1325,8 +1323,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
             // initialize event filter as not to flood the log
             let world = World.setEventFilter Constants.Gaia.EventFilter world
 
-            // process ImNui once to make sure initial simulants are created
-            let world = World.processSimulants world
+            // attempt to process ImNui once to make sure initial simulants are created
+            let world = World.tryProcessSimulants world
 
             // apply any selected mode
             let world =
@@ -1337,8 +1335,8 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                     | (false, _) -> world
                 | None -> world
 
-            // process ImNui again to ensure simulants in new mode are created
-            let world = World.processSimulants world
+            // attempt to process ImNui again to ensure simulants in new mode are created
+            let world = World.tryProcessSimulants world
 
             // figure out which screen to use
             let (screen, world) =
@@ -2575,7 +2573,7 @@ DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,0 Size=1920,1080 Spl
                                         let world = snapshot (SetEditMode 0) world // snapshot before mode change
                                         selectEntityOpt None world
                                         let world = editModeFn world
-                                        let world = World.processSimulants world
+                                        let world = World.tryProcessSimulants world
                                         let world = snapshot (SetEditMode 1) world // snapshot before after change
                                         world
                                     else world

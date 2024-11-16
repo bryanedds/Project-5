@@ -19,8 +19,7 @@ type MetricsEntityDispatcher () =
         let affineMatrix = transform.AffineMatrix
         let presence = transform.Presence
         let properties = MaterialProperties.empty
-        let material = Material.empty
-        World.renderStaticModelSurfaceFast (&affineMatrix, presence, ValueNone, &properties, &material, staticModel, 0, DeferredRenderType, renderPass, world)
+        World.renderStaticModelFast (&affineMatrix, presence, ValueNone, &properties, staticModel, DeferredRenderType, renderPass, world)
 
     override this.GetAttributesInferred (entity, world) =
         let staticModel = entity.GetModelGeneric world
@@ -76,9 +75,9 @@ type MmccGameDispatcher () =
         else world
 #else
 type MyGameDispatcher () =
-    inherit GameDispatcher ()
-
 #if IMNUI
+    inherit GameDispatcherImNui ()
+
     static let Positions = // 15,000 entities (goal: 60FPS, current 55FPS)
         [|for i in 0 .. dec 50 do
             for j in 0 .. dec 50 do
@@ -101,7 +100,9 @@ type MyGameDispatcher () =
         let world = World.endScreen world
         world
 #else
-    static let Positions = // 40,000 entities (goal: 60FPS, current 60FPS)
+    inherit GameDispatcher ()
+
+    static let Positions = // 40,000 entities (goal: 60FPS, current 55FPS)
         [|for i in 0 .. dec 50 do
             for j in 0 .. dec 50 do
                 for k in 0 .. dec 16 do
