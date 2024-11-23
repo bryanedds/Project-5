@@ -1,5 +1,5 @@
 [GroupDispatcher
- [[Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
+ [[Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
   [Name Scene]
   [Persistent True]
   [Visible True]]
@@ -37,6 +37,7 @@
     [Lighting3dConfigDispatcher
      [[Lighting3dConfig
        [[LightCutoffMargin 0.333]
+        [LightShadowSampleScalar 0.01]
         [LightShadowExponent 87]
         [LightShadowDensity 32]
         [SsaoIntensity 1.35]
@@ -50,7 +51,7 @@
         [SsrEnabled True]
         [SsrDetail 0.21]
         [SsrRefinementsMax 24]
-        [SsrRayThickness 0.0667]
+        [SsrRayThickness 0.05]
         [SsrTowardEyeCutoff 0.9]
         [SsrDepthCutoff 24]
         [SsrDepthCutoffMargin 0.2]
