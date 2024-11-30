@@ -1,5 +1,5 @@
 ﻿// Nu Game Engine.
-// Copyright (C) Bryan Edds, 2013-2023.
+// Copyright (C) Bryan Edds.
 
 namespace Nu
 open System
@@ -131,8 +131,9 @@ module WorldModuleEntity =
                 let changeData = { Name = propertyName; Previous = previousValue; Value = propertyValue }
                 let entityNames = Address.getNames entity.EntityAddress
                 let world =
-                    if  BodyPropertyAffectingPropertyNames.Contains propertyName &&
-                        (World.getEntityFacetNames entity world : string Set).Contains "RigidBodyFacet" then
+                    // OPTIMIZATION: this works together with RigidBodyFacet to reduce the bookkeeping footprint of its
+                    // subscriptions. This does have some run-time performance cost associated with it, however.
+                    if BodyPropertyAffectingPropertyNames.Contains propertyName then
                         let changeEventAddress = rtoa<ChangeData> (Array.append [|Constants.Lens.ChangeName; "BodyPropertiesAffecting"; Constants.Lens.EventName|] entityNames)
                         let eventTrace = EventTrace.debug "World" "publishEntityChange" "BodyPropertiesAffecting" EventTrace.empty
                         World.publishPlus changeData changeEventAddress eventTrace entity false false world

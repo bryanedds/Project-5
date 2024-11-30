@@ -1,5 +1,5 @@
 ﻿// Nu Game Engine.
-// Copyright (C) Bryan Edds, 2013-2023.
+// Copyright (C) Bryan Edds.
 
 namespace Nu
 open System
@@ -384,18 +384,18 @@ type [<ReferenceEquality>] GlRenderer2d =
         inline
 #endif
         private batchSprite
-        absolute
-        min
-        size
-        pivot
-        rotation
+        (absolute : bool)
+        (min : Vector2)
+        (size : Vector2)
+        (pivot : Vector2)
+        (rotation : single)
         (insetOpt : Box2 voption)
         (clipOpt : Box2 voption)
         (texture : OpenGL.Texture.Texture)
         (color : Color)
-        blend
+        (blend : Blend)
         (emission : Color)
-        flip
+        (flip : Flip)
         windowSize
         renderer =
 
@@ -445,7 +445,7 @@ type [<ReferenceEquality>] GlRenderer2d =
             | Additive -> struct (OpenGL.BlendingFactor.SrcAlpha, OpenGL.BlendingFactor.One, OpenGL.BlendEquationMode.FuncAdd)
             | Overwrite -> struct (OpenGL.BlendingFactor.One, OpenGL.BlendingFactor.Zero, OpenGL.BlendEquationMode.FuncAdd)
 
-        // attempt to draw normal sprite
+        // attempt to draw regular sprite
         if color.A <> 0.0f then
             OpenGL.SpriteBatch.SubmitSpriteBatchSprite (absolute, min, size, pivot, rotation, &texCoords, &clipOpt, &color, bfs, bfd, beq, texture, windowSize, renderer.SpriteBatchEnv)
 

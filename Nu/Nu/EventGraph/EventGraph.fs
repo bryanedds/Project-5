@@ -1,5 +1,5 @@
 ﻿// Nu Game Engine.
-// Copyright (C) Bryan Edds, 2013-2023.
+// Copyright (C) Bryan Edds.
 
 namespace Nu
 open System
@@ -35,7 +35,7 @@ type SubscriptionEntries =
 
 /// A map of subscription keys to unsubscription data.
 type UnsubscriptionEntries =
-    UMap<uint64, Address * Simulant>
+    UMap<uint64, struct (Address * Simulant)>
 
 [<RequireQualifiedAccess>]
 module EventGraph =
