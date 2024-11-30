@@ -13,7 +13,6 @@ layout(location = 3) in vec4 boneIds;
 layout(location = 4) in vec4 weights;
 layout(location = 5) in mat4 model;
 
-out vec4 positionOut;
 out float depthDirectionalOut;
 
 void main()
@@ -28,7 +27,7 @@ void main()
 
     // compute output values
     vec4 positionBlended = boneBlended * vec4(position, 1.0);
-    positionOut = model * positionBlended;
+    vec4 positionOut = model * positionBlended;
     gl_Position = projection * view * positionOut;
 	depthDirectionalOut = gl_Position.z / gl_Position.w;
 }
@@ -36,29 +35,14 @@ void main()
 #shader fragment
 #version 410
 
-uniform vec3 eyeCenter;
-uniform int lightType;
 uniform float lightShadowExponent;
 
 layout(location = 0) out vec2 depths;
 
-in vec4 positionOut;
 in float depthDirectionalOut;
 
 void main()
 {
-	switch (lightType)
-	{
-	case 0: // point light
-		depths.x = length(positionOut.xyz - eyeCenter);
-		break;
-	case 1: // spot light
-		depths.x = gl_FragCoord.z;
-		depths.y = exp(lightShadowExponent * depths.x);
-		break;
-	case 2: // directional light
-		depths.x = gl_FragCoord.z;
-		depths.y = exp(lightShadowExponent * depthDirectionalOut);
-		break;
-	}
+	depths.x = gl_FragCoord.z;
+	depths.y = exp(lightShadowExponent * depthDirectionalOut);
 }
