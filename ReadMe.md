@@ -48,6 +48,9 @@ Wandering the lake in Omni Blade.
 ![image](https://github.com/bryanedds/Nu/assets/1625560/c9f0a9a1-d071-48f7-9175-c0b08f5768f0)
 Directly editing the entire game state in the new editor.
 
+![image](https://github.com/user-attachments/assets/a1c3d8a0-79c2-4e9a-b466-5901ea601c7e)
+Spine 2D skeletal animation available now!
+
 ![image](https://github.com/bryanedds/Nu/assets/1625560/69cd30f1-06fe-450e-a83f-8a7a9fd504d0)
 Algebraic terrain rendering thanks to contributions from **[@deanjl](https://github.com/deanjl)**.
 
@@ -61,6 +64,8 @@ Recursive Prefab-like functionality via Entity Structure Propagation.
 ====================================
 
 **[@reinux](https://github.com/reinux)**
+
+**[@yvileapsis](https://github.com/yvileapsis)**
 
 **[@arsmilitaris](https://github.com/arsmilitaris)** at **https://arsmilitaris.com**
 
