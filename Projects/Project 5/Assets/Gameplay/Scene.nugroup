@@ -37,8 +37,10 @@
     [Lighting3dConfigDispatcher
      [[Lighting3dConfig
        [[LightCutoffMargin 0.333]
+        [LightShadowSamples 3]
+        [LightShadowBias 0.005]
         [LightShadowSampleScalar 0.01]
-        [LightShadowExponent 87]
+        [LightShadowExponent 80]
         [LightShadowDensity 32]
         [SsaoIntensity 1.35]
         [SsaoBias 0.025]
