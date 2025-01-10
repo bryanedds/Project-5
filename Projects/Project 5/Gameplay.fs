@@ -40,7 +40,7 @@ type GameplayDispatcher () =
         let player = world.RecentEntity
 
         // move player
-        let playerSpeed = 1.8f * world.GameDelta.Seconds
+        let playerSpeed = 30.0f * world.GameDelta.Seconds
         let playerRotation = player.GetRotation world
         let playerVelocity =
             (if World.isKeyboardKeyDown KeyboardKey.W world then playerRotation.Forward * playerSpeed else v3Zero) +
@@ -52,7 +52,7 @@ type GameplayDispatcher () =
         let turnVelocity =
             (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f) +
             (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f)
-        let world = player.SetPosition (player.GetPosition world + playerVelocity) world
+        let world = player.SetLinearVelocity (player.GetLinearVelocity world + playerVelocity) world
         let world = player.SetRotation (player.GetRotation world * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity)) world
 
         // update eye to look at player
