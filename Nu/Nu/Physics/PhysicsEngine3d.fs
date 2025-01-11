@@ -96,7 +96,7 @@ type [<ReferenceEquality>] PhysicsEngine3d =
           CreateBodyJointMessages : Dictionary<BodyId, CreateBodyJointMessage List>
           BodyConstraintEvents : BodyConstraintEvent List
           BodyConstraintUserData : Dictionary<BodyJointId, BodyConstraintUserData>
-          BodyConstraints : Dictionary<BodyJointId, TwoBodyConstraint>
+          BodyConstraints : Dictionary<BodyJointId, Constraint>
           IntegrationMessages : IntegrationMessage List }
 
     static member private handleBodyPenetration (bodyId : BodyId) (body2Id : BodyId) (contactNormal : Vector3) physicsEngine =
@@ -1077,11 +1077,6 @@ type [<ReferenceEquality>] PhysicsEngine3d =
           BodyConstraints = dictPlus HashIdentity.Structural []
           IntegrationMessages = List () }
 
-    static member cleanUp physicsEngine =
-        physicsEngine.JobSystem.Dispose ()
-        physicsEngine.PhysicsContext.Dispose ()
-        Foundation.Shutdown ()
-
     interface PhysicsEngine with
 
         member physicsEngine.GetBodyExists bodyId =
@@ -1312,4 +1307,6 @@ type [<ReferenceEquality>] PhysicsEngine3d =
             affected
 
         member physicsEngine.CleanUp () =
-            PhysicsEngine3d.cleanUp physicsEngine
+            physicsEngine.JobSystem.Dispose ()
+            physicsEngine.PhysicsContext.Dispose ()
+            Foundation.Shutdown ()
