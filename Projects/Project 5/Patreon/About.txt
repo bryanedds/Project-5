@@ -1,0 +1,37 @@
+Help us fund our next game with the Nu Game Engine!
+
+In terms of open source, our work on Nu Game Engine has been a success! Having shipped our 20-hour JRPG, Omni Blade, on Steam last year, we are now ready to scale up into the 3D commercial gaming realm!
+
+Nu Game Engine has been 3D-capable for over a year, but in order to prove out its capabilities in the same way we have done with Omni Blade for 2D, we need to start production on a 3D game! This is our main motivation for creating this Patreon account. We need YOUR help to cover the minimal operating expenses for developing a mid-size 3D game inspired by the classic Clock Tower game series!
+
+We are reliable developers with proven track record of shipping open source libraries, game engines, and games. This is the work record of the main developer over the past year -
+
+As you can see, we are on a rocket ship to bringing functional and declarative game programming into the wider game industry! We've done everything possible to prove ourselves as a worthy investment and of real consequence to the game development landscape. But games - even when made with an awesome development platform like Nu - still need resources! Especially games like the mid-size 3D game we're aiming to build with your patronage!
+
+Please join us in our next game development journey to further prove the efficacy of functional and declarative programming in games!
+
+About the Game
+
+So what type of game are we making?
+
+One of my favorite hidden gems on the PSX is Clock Tower (in Japanese, subtitled Ghost Head). I swear to God, I still intermittently have nightmares about Scissorman chasing me down in novel and weird environments. It's terrifying in the dream, but when I wake up I'm like, "ah, that was cool tho." Clock Tower on PSX did something incredibly special which many other games have tried to imitate somewhat, but they never captured the type of world-gripping dread that Clock Tower on PSX did.
+
+Not only do I want to take that feeling of psychological terror and recreate for current audiences, I want to enhance the experience with sound-based and complimentary stealth-based gameplay. As a designer, just play around with mixing these mechanics in a synergistic way to make one of the scariest damn game you have ever played.
+
+The the game has been living exclusively in my head for many, many years, we don't have a ton of in-depth documentation around the design details yet. However, that's sort of a good thing in this case because as developers, we recognize the need to experiment within the development process to find what will actually work and what won't. As an experience game designer, that this is rarely obvious from just a game design document.
+
+Scoping
+
+This is a somewhat ambitious title for indie developers like us who are crafting their game engine as well, but the project is intelligently scoped because replicating and enhancing the otherwise extremely basic mechanics and UX of Clock Tower is relatively straightforward. Certinaly moreso than with our finely-balanced JRPG, Omni Blade. In this game, there's no level scaling algorithms or pain-staking equipment balancing that have to be done mostly by trial-and-error. Our task is mostly about simple gameplay, presentation, and feedback-testing on just how much we can frighten the normies.
+
+Because we keep it classy, the game is not going to lean heavily on gore or shock value, but will, like Omni Blade, will lean mostly on intricate psychological narrative. To us, that's the best type of horror.
+
+Since we've only got about a week worth of work into the actual game's development, we only have very preliminary screenshots to show, but it is something. Most of the time has been spent setting up the scaffolding needed to get the physically-interactive scenes in place using modular stage building pieces -
+
+The actual API from Nu that we are using to build the game is the new ImNui API, an immediate-mode declarative programming API inspired by Casey Muratori's ImGui (but with significant functional enhancements) -
+
+Beautiful straight-line coding, just like the programmer gods intended.
+
+Extremely early screenshot.
+
+Our previous game, Omni Blade used Nu's other declarative API, MMCC. While MMCC was a perfect fit for a JRPG, we felt that something more like immediate-mode programming would be a better choice for an action game. Just as Omni Blade proved out the efficacy of the MMCC game programming form factor, this game will prove out the ImNui form factor. That alone will be a significant contribution to computing, in our minds.
