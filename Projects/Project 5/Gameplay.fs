@@ -53,6 +53,7 @@ type GameplayDispatcher () =
             (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f) +
             (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f)
         let world = player.SetLinearVelocity (player.GetLinearVelocity world + playerVelocity) world
+        let world = player.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
         let world = player.SetRotation (player.GetRotation world * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity)) world
 
         // update eye to look at player
