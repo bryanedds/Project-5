@@ -1057,17 +1057,19 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         | Some _ | None -> (false, world)
 
     let private tryPaste tryForwardPropagationSource atMouse parentOpt world =
-        let world = snapshot PasteEntity world
-        let positionSnapEir = if Snaps2dSelected then Left (a__ Snaps2d) else Right (a__ Snaps3d)
-        let parent = match parentOpt with Some parent -> parent | None -> SelectedGroup :> Simulant
-        let (entityOpt, world) = World.pasteEntityFromClipboard tryForwardPropagationSource NewEntityDistance RightClickPosition positionSnapEir atMouse parent world
-        match entityOpt with
-        | Some entity ->
-            selectEntityOpt (Some entity) world
-            ImGui.SetWindowFocus "Viewport"
-            ShowSelectedEntity <- true
-            (true, world)
-        | None -> (false, world)
+        if World.canPasteEntityFromClipboard world then
+            let world = snapshot PasteEntity world
+            let positionSnapEir = if Snaps2dSelected then Left (a__ Snaps2d) else Right (a__ Snaps3d)
+            let parent = match parentOpt with Some parent -> parent | None -> SelectedGroup :> Simulant
+            let (entityOpt, world) = World.pasteEntityFromClipboard tryForwardPropagationSource NewEntityDistance RightClickPosition positionSnapEir atMouse parent world
+            match entityOpt with
+            | Some entity ->
+                selectEntityOpt (Some entity) world
+                ImGui.SetWindowFocus "Viewport"
+                ShowSelectedEntity <- true
+                (true, world)
+            | None -> (false, world)
+        else (false, world)
 
     let private trySetSelectedEntityFamilyStatic static_ world =
         let rec setEntityFamilyStatic static_ (entity : Entity) world =
@@ -3158,6 +3160,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                                 "#r \"FSharp.Core.dll\"\n" +
                                 "#r \"FSharp.Compiler.Service.dll\"\n" +
                                 "#r \"Aether.Physics2D.dll\"\n" +
+                                "#r \"JoltPhysicsSharp.dll\"\n" +
                                 "#r \"AssimpNet.dll\"\n" +
                                 "#r \"BulletSharp.dll\"\n" +
                                 "#r \"Csv.dll\"\n" +
@@ -3168,9 +3171,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                                 "#r \"Pfim.dll\"\n" +
                                 "#r \"SDL2-CS.dll\"\n" +
                                 "#r \"TiledSharp.dll\"\n" +
-                                "#r \"ImGui.NET.dll\"\n" +
-                                "#r \"ImGuizmo.NET.dll\"\n" +
-                                "#r \"ImPlot.NET.dll\"\n" +
+                                "#r \"Twizzle.ImGui-Bundle.NET.dll\"\n" +
                                 "#r \"Prime.dll\"\n" +
                                 "#r \"Nu.Math.dll\"\n" +
                                 "#r \"Nu.dll\"\n" +
