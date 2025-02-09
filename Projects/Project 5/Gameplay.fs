@@ -27,7 +27,7 @@ type GameplayDispatcher () =
     // here we define the behavior of our gameplay
     override this.Process (screenResults, gameplay, world) =
 
-        // determing if initializing
+        // determine if initializing
         let initializing = FQueue.contains Select screenResults
 
         // begin scene declaration
@@ -36,7 +36,7 @@ type GameplayDispatcher () =
         // declare player
         let (playerBodyId, _, world) =
             World.doCharacter3d "Player"
-                [if initializing then Entity.Position .= v3 1.0f 0.0f -1.0f
+                [if initializing then Entity.Position @= v3 1.0f 0.0f -1.0f
                  Entity.Size .= v3 1.5f 2.0f 1.5f
                  Entity.Offset .= v3 0.0f 1.0f 0.0f
                  Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
