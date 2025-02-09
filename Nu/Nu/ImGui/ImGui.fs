@@ -37,6 +37,11 @@ type ImGui (stub : bool, displaySize : Vector2i) =
         // set guizmo context
         ImGuizmo.SetImGuiContext context
 
+        // configure guizmo settings
+        ImGuizmo.AllowAxisFlip false
+        ImGuizmo.SetAxisLimit 0.001f
+        ImGuizmo.SetPlaneLimit 0.001f
+
         // enable guizmo
         ImGuizmo.Enable true
 
