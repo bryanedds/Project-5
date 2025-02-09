@@ -43,7 +43,7 @@ type GameplayDispatcher () =
         let player = world.RecentEntity
 
         // move player
-        let playerSpeed = 30.0f * world.GameDelta.Seconds
+        let playerSpeed = 35.0f * world.GameDelta.Seconds
         let playerRotation = player.GetRotation world
         let playerVelocity =
             (if World.isKeyboardKeyDown KeyboardKey.W world then playerRotation.Forward * playerSpeed else v3Zero) +
@@ -64,7 +64,7 @@ type GameplayDispatcher () =
             if world.Advancing then
                 let position = player.GetPosition world
                 let rotation = player.GetRotation world
-                let world = World.setEye3dCenter (position + v3Up * 1.8f - rotation.Forward * 1.0f + rotation.Right * 0.25f) world
+                let world = World.setEye3dCenter (position + v3Up * 1.6f - rotation.Forward * 1.1f + rotation.Right * 0.25f) world
                 let world = World.setEye3dRotation rotation world
                 world
             else world
