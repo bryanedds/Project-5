@@ -6,9 +6,11 @@
  [[Entity3dDispatcher
    [[Name Environment] [Pickable False]]
    [[Light3dDispatcher
-     [[Brightness 1]
+     [[AttenuationLinear 0.03125]
+      [AttenuationQuadratic 0.0009765625]
+      [Brightness 1]
       [DesireShadows True]
-      [LightCutoff 9]
+      [LightCutoff 32]
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
