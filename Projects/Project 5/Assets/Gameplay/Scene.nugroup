@@ -16,8 +16,7 @@
       [Position [0 8 0]]
       [PositionLocal [0 8 0]]
       [Presence Omnipresent]
-      [Size [0.25 0.25 0.25]]
-      [Static True]]
+      [Size [0.25 0.25 0.25]]]
      []]
     [SkyBoxDispatcher
      [[Absolute True]
@@ -73,8 +72,95 @@
   [Entity3dDispatcher
    [[Name Palettes]
     [Pickable False]
-    [Position [-12 0 24]]]
+    [Position [-12 0 24]]
+    [Static True]]
    [[Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Room]
+      [Pickable False]
+      [Position [-18.5 0 28]]
+      [PositionLocal [-6.5 0 4]]
+      [PropagatedDescriptorOpt
+       [Some
+        [Entity3dDispatcher
+         [[MountOpt [Some ^]]
+          [Name Room]
+          [Pickable False]
+          [Position [-18.5 0 28]]
+          [PositionLocal [-6.5 0 4]]
+          [Static True]]
+         [[Entity3dDispatcher
+           [[MountOpt [Some ^]]
+            [Name Lights]
+            [Pickable False]
+            [Position [-18.5 0 28]]
+            [Static True]]
+           []]
+          [Entity3dDispatcher
+           [[MountOpt [Some ^]]
+            [Name Decor]
+            [Pickable False]
+            [Position [-18.5 0 28]]
+            [Static True]]
+           []]
+          [Entity3dDispatcher
+           [[MountOpt [Some ^]]
+            [Name Floors]
+            [Pickable False]
+            [Position [-18.5 0 28]]
+            [Static True]]
+           []]
+          [Entity3dDispatcher
+           [[MountOpt [Some ^]]
+            [Name Walls]
+            [Pickable False]
+            [Position [-18.5 0 28]]
+            [Static True]]
+           []]
+          [Entity3dDispatcher
+           [[MountOpt [Some ^]]
+            [Name Corners]
+            [Pickable False]
+            [Position [-18.5 0 28]]
+            [Static True]]
+           []]]]]]
+      [Static True]]
+     [[Entity3dDispatcher
+       [[MountOpt [Some ^]]
+        [Name Lights]
+        [Pickable False]
+        [Position [-18.5 0 28]]
+        [Static True]]
+       []]
+      [Entity3dDispatcher
+       [[MountOpt [Some ^]]
+        [Name Decor]
+        [Pickable False]
+        [Position [-18.5 0 28]]
+        [Static True]]
+       []]
+      [Entity3dDispatcher
+       [[MountOpt [Some ^]]
+        [Name Floors]
+        [Pickable False]
+        [Position [-18.5 0 28]]
+        [Static True]]
+       []]
+      [Entity3dDispatcher
+       [[MountOpt [Some ^]]
+        [Name Walls]
+        [Pickable False]
+        [Position [-18.5 0 28]]
+        [Static True]]
+       []]
+      [Entity3dDispatcher
+       [[MountOpt [Some ^]]
+        [Name Corners]
+        [Pickable False]
+        [Position [-18.5 0 28]]
+        [Static True]]
+       []]]]
+    [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Architecture]
       [Position [-25.25 0 31]]
@@ -1236,7 +1322,7 @@
         [StaticModel [Gameplay wall_column]]]
        []]]]]]
   [Entity3dDispatcher
-   [[Name Gallery] [Pickable False]]
+   [[Name Gallery] [Pickable False] [Static True]]
    [[LightProbe3dDispatcher
      [[AmbientBrightness 0.1]
       [MountOpt [Some ^]]
@@ -1264,7 +1350,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Lights]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[StaticModelDispatcher
        [[CastShadow False]
         [MaterialProperties
@@ -1757,7 +1844,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Tables]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -2069,6 +2157,7 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Pictures]
+      [Pickable False]
       [Static True]]
      [[StaticModelDispatcher
        [[MaterialProperties
@@ -2153,6 +2242,7 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Pictures2]
+      [Pickable False]
       [Static True]]
      [[StaticModelDispatcher
        [[MaterialProperties
@@ -2229,6 +2319,7 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Pictures3]
+      [Pickable False]
       [Position [-1.25 1.75 -2.75]]
       [PositionLocal [-1.25 1.75 -2.75]]
       [Static True]]
@@ -2323,6 +2414,7 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Pictures4]
+      [Pickable False]
       [Static True]]
      [[StaticModelDispatcher
        [[MaterialProperties
@@ -2350,7 +2442,9 @@
        []]]]
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
-      [Name Doors]]
+      [Name Doors]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -2441,7 +2535,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Walls]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -3041,7 +3136,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Corners]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -3160,7 +3256,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Halls]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -4134,7 +4231,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Columns]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -4258,7 +4356,8 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Floors]
-      [Pickable False]]
+      [Pickable False]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -4466,8 +4565,139 @@
       [StaticModel [Gameplay Rug]]]
      []]]]
   [Entity3dDispatcher
+   [[MountOpt [Some ^]]
+    [Name GalleryToReception]
+    [Pickable False]
+    [Position [13.75 0 5.5]]
+    [PositionLocal [-6.5 0 4]]
+    [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Room]]
+    [Static True]]
+   [[Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Lights]
+      [Pickable False]
+      [Position [13.75 0 5.5]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Decor]
+      [Pickable False]
+      [Position [13.75 0 5.5]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Floors]
+      [Pickable False]
+      [Position [13.75 0 5.5]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Walls]
+      [Pickable False]
+      [Position [13.75 0 5.5]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Corners]
+      [Pickable False]
+      [Position [13.75 0 5.5]]
+      [Static True]]
+     []]]]
+  [Entity3dDispatcher
+   [[MountOpt [Some ^]]
+    [Name GalleryToDining]
+    [Pickable False]
+    [Position [-3.75 0 10.75]]
+    [PositionLocal [-6.5 0 4]]
+    [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Room]]
+    [Static True]]
+   [[Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Lights]
+      [Pickable False]
+      [Position [-3.75 0 10.75]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Decor]
+      [Pickable False]
+      [Position [-3.75 0 10.75]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Floors]
+      [Pickable False]
+      [Position [-3.75 0 10.75]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Walls]
+      [Pickable False]
+      [Position [-3.75 0 10.75]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Corners]
+      [Pickable False]
+      [Position [-3.75 0 10.75]]
+      [Static True]]
+     []]]]
+  [Entity3dDispatcher
+   [[MountOpt [Some ^]]
+    [Name GalleryToLibrary]
+    [Pickable False]
+    [Position [-11.5 0 -4]]
+    [PositionLocal [-6.5 0 4]]
+    [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Room]]
+    [Static True]]
+   [[Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Lights]
+      [Pickable False]
+      [Position [-11.5 0 -4]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Decor]
+      [Pickable False]
+      [Position [-11.5 0 -4]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Floors]
+      [Pickable False]
+      [Position [-11.5 0 -4]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Walls]
+      [Pickable False]
+      [Position [-11.5 0 -4]]
+      [Static True]]
+     []]
+    [Entity3dDispatcher
+     [[MountOpt [Some ^]]
+      [Name Corners]
+      [Pickable False]
+      [Position [-11.5 0 -4]]
+      [Static True]]
+     []]]]
+  [Entity3dDispatcher
    [[Name Dining]
-    [Position [5 0 13]]]
+    [Pickable False]
+    [Position [5 0 13]]
+    [Static True]]
    [[LightProbe3dDispatcher
      [[AmbientBrightness 0.1]
       [MountOpt [Some ^]]
@@ -4483,7 +4713,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Lights]
-      [Position [5 0 13]]]
+      [Pickable False]
+      [Position [5 0 13]]
+      [Static True]]
      [[StaticModelDispatcher
        [[MountOpt [Some ^]]
         [Name Fan]
@@ -4547,7 +4779,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Decor]
-      [Position [5 0 13]]]
+      [Pickable False]
+      [Position [5 0 13]]
+      [Static True]]
      [[StaticModelDispatcher
        [[MountOpt [Some ^]]
         [Name Rug]
@@ -4582,7 +4816,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Floors]
-      [Position [5 0 13]]]
+      [Pickable False]
+      [Position [5 0 13]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -4922,7 +5158,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Walls]
-      [Position [5 0 13]]]
+      [Pickable False]
+      [Position [5 0 13]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -5337,8 +5575,10 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Corners]
+      [Pickable False]
       [Position [-3.8000002 14.2 11.2]]
-      [PositionLocal [-8.8 14.2 -1.8000002]]]
+      [PositionLocal [-8.8 14.2 -1.8000002]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -5365,7 +5605,9 @@
        []]]]]]
   [Entity3dDispatcher
    [[Name Library]
-    [Position [-11 0 3.5]]]
+    [Pickable False]
+    [Position [-11 0 3.5]]
+    [Static True]]
    [[LightProbe3dDispatcher
      [[AmbientBrightness 0.1]
       [MountOpt [Some ^]]
@@ -5381,7 +5623,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Lights]
-      [Position [-11 0 3.5]]]
+      [Pickable False]
+      [Position [-11 0 3.5]]
+      [Static True]]
      [[StaticModelDispatcher
        [[MountOpt [Some ^]]
         [Name Fan]
@@ -5473,7 +5717,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Shelves]
-      [Position [-11 0 3.5]]]
+      [Pickable False]
+      [Position [-11 0 3.5]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -5789,7 +6035,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Walls]
-      [Position [-11 0 3.5]]]
+      [Pickable False]
+      [Position [-11 0 3.5]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -6143,7 +6391,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Floors]
-      [Position [-11 0 3.5]]]
+      [Pickable False]
+      [Position [-11 0 3.5]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -6483,7 +6733,9 @@
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name Columns]
-      [Position [-11 0 3.5]]]
+      [Pickable False]
+      [Position [-11 0 3.5]]
+      [Static True]]
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
@@ -6627,8 +6879,4 @@
         [Size [0.5978668 3.5000005 0.58322096]]
         [Static True]
         [StaticModel [Gameplay wall_column]]]
-       []]]]]]
-  [Entity3dDispatcher
-   [[Name Reception]
-    [Position [16.5 0 6.5]]]
-   []]]]
+       []]]]]]]]
