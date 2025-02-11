@@ -46,7 +46,7 @@ type GameplayDispatcher () =
             // move player
             let world =
                 if world.Advancing then
-                    let playerSpeed = 35.0f * world.GameDelta.Seconds
+                    let playerSpeed = 2.0f
                     let playerRotation = player.GetRotation world
                     let playerVelocity =
                         (if World.isKeyboardKeyDown KeyboardKey.W world then playerRotation.Forward * playerSpeed else v3Zero) +
@@ -54,13 +54,13 @@ type GameplayDispatcher () =
                         (if World.isKeyboardKeyDown KeyboardKey.A world then playerRotation.Left * playerSpeed else v3Zero) +
                         (if World.isKeyboardKeyDown KeyboardKey.D world then playerRotation.Right * playerSpeed else v3Zero)
                     let grounded = World.getBodyGrounded playerBodyId world
-                    let turnSpeed = 1.8f * world.GameDelta.Seconds * if grounded then 1.0f else 0.75f
+                    let turnSpeed = 1.8f * if grounded then 1.0f else 0.75f
                     let turnVelocity =
                         (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f) +
                         (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f)
-                    let world = player.SetLinearVelocity (player.GetLinearVelocity world + playerVelocity) world
+                    let world = player.SetLinearVelocity (playerVelocity.WithY 0.0f + v3Up * player.GetLinearVelocity world) world
                     let world = player.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
-                    let world = player.SetRotation (player.GetRotation world * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity)) world
+                    let world = player.SetRotation (player.GetRotation world * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.Seconds)) world
                     world
                 else world
 
