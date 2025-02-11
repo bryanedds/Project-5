@@ -103,7 +103,7 @@ module WorldImGui =
             let projection = Viewport.getProjection3d eyeFieldOfView world.RasterViewport
             let viewProjection = view * projection
             for segment in segments do
-                match Math.TryUnionSegmentAndFrustum segment.A segment.B eyeFrustum with
+                match Math.TryUnionSegmentAndFrustum (segment.A, segment.B, eyeFrustum) with
                 | Some (start, stop) ->
                     let color = computeColor segment
                     let startWindow = ImGui.Position3dToWindow (windowPosition, windowSize, viewProjection, start)
@@ -512,7 +512,7 @@ module WorldImGui =
                 let mutable ssrLightBrightness = lighting3dConfig.SsrLightBrightness
                 lighting3dChanged <- ImGui.SliderFloat ("Light Cutoff Margin", &lightCutoffMargin, 0.0f, 1.0f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
                 lighting3dChanged <- ImGui.SliderInt ("Light Shadow Samples", &lightShadowSamples, 0, 5) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
-                lighting3dChanged <- ImGui.SliderFloat ("Light Shadow Bias", &lightShadowBias, 0.0f, 0.02f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
+                lighting3dChanged <- ImGui.SliderFloat ("Light Shadow Bias", &lightShadowBias, 0.0f, 0.05f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
                 lighting3dChanged <- ImGui.SliderFloat ("Light Shadow Sample Scalar", &lightShadowSampleScalar, 0.0f, 0.05f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
                 lighting3dChanged <- ImGui.SliderFloat ("Light Shadow Exponent", &lightShadowExponent, 0.0f, 90.0f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
                 lighting3dChanged <- ImGui.SliderFloat ("Light Shadow Density", &lightShadowDensity, 0.0f, 32.0f) || lighting3dChanged; if ImGui.IsItemFocused () then context.FocusProperty ()
