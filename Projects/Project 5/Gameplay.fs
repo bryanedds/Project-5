@@ -46,7 +46,7 @@ type GameplayDispatcher () =
             // move player
             let world =
                 if world.Advancing then
-                    let playerSpeed = 2.0f
+                    let playerSpeed = 1.75f
                     let playerRotation = player.GetRotation world
                     let playerVelocity =
                         (if World.isKeyboardKeyDown KeyboardKey.W world then playerRotation.Forward * playerSpeed else v3Zero) +
