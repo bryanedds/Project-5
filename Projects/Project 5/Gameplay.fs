@@ -73,6 +73,25 @@ type GameplayDispatcher () =
             let playerDeaths = FQueue.filter (fun (death : Entity) -> death.GetIsPlayer world) deaths
             let world = if FQueue.notEmpty playerDeaths then gameplay.SetGameplayState Quit world else world
 
+            // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
+            // in concept to - https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN#moving-the-light-in-texel-sized-increments
+            let sun = Simulants.GameplaySun
+            let mutable shadowViewInverse = Matrix4x4.CreateFromYawPitchRoll (0.0f, -MathF.PI_OVER_2, 0.0f) * Matrix4x4.CreateFromQuaternion (sun.GetRotation world)
+            shadowViewInverse.Translation <- sun.GetPosition world
+            let shadowView = shadowViewInverse.Inverted
+            let shadowWidth = sun.GetLightCutoff world * 2.0f
+            let shadowResolution = Viewport.getShadowTextureBufferResolution 0 world.GeometryViewport
+            let shadowTexelSize = shadowWidth / single shadowResolution.X // assuming square, of course
+            let position = Simulants.GameplayPlayer.GetPosition world
+            let positionShadow = position.Transform shadowView + v3Up * 12.0f // position of player + offset in shadow space
+            let positionSnapped =
+                v3
+                    (floor (positionShadow.X / shadowTexelSize) * shadowTexelSize)
+                    (floor (positionShadow.Y / shadowTexelSize) * shadowTexelSize)
+                    (floor (positionShadow.Z / shadowTexelSize) * shadowTexelSize)
+            let position = positionSnapped.Transform shadowViewInverse
+            let world = sun.SetPosition position world
+
             // update eye to look at player
             let world =
                 if world.Advancing then
