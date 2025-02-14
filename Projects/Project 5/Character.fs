@@ -493,9 +493,10 @@ type CharacterDispatcher () =
         // fin
         world
 
-    // custom definition of ray cast to utilize weapon
+    // custom definition of ray cast to utilize animated model and weapon
     override this.RayCast (ray, entity, world) =
-        match base.RayCast (ray, entity, world) with
+        let animatedModel = entity / Constants.Gameplay.CharacterAnimatedModelName
+        match animatedModel.RayCast ray world with
         | [||] ->
             let weapon = entity / Constants.Gameplay.CharacterWeaponName
             weapon.RayCast ray world
