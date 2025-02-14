@@ -40,7 +40,7 @@ type GameplayDispatcher () =
                     [if initializing then Entity.Position @= v3 1.0f 0.0f -1.0f
                      Entity.Size .= v3 1.5f 2.0f 1.5f
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
-                     Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
+                     Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.RecentEntity
 
             // process attacks

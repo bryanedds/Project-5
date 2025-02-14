@@ -87,6 +87,30 @@ type CharacterState =
     member this.IsEnemyState =
         not this.IsPlayerState
 
+    member this.WalkSpeed =
+        match this with
+        | HunterState _ -> 1.375f
+        | StalkerState _ -> 1.0f
+        | PlayerState _ -> 1.75f
+
+    member this.TurnSpeed =
+        match this with
+        | HunterState _ -> 2.5f
+        | StalkerState _ -> 2.0f
+        | PlayerState _ -> 1.0f
+
+    member this.CharacterModel =
+        match this with
+        | HunterState _ -> Assets.Gameplay.RhyoliteModel
+        | StalkerState _ -> Assets.Gameplay.CruciformModel
+        | PlayerState _ -> Assets.Gameplay.SophieModel
+
+    member this.HitPointsMax =
+        match this with
+        | HunterState _ -> 1
+        | StalkerState _ -> Int32.MaxValue
+        | PlayerState _ -> 3
+
 type AttackState =
     { AttackTime : single
       AttackSoundPlayed : bool
@@ -128,23 +152,18 @@ module CharacterExtensions =
         member this.GetWeaponCollisions world : Entity Set = this.Get (nameof this.WeaponCollisions) world
         member this.SetWeaponCollisions (value : Entity Set) world = this.Set (nameof this.WeaponCollisions) value world
         member this.WeaponCollisions = lens (nameof this.WeaponCollisions) this this.GetWeaponCollisions this.SetWeaponCollisions
-        member this.GetWalkSpeed world : single = this.Get (nameof this.WalkSpeed) world
-        member this.SetWalkSpeed (value : single) world = this.Set (nameof this.WalkSpeed) value world
-        member this.WalkSpeed = lens (nameof this.WalkSpeed) this this.GetWalkSpeed this.SetWalkSpeed
-        member this.GetTurnSpeed world : single = this.Get (nameof this.TurnSpeed) world
-        member this.SetTurnSpeed (value : single) world = this.Set (nameof this.TurnSpeed) value world
-        member this.TurnSpeed = lens (nameof this.TurnSpeed) this this.GetTurnSpeed this.SetTurnSpeed
         member this.GetWeaponModel world : StaticModel AssetTag = this.Get (nameof this.WeaponModel) world
         member this.SetWeaponModel (value : StaticModel AssetTag) world = this.Set (nameof this.WeaponModel) value world
         member this.WeaponModel = lens (nameof this.WeaponModel) this this.GetWeaponModel this.SetWeaponModel
         member this.AttackEvent = Events.AttackEvent --> this
         member this.DieEvent = Events.DieEvent --> this
 
-        member this.GetIsEnemy world =
-            (this.GetCharacterState world).IsEnemyState
-
-        member this.GetIsPlayer world =
-            (this.GetCharacterState world).IsPlayerState
+        member this.GetIsEnemy world = (this.GetCharacterState world).IsEnemyState
+        member this.GetIsPlayer world = (this.GetCharacterState world).IsPlayerState
+        member this.GetWalkSpeed world = (this.GetCharacterState world).WalkSpeed
+        member this.GetTurnSpeed world = (this.GetCharacterState world).TurnSpeed
+        member this.GetCharacterModel world = (this.GetCharacterState world).CharacterModel
+        member this.GetHitPointsMax world = (this.GetCharacterState world).HitPointsMax
 
         member this.GetCharacterProperties world =
             if this.GetIsEnemy world
@@ -272,8 +291,6 @@ type CharacterDispatcher () =
          define Entity.ActionState NormalState
          define Entity.CharacterCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
-         define Entity.WalkSpeed 1.0f
-         define Entity.TurnSpeed 1.0f
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
 
     override this.Process (entity, world) =
@@ -344,11 +361,7 @@ type CharacterDispatcher () =
                  Entity.Offset .= entity.GetOffset world
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
-                 Entity.AnimatedModel @=
-                    match entity.GetCharacterState world with
-                    | HunterState _ -> Assets.Gameplay.RhyoliteModel
-                    | StalkerState _ -> Assets.Gameplay.CruciformModel
-                    | PlayerState _ -> Assets.Gameplay.Sophie]
+                 Entity.AnimatedModel @= entity.GetCharacterModel world]
                 world
         let animatedModel = world.RecentEntity
 
@@ -478,7 +491,7 @@ type CharacterDispatcher () =
                          Entity.MountOpt .= None
                          Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty]
                         world)
-                    world [0 .. dec 3]
+                    world [0 .. dec (entity.GetHitPointsMax world)]
             else world
 
         // process death
@@ -502,24 +515,12 @@ type CharacterDispatcher () =
             weapon.RayCast ray world
         | intersections -> intersections
 
-type PlayerDispatcher () =
-    inherit CharacterDispatcher ()
-
-    static member Properties =
-        [define Entity.Persistent false // don't serialize player when saving scene
-         define Entity.CharacterState (PlayerState PlayerState.initial)
-         define Entity.HitPoints 3
-         define Entity.WalkSpeed 1.75f
-         define Entity.TurnSpeed 1.0f]
-
 type HunterDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
         [define Entity.CharacterState (HunterState HunterState.initial)
-         define Entity.HitPoints 1
-         define Entity.WalkSpeed 1.375f
-         define Entity.TurnSpeed 2.5f]
+         define Entity.HitPoints 1]
 
 type StalkerDispatcher () =
     inherit CharacterDispatcher ()
@@ -527,6 +528,12 @@ type StalkerDispatcher () =
     static member Properties =
         [define Entity.Persistent false // don't serialize stalker when saving scene
          define Entity.CharacterState (StalkerState StalkerState.initial)
-         define Entity.HitPoints 1
-         define Entity.WalkSpeed 1.0f
-         define Entity.TurnSpeed 2.0f]
+         define Entity.HitPoints Int32.MaxValue]
+
+type PlayerDispatcher () =
+    inherit CharacterDispatcher ()
+
+    static member Properties =
+        [define Entity.Persistent false // don't serialize player when saving scene
+         define Entity.CharacterState (PlayerState PlayerState.initial)
+         define Entity.HitPoints 3]
