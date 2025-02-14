@@ -90,11 +90,11 @@ type CharacterState =
     member this.IsEnemyState =
         not this.IsPlayerState
 
-    member this.AnimatedModel =
+    member this.HitPointsMax =
         match this with
-        | HunterState _ -> Assets.Gameplay.RhyoliteModel
-        | StalkerState _ -> Assets.Gameplay.CruciformModel
-        | PlayerState _ -> Assets.Gameplay.SophieModel
+        | HunterState _ -> 1
+        | StalkerState _ -> Int32.MaxValue
+        | PlayerState _ -> 3
 
     member this.WalkSpeed =
         match this with
@@ -108,11 +108,11 @@ type CharacterState =
         | StalkerState _ -> 2.0f
         | PlayerState _ -> 1.0f
 
-    member this.HitPointsMax =
+    member this.AnimatedModel =
         match this with
-        | HunterState _ -> 1
-        | StalkerState _ -> Int32.MaxValue
-        | PlayerState _ -> 3
+        | HunterState _ -> Assets.Gameplay.RhyoliteModel
+        | StalkerState _ -> Assets.Gameplay.CruciformModel
+        | PlayerState _ -> Assets.Gameplay.SophieModel
 
 type AttackState =
     { AttackTime : single
@@ -143,12 +143,12 @@ module CharacterExtensions =
         member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
-        member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
-        member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
-        member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
         member this.GetActionState world : ActionState = this.Get (nameof this.ActionState) world
         member this.SetActionState (value : ActionState) world = this.Set (nameof this.ActionState) value world
         member this.ActionState = lens (nameof this.ActionState) this this.GetActionState this.SetActionState
+        member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
+        member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
+        member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
         member this.GetCharacterCollisions world : Entity Set = this.Get (nameof this.CharacterCollisions) world
         member this.SetCharacterCollisions (value : Entity Set) world = this.Set (nameof this.CharacterCollisions) value world
         member this.CharacterCollisions = lens (nameof this.CharacterCollisions) this this.GetCharacterCollisions this.SetCharacterCollisions
@@ -163,10 +163,10 @@ module CharacterExtensions =
 
         member this.GetIsEnemy world = (this.GetCharacterState world).IsEnemyState
         member this.GetIsPlayer world = (this.GetCharacterState world).IsPlayerState
-        member this.GetAnimatedModel' world = (this.GetCharacterState world).AnimatedModel
+        member this.GetHitPointsMax world = (this.GetCharacterState world).HitPointsMax
         member this.GetWalkSpeed world = (this.GetCharacterState world).WalkSpeed
         member this.GetTurnSpeed world = (this.GetCharacterState world).TurnSpeed
-        member this.GetHitPointsMax world = (this.GetCharacterState world).HitPointsMax
+        member this.GetAnimatedModel' world = (this.GetCharacterState world).AnimatedModel
 
         member this.GetCharacterProperties world =
             if this.GetIsEnemy world
@@ -290,8 +290,8 @@ type CharacterDispatcher () =
          define Entity.Substance (Mass 50.0f)
          define Entity.Observable true
          define Entity.CharacterState (HunterState HunterState.initial)
-         define Entity.HitPoints 1
          define Entity.ActionState NormalState
+         define Entity.HitPoints 1
          define Entity.CharacterCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
