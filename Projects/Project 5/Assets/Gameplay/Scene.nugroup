@@ -6785,17 +6785,15 @@
         [Static True]
         [StaticModel [Gameplay wall_column]]]
        []]]]]]
-  [Character3dDispatcher
+  [HunterDispatcher
    [[AnimatedModel [Gameplay Cruciform]]
     [Animations
-     [[[StartTime 0] [LifeTimeOpt None] [Name Armature|WalkForward] [Playback Loop] [Rate 1] [Weight 0.5265072] [BoneFilterOpt None]]
-      [[StartTime 0] [LifeTimeOpt None] [Name Armature|Idle] [Playback Loop] [Rate 1] [Weight 0.5] [BoneFilterOpt None]]]]
-    [FacetNames [FollowerFacet]]
-    [FollowTargetOpt [Some Game/Gameplay/Scene/Player]]
+     [[[StartTime 0] [LifeTimeOpt None] [Name Armature|WalkRight] [Playback Loop] [Rate 1] [Weight 0.015993271] [BoneFilterOpt None]]
+      [[StartTime 0] [LifeTimeOpt None] [Name Armature|Idle] [Playback Loop] [Rate 1] [Weight 1] [BoneFilterOpt None]]]]
     [LinearVelocity [0.015993271 0 0.0032404605]]
-    [Name Enemy]
-    [Offset [0 1 0]]
+    [Name Hunter]
+    [Offset [0 0.99761707 0.014695913]]
     [Position [-10 0 5]]
     [Rotation [4.3711392E-08 -4.3711385E-08 4.3711392E-08 1]]
-    [Size [2 2 2]]]
+    [Size [2.2449236 2.0284772 0.5377567]]]
    []]]]

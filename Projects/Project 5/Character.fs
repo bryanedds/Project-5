@@ -87,28 +87,25 @@ type CharacterState =
     member this.IsEnemyState =
         not this.IsPlayerState
 
-type ObstructedState =
-    { ObstructedTime : int64 }
-
 type AttackState =
-    { AttackTime : int64
-      FollowUpBuffered : bool
+    { AttackTime : single
+      AttackSoundPlayed : bool
       AttackedCharacters : Entity Set }
 
     static member make time =
         { AttackTime = time
-          FollowUpBuffered = false
+          AttackSoundPlayed = false
           AttackedCharacters = Set.empty }
 
 type InjuryState =
-    { InjuryTime : int64 }
+    { InjuryTime : single }
 
 type WoundState =
-    { WoundTime : int64 }
+    { WoundTime : single
+      WoundEventPublished : bool }
 
 type ActionState =
     | NormalState
-    | ObstructedState of ObstructedState
     | AttackState of AttackState
     | InjuryState of InjuryState
     | WoundState of WoundState
@@ -119,12 +116,6 @@ module CharacterExtensions =
         member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
-        member this.GetLastTimeOnGround world : int64 = this.Get (nameof this.LastTimeOnGround) world
-        member this.SetLastTimeOnGround (value : int64) world = this.Set (nameof this.LastTimeOnGround) value world
-        member this.LastTimeOnGround = lens (nameof this.LastTimeOnGround) this this.GetLastTimeOnGround this.SetLastTimeOnGround
-        member this.GetLastTimeJump world : int64 = this.Get (nameof this.LastTimeJump) world
-        member this.SetLastTimeJump (value : int64) world = this.Set (nameof this.LastTimeJump) value world
-        member this.LastTimeJump = lens (nameof this.LastTimeJump) this this.GetLastTimeJump this.SetLastTimeJump
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
@@ -143,9 +134,6 @@ module CharacterExtensions =
         member this.GetTurnSpeed world : single = this.Get (nameof this.TurnSpeed) world
         member this.SetTurnSpeed (value : single) world = this.Set (nameof this.TurnSpeed) value world
         member this.TurnSpeed = lens (nameof this.TurnSpeed) this this.GetTurnSpeed this.SetTurnSpeed
-        member this.GetJumpSpeed world : single = this.Get (nameof this.JumpSpeed) world
-        member this.SetJumpSpeed (value : single) world = this.Set (nameof this.JumpSpeed) value world
-        member this.JumpSpeed = lens (nameof this.JumpSpeed) this this.GetJumpSpeed this.SetJumpSpeed
         member this.GetWeaponModel world : StaticModel AssetTag = this.Get (nameof this.WeaponModel) world
         member this.SetWeaponModel (value : StaticModel AssetTag) world = this.Set (nameof this.WeaponModel) value world
         member this.WeaponModel = lens (nameof this.WeaponModel) this this.GetWeaponModel this.SetWeaponModel
@@ -195,34 +183,6 @@ type CharacterDispatcher () =
             Array.ofList animations
         | _ -> [||]
 
-    static let tryComputeActionAnimation animations (entity : Entity) world =
-        match entity.GetActionState world with
-        | NormalState ->
-            (true, animations, world)
-        | ObstructedState obstructed ->
-            let animation = Animation.loop obstructed.ObstructedTime None "Armature|Idle"
-            (true, [|animation|], world)
-        | AttackState attack ->
-            let localTime = world.UpdateTime - attack.AttackTime
-            match localTime with
-            | 7L -> World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
-            | 67L -> World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.Slash2Sound world
-            | _ -> ()
-            let (animationTime, animationName) =
-                if localTime <= 55L
-                then (attack.AttackTime, "Armature|AttackVertical")
-                else (attack.AttackTime + 55L, "Armature|AttackHorizontal")
-            let animation = Animation.once animationTime None animationName
-            (true, [|animation|], world)
-        | InjuryState injury ->
-            let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
-            (true, [|animation|], world)
-        | WoundState wound ->
-            let localTime = world.UpdateTime - wound.WoundTime
-            let visible = localTime / 5L % 2L <> 0L
-            let animation = Animation.loop wound.WoundTime None "Armature|WalkBack"
-            (visible, [|animation|], world)
-
     static let updateEnemyInput (playerPosition : Vector3) (entity : Entity) world =
 
         // attacking
@@ -235,15 +195,15 @@ type CharacterDispatcher () =
                 let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                 let playerPositionFlat = playerPosition.WithY 0.0f
                 if position.Y - playerPosition.Y >= 0.25f then // above player
-                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
+                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 0.75f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.UpdateTime)) world
+                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
                         entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
                     else world
                 elif playerPosition.Y - position.Y < 1.3f then // at or a bit below player
-                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.75f &&
+                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.15f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.UpdateTime)) world
+                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
                         entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
                     else world
                 else world
@@ -253,25 +213,7 @@ type CharacterDispatcher () =
         let (navSpeedsOpt, world) =
             let actionState = entity.GetActionState world
             match actionState with
-            | NormalState | ObstructedState _ ->
-                let order =
-                    entity.GetCharacterCollisions world |>
-                    Array.ofSeq |>
-                    Array.filter (fun character -> character.GetExists world) |>
-                    Array.map (fun character -> (false, character.GetPosition world)) |>
-                    Array.cons (true, entity.GetPosition world) |>
-                    Array.sortBy (fun (_, position) -> Vector3.DistanceSquared (position, playerPosition)) |>
-                    Array.findIndex fst
-                let canUnobstruct =
-                    match actionState with
-                    | ObstructedState obstructed ->
-                        let localTime = world.UpdateTime - obstructed.ObstructedTime
-                        order = 0 && localTime >= 10L
-                    | _ -> order = 0
-                let actionState =
-                    if canUnobstruct then NormalState
-                    elif actionState = NormalState then ObstructedState { ObstructedTime = world.UpdateTime }
-                    else actionState
+            | NormalState ->
                 let navSpeed =
                     if actionState = NormalState
                     then (entity.GetWalkSpeed world, entity.GetTurnSpeed world)
@@ -286,9 +228,9 @@ type CharacterDispatcher () =
             let sphere =
                 if position.Y - playerPosition.Y >= 0.25f
                 then Sphere (playerPosition, 0.1f) // when above player
-                else Sphere (playerPosition, 0.7f) // when at or below player
+                else Sphere (playerPosition, 0.4f) // when at or below player
             let nearest = sphere.Nearest position
-            let followOutput = World.nav3dFollow (Some 1.0f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+            let followOutput = World.nav3dFollow (Some 0.5f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
             let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
             let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
             let world = entity.SetRotation followOutput.NavRotation world
@@ -300,29 +242,13 @@ type CharacterDispatcher () =
         // action
         let world =
 
-            // jumping
-            if World.isKeyboardKeyPressed KeyboardKey.Space world then
-                let actionState = entity.GetActionState world
-                let sinceOnGround = world.UpdateTime - entity.GetLastTimeOnGround world
-                let sinceJump = world.UpdateTime - entity.GetLastTimeJump world
-                if sinceJump >= 12L && sinceOnGround < 10L && actionState = NormalState then
-                    let world = entity.SetLinearVelocity (entity.GetLinearVelocity world + v3Up * entity.GetJumpSpeed world) world
-                    let world = entity.SetLastTimeJump world.UpdateTime world
-                    world
-                else world
-
             // attacking
-            elif World.isKeyboardKeyPressed KeyboardKey.RShift world then
+            if World.isKeyboardKeyPressed KeyboardKey.RShift world then
                 match entity.GetActionState world with
                 | NormalState ->
-                    let world = entity.SetActionState (AttackState (AttackState.make world.UpdateTime)) world
+                    let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
                     entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                | AttackState attack ->
-                    let localTime = world.UpdateTime - attack.AttackTime
-                    if localTime > 10L && not attack.FollowUpBuffered
-                    then entity.SetActionState (AttackState { attack with FollowUpBuffered = true }) world
-                    else world
-                | ObstructedState _ | InjuryState _ | WoundState _ -> world
+                | AttackState _ | InjuryState _ | WoundState _ -> world
 
             // do nothing
             else world
@@ -374,25 +300,15 @@ type CharacterDispatcher () =
          define Entity.MaterialProperties MaterialProperties.defaultProperties
          define Entity.AnimatedModel Assets.Gameplay.RhyoliteModel
          define Entity.CharacterState (HunterState HunterState.initial)
-         define Entity.LastTimeOnGround 0L
-         define Entity.LastTimeJump 0L
          define Entity.HitPoints 1
          define Entity.ActionState NormalState
          define Entity.CharacterCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
-         define Entity.WalkSpeed 2.0f
-         define Entity.TurnSpeed 3.0f
-         define Entity.JumpSpeed 5.0f
+         define Entity.WalkSpeed 1.0f
+         define Entity.TurnSpeed 1.0f
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
 
     override this.Process (entity, world) =
-
-        // process last time on ground
-        let bodyId = entity.GetBodyId world
-        let world =
-            if World.getBodyGrounded bodyId world
-            then entity.SetLastTimeOnGround world.UpdateTime world
-            else world
 
         // process penetration
         let (penetrations, world) = World.doSubscription "Penetration" entity.BodyPenetrationEvent world
@@ -440,26 +356,47 @@ type CharacterDispatcher () =
         let world =
             let actionState =
                 match entity.GetActionState world with
-                | NormalState | ObstructedState _ | WoundState _ as actionState ->
+                | NormalState | WoundState _ as actionState ->
                     actionState
-                | AttackState attack ->
-                    let localTime = world.UpdateTime - attack.AttackTime
-                    if localTime < 55 || localTime < 130 && attack.FollowUpBuffered
-                    then AttackState attack
-                    else NormalState
-                | InjuryState injury ->
-                    let localTime = world.UpdateTime - injury.InjuryTime
-                    let injuryTime = if entity.GetIsEnemy world then 40 else 30
-                    if localTime < injuryTime
-                    then InjuryState injury
-                    else NormalState
+                | AttackState attack as actionState ->
+                    let localTime = world.ClockTime - attack.AttackTime
+                    if localTime <= 0.92f then actionState else NormalState
+                | InjuryState injury as actionState ->
+                    let localTime = world.ClockTime - injury.InjuryTime
+                    let injuryTime = if entity.GetIsEnemy world then 0.667f else 0.5f
+                    if localTime < injuryTime then actionState else NormalState
             entity.SetActionState actionState world
 
-        // process animations model
-        let animations = computeTraversalAnimations entity world
-        let (visible, animations, world) = tryComputeActionAnimation animations entity world
-        let world = entity.SetVisible visible world
-        let world = entity.SetAnimations animations world
+        // process traversal animations
+        let world =
+            let animations = computeTraversalAnimations entity world
+            entity.SetAnimations animations world
+
+        // process action animations
+        let world =
+            match entity.GetActionState world with
+            | NormalState ->
+                world
+
+            | AttackState attack ->
+                let localTime = world.ClockTime - attack.AttackTime
+                let world =
+                    if localTime > 0.12f && not attack.AttackSoundPlayed then
+                        let attack = { attack with AttackSoundPlayed = true }
+                        let world = entity.SetActionState (AttackState attack) world
+                        World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
+                        world
+                    else world
+                let animation = Animation.once attack.AttackTime None "Armature|Attack"
+                entity.SetAnimations [|animation|] world
+
+            | InjuryState injury ->
+                let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
+                entity.SetAnimations [|animation|] world
+
+            | WoundState wound ->
+                let animation = Animation.loop wound.WoundTime None "Armature|WalkBack"
+                entity.SetAnimations [|animation|] world
 
         // declare weapon
         let weaponTransform =
@@ -475,7 +412,6 @@ type CharacterDispatcher () =
                  Entity.Rotation @= weaponTransform.Rotation
                  Entity.Offset .= v3 0.0f 0.5f 0.0f
                  Entity.MountOpt .= None
-                 Entity.Visible @= visible
                  Entity.Pickable .= false
                  Entity.StaticModel @= entity.GetWeaponModel world
                  Entity.BodyType .= Static
@@ -511,12 +447,8 @@ type CharacterDispatcher () =
         let (attacks, world) =
             match entity.GetActionState world with
             | AttackState attack ->
-                let localTime = world.UpdateTime - attack.AttackTime
-                let attack =
-                    match localTime with
-                    | 55L -> { attack with AttackedCharacters = Set.empty } // reset attack tracking at start of buffered attack
-                    | _ -> attack
-                if localTime >= 20 && localTime < 30 || localTime >= 78 && localTime < 88 then
+                let localTime = world.ClockTime - attack.AttackTime
+                if localTime >= 0.2f && localTime < 0.8f then
                     let weaponCollisions = entity.GetWeaponCollisions world
                     let attacks = Set.difference weaponCollisions attack.AttackedCharacters
                     let attack = { attack with AttackedCharacters = Set.union attack.AttackedCharacters weaponCollisions }
@@ -539,14 +471,16 @@ type CharacterDispatcher () =
                          Entity.MountOpt .= None
                          Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty]
                         world)
-                    world [0 .. 3]
+                    world [0 .. dec 3]
             else world
 
         // process death
         let world =
             match entity.GetActionState world with
-            | WoundState wound when wound.WoundTime = world.UpdateTime - 60L ->
-                World.publish entity entity.DieEvent entity world
+            | WoundState wound when wound.WoundTime >= world.ClockTime - 1.0f && not wound.WoundEventPublished ->
+                let world = World.publish entity entity.DieEvent entity world
+                let wound = { wound with WoundEventPublished = true}
+                entity.SetActionState (WoundState wound) world
             | _ -> world
 
         // fin
@@ -568,8 +502,8 @@ type PlayerDispatcher () =
          define Entity.AnimatedModel Assets.Gameplay.Sophie
          define Entity.CharacterState (PlayerState PlayerState.initial)
          define Entity.HitPoints 3
-         define Entity.WalkSpeed 3.0f
-         define Entity.TurnSpeed 3.0f]
+         define Entity.WalkSpeed 1.75f
+         define Entity.TurnSpeed 1.0f]
 
 type HunterDispatcher () =
     inherit CharacterDispatcher ()
@@ -578,8 +512,8 @@ type HunterDispatcher () =
         [define Entity.AnimatedModel Assets.Gameplay.RhyoliteModel
          define Entity.CharacterState (HunterState HunterState.initial)
          define Entity.HitPoints 1
-         define Entity.WalkSpeed 2.0f
-         define Entity.TurnSpeed 3.0f]
+         define Entity.WalkSpeed 1.375f
+         define Entity.TurnSpeed 2.5f]
 
 type StalkerDispatcher () =
     inherit CharacterDispatcher ()
@@ -589,5 +523,5 @@ type StalkerDispatcher () =
          define Entity.AnimatedModel Assets.Gameplay.CruciformModel
          define Entity.CharacterState (StalkerState StalkerState.initial)
          define Entity.HitPoints 1
-         define Entity.WalkSpeed 1.5f
+         define Entity.WalkSpeed 1.0f
          define Entity.TurnSpeed 2.0f]

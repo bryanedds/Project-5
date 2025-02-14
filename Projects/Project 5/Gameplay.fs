@@ -35,34 +35,43 @@ type GameplayDispatcher () =
             let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
 
             // declare player
-            let (playerBodyId, _, world) =
-                World.doCharacter3d "Player"
+            let world =
+                World.doEntity<PlayerDispatcher> "Player"
                     [if initializing then Entity.Position @= v3 1.0f 0.0f -1.0f
                      Entity.Size .= v3 1.5f 2.0f 1.5f
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.Sophie] world
             let player = world.RecentEntity
 
-            // move player
+            // process attacks
+            let (attacks, world) = World.doSubscription "Attack" (Events.AttackEvent --> Simulants.GameplayScene --> Address.Wildcard) world
             let world =
-                if world.Advancing then
-                    let playerSpeed = 1.75f
-                    let playerRotation = player.GetRotation world
-                    let playerVelocity =
-                        (if World.isKeyboardKeyDown KeyboardKey.W world then playerRotation.Forward * playerSpeed else v3Zero) +
-                        (if World.isKeyboardKeyDown KeyboardKey.S world then playerRotation.Back * playerSpeed else v3Zero) +
-                        (if World.isKeyboardKeyDown KeyboardKey.A world then playerRotation.Left * playerSpeed else v3Zero) +
-                        (if World.isKeyboardKeyDown KeyboardKey.D world then playerRotation.Right * playerSpeed else v3Zero)
-                    let grounded = World.getBodyGrounded playerBodyId world
-                    let turnSpeed = 1.8f * if grounded then 1.0f else 0.75f
-                    let turnVelocity =
-                        (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f) +
-                        (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f)
-                    let world = player.SetLinearVelocity (playerVelocity.WithY 0.0f + v3Up * player.GetLinearVelocity world) world
-                    let world = player.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
-                    let world = player.SetRotation (player.GetRotation world * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.Seconds)) world
-                    world
-                else world
+                FQueue.fold (fun world (attacked : Entity) ->
+                    let world = attacked.HitPoints.Map (dec >> max 0) world
+                    if attacked.GetHitPoints world > 0 then
+                        if not (attacked.GetActionState world).IsInjuryState then
+                            let world = attacked.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
+                            let world = attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                            world
+                        else world
+                    else
+                        if not (attacked.GetActionState world).IsWoundState then
+                            let world = attacked.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
+                            let world = attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                            world
+                        else world)
+                    world attacks
+
+            // process enemy deaths
+            let (deaths, world) = World.doSubscription "Die" (Events.DieEvent --> Simulants.GameplayScene --> Address.Wildcard) world
+            let enemyDeaths = FQueue.filter (fun (death : Entity) -> death.GetIsEnemy world) deaths
+            let world = FQueue.fold (fun world death -> World.destroyEntity death world) world enemyDeaths
+        
+            // process player death
+            let playerDeaths = FQueue.filter (fun (death : Entity) -> death.GetIsPlayer world) deaths
+            let world = if FQueue.notEmpty playerDeaths then gameplay.SetGameplayState Quit world else world
 
             // update eye to look at player
             let world =
