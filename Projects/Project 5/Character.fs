@@ -154,36 +154,7 @@ module CharacterExtensions =
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
-    static let computeTraversalAnimations (entity : Entity) world =
-        match entity.GetActionState world with
-        | NormalState ->
-            let rotation = entity.GetRotation world
-            let linearVelocity = entity.GetLinearVelocity world
-            let angularVelocity = entity.GetAngularVelocity world
-            let forwardness = linearVelocity.Dot rotation.Forward
-            let backness = linearVelocity.Dot -rotation.Forward
-            let rightness = linearVelocity.Dot rotation.Right
-            let leftness = linearVelocity.Dot -rotation.Right
-            let turnRightness = if angularVelocity.Y < 0.0f then -angularVelocity.Y * 0.5f else 0.0f
-            let turnLeftness = if angularVelocity.Y > 0.0f then angularVelocity.Y * 0.5f else 0.0f
-            let animations =
-                [Animation.make 0.0f None "Armature|Idle" Loop 1.0f 1.0f None]
-            let animations =
-                if forwardness >= 0.01f then Animation.make 0.0f None "Armature|WalkForward" Loop 1.0f forwardness None :: animations
-                elif backness >= 0.01f then Animation.make 0.0f None "Armature|WalkBack" Loop 1.0f backness None :: animations
-                else animations
-            let animations =
-                if rightness >= 0.01f then Animation.make 0.0f None "Armature|WalkRight" Loop 1.0f rightness None :: animations
-                elif leftness >= 0.01f then Animation.make 0.0f None "Armature|WalkLeft" Loop 1.0f leftness None :: animations
-                else animations
-            let animations =
-                if turnRightness >= 0.01f then Animation.make 0.0f None "Armature|TurnRight" Loop 1.0f turnRightness None :: animations
-                elif turnLeftness >= 0.01f then Animation.make 0.0f None "Armature|TurnLeft" Loop 1.0f turnLeftness None :: animations
-                else animations
-            Array.ofList animations
-        | _ -> [||]
-
-    static let updateEnemyInput (playerPosition : Vector3) (entity : Entity) world =
+    static let processEnemyInput (playerPosition : Vector3) (entity : Entity) world =
 
         // attacking
         let world =
@@ -237,7 +208,7 @@ type CharacterDispatcher () =
             world
         | None -> world
 
-    static let updatePlayerInput (entity : Entity) world =
+    static let processPlayerInput (entity : Entity) world =
 
         // action
         let world =
@@ -286,8 +257,7 @@ type CharacterDispatcher () =
         else world
 
     static member Facets =
-        [typeof<RigidBodyFacet>
-         typeof<AnimatedModelFacet>]
+        [typeof<RigidBodyFacet>]
 
     static member Properties =
         [define Entity.Size (v3Dup 2.0f)
@@ -297,8 +267,6 @@ type CharacterDispatcher () =
          define Entity.BodyShape (CapsuleShape { Height = 1.0f; Radius = 0.35f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.85f 0.0f)); PropertiesOpt = None })
          define Entity.Substance (Mass 50.0f)
          define Entity.Observable true
-         define Entity.MaterialProperties MaterialProperties.defaultProperties
-         define Entity.AnimatedModel Assets.Gameplay.RhyoliteModel
          define Entity.CharacterState (HunterState HunterState.initial)
          define Entity.HitPoints 1
          define Entity.ActionState NormalState
@@ -347,9 +315,9 @@ type CharacterDispatcher () =
                 match entity.GetCharacterState world with
                 | HunterState _ | StalkerState _ ->
                     if Simulants.GameplayPlayer.GetExists world
-                    then updateEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
+                    then processEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
                     else world
-                | PlayerState _ -> updatePlayerInput entity world
+                | PlayerState _ -> processPlayerInput entity world
             else world
 
         // process action state
@@ -367,17 +335,58 @@ type CharacterDispatcher () =
                     if localTime < injuryTime then actionState else NormalState
             entity.SetActionState actionState world
 
+        // declare animated model
+        let world =
+            World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
+                [Entity.Position @= entity.GetPosition world
+                 Entity.Rotation @= entity.GetRotation world
+                 Entity.Size .= entity.GetSize world
+                 Entity.Offset .= entity.GetOffset world
+                 Entity.MountOpt .= None
+                 Entity.Pickable .= false
+                 Entity.AnimatedModel @=
+                    match entity.GetCharacterState world with
+                    | HunterState _ -> Assets.Gameplay.RhyoliteModel
+                    | StalkerState _ -> Assets.Gameplay.CruciformModel
+                    | PlayerState _ -> Assets.Gameplay.Sophie]
+                world
+        let animatedModel = world.RecentEntity
+
         // process traversal animations
         let world =
-            let animations = computeTraversalAnimations entity world
-            entity.SetAnimations animations world
+            match entity.GetActionState world with
+            | NormalState ->
+                let rotation = entity.GetRotation world
+                let linearVelocity = entity.GetLinearVelocity world
+                let angularVelocity = entity.GetAngularVelocity world
+                let forwardness = linearVelocity.Dot rotation.Forward
+                let backness = linearVelocity.Dot -rotation.Forward
+                let rightness = linearVelocity.Dot rotation.Right
+                let leftness = linearVelocity.Dot -rotation.Right
+                let turnRightness = if angularVelocity.Y < 0.0f then -angularVelocity.Y * 0.5f else 0.0f
+                let turnLeftness = if angularVelocity.Y > 0.0f then angularVelocity.Y * 0.5f else 0.0f
+                let animations =
+                    [Animation.make 0.0f None "Armature|Idle" Loop 1.0f 1.0f None]
+                let animations =
+                    if forwardness >= 0.01f then Animation.make 0.0f None "Armature|WalkForward" Loop 1.0f forwardness None :: animations
+                    elif backness >= 0.01f then Animation.make 0.0f None "Armature|WalkBack" Loop 1.0f backness None :: animations
+                    else animations
+                let animations =
+                    if rightness >= 0.01f then Animation.make 0.0f None "Armature|WalkRight" Loop 1.0f rightness None :: animations
+                    elif leftness >= 0.01f then Animation.make 0.0f None "Armature|WalkLeft" Loop 1.0f leftness None :: animations
+                    else animations
+                let animations =
+                    if turnRightness >= 0.01f then Animation.make 0.0f None "Armature|TurnRight" Loop 1.0f turnRightness None :: animations
+                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "Armature|TurnLeft" Loop 1.0f turnLeftness None :: animations
+                    else animations
+                animatedModel.SetAnimations (Array.ofList animations) world
+            | _ -> world
 
         // process action animations
         let world =
             match entity.GetActionState world with
             | NormalState ->
                 world
-
             | AttackState attack ->
                 let localTime = world.ClockTime - attack.AttackTime
                 let world =
@@ -388,19 +397,17 @@ type CharacterDispatcher () =
                         world
                     else world
                 let animation = Animation.once attack.AttackTime None "Armature|Attack"
-                entity.SetAnimations [|animation|] world
-
+                animatedModel.SetAnimations [|animation|] world
             | InjuryState injury ->
                 let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
-                entity.SetAnimations [|animation|] world
-
+                animatedModel.SetAnimations [|animation|] world
             | WoundState wound ->
                 let animation = Animation.loop wound.WoundTime None "Armature|WalkBack"
-                entity.SetAnimations [|animation|] world
+                animatedModel.SetAnimations [|animation|] world
 
         // declare weapon
         let weaponTransform =
-            match entity.TryGetBoneTransformByName Constants.Gameplay.CharacterWeaponHandBoneName world with
+            match animatedModel.TryGetBoneTransformByName Constants.Gameplay.CharacterWeaponHandBoneName world with
             | Some weaponHandBoneTransform ->
                 Matrix4x4.CreateTranslation (v3 -0.1f 0.0f 0.02f) *
                 Matrix4x4.CreateFromAxisAngle (v3Forward, MathF.PI_OVER_2) *
@@ -499,7 +506,6 @@ type PlayerDispatcher () =
 
     static member Properties =
         [define Entity.Persistent false // don't serialize player when saving scene
-         define Entity.AnimatedModel Assets.Gameplay.Sophie
          define Entity.CharacterState (PlayerState PlayerState.initial)
          define Entity.HitPoints 3
          define Entity.WalkSpeed 1.75f
@@ -509,8 +515,7 @@ type HunterDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        [define Entity.AnimatedModel Assets.Gameplay.RhyoliteModel
-         define Entity.CharacterState (HunterState HunterState.initial)
+        [define Entity.CharacterState (HunterState HunterState.initial)
          define Entity.HitPoints 1
          define Entity.WalkSpeed 1.375f
          define Entity.TurnSpeed 2.5f]
@@ -520,7 +525,6 @@ type StalkerDispatcher () =
 
     static member Properties =
         [define Entity.Persistent false // don't serialize stalker when saving scene
-         define Entity.AnimatedModel Assets.Gameplay.CruciformModel
          define Entity.CharacterState (StalkerState StalkerState.initial)
          define Entity.HitPoints 1
          define Entity.WalkSpeed 1.0f
