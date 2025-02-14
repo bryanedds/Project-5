@@ -20,4 +20,12 @@ module Assets =
     module Gameplay =
 
         let PackageName = "Gameplay"
+        let SlashSound = asset<Sound> PackageName "Slash"
+        let Slash2Sound = asset<Sound> PackageName "Slash2"
+        let InjureSound = asset<Sound> PackageName "Injure"
+        let HeartFull = asset<Image> PackageName "HeartFull"
+        let HeartEmpty = asset<Image> PackageName "HeartEmpty"
         let Sophie = asset<AnimatedModel> PackageName "Sophie"
+        let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
+        let CruciformModel = asset<AnimatedModel> PackageName "Cruciform"
+        let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
