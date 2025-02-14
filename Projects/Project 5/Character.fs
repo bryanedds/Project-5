@@ -84,8 +84,17 @@ type CharacterState =
     | StalkerState of StalkerState
     | PlayerState of PlayerState
 
+    member this.Persistent =
+        not this.IsPlayerState
+
     member this.IsEnemyState =
         not this.IsPlayerState
+
+    member this.AnimatedModel =
+        match this with
+        | HunterState _ -> Assets.Gameplay.RhyoliteModel
+        | StalkerState _ -> Assets.Gameplay.CruciformModel
+        | PlayerState _ -> Assets.Gameplay.SophieModel
 
     member this.WalkSpeed =
         match this with
@@ -98,12 +107,6 @@ type CharacterState =
         | HunterState _ -> 2.5f
         | StalkerState _ -> 2.0f
         | PlayerState _ -> 1.0f
-
-    member this.CharacterModel =
-        match this with
-        | HunterState _ -> Assets.Gameplay.RhyoliteModel
-        | StalkerState _ -> Assets.Gameplay.CruciformModel
-        | PlayerState _ -> Assets.Gameplay.SophieModel
 
     member this.HitPointsMax =
         match this with
@@ -160,9 +163,9 @@ module CharacterExtensions =
 
         member this.GetIsEnemy world = (this.GetCharacterState world).IsEnemyState
         member this.GetIsPlayer world = (this.GetCharacterState world).IsPlayerState
+        member this.GetAnimatedModel' world = (this.GetCharacterState world).AnimatedModel
         member this.GetWalkSpeed world = (this.GetCharacterState world).WalkSpeed
         member this.GetTurnSpeed world = (this.GetCharacterState world).TurnSpeed
-        member this.GetCharacterModel world = (this.GetCharacterState world).CharacterModel
         member this.GetHitPointsMax world = (this.GetCharacterState world).HitPointsMax
 
         member this.GetCharacterProperties world =
@@ -361,7 +364,7 @@ type CharacterDispatcher () =
                  Entity.Offset .= entity.GetOffset world
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
-                 Entity.AnimatedModel @= entity.GetCharacterModel world]
+                 Entity.AnimatedModel @= entity.GetAnimatedModel' world]
                 world
         let animatedModel = world.RecentEntity
 
@@ -519,21 +522,25 @@ type HunterDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        [define Entity.CharacterState (HunterState HunterState.initial)
-         define Entity.HitPoints 1]
+        let characterState = HunterState HunterState.initial
+        [define Entity.Persistent characterState.Persistent
+         define Entity.CharacterState characterState
+         define Entity.HitPoints characterState.HitPointsMax]
 
 type StalkerDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        [define Entity.Persistent false // don't serialize stalker when saving scene
-         define Entity.CharacterState (StalkerState StalkerState.initial)
-         define Entity.HitPoints Int32.MaxValue]
+        let characterState = StalkerState StalkerState.initial
+        [define Entity.Persistent characterState.Persistent
+         define Entity.CharacterState characterState
+         define Entity.HitPoints characterState.HitPointsMax]
 
 type PlayerDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        [define Entity.Persistent false // don't serialize player when saving scene
-         define Entity.CharacterState (PlayerState PlayerState.initial)
-         define Entity.HitPoints 3]
+        let characterState = PlayerState PlayerState.initial
+        [define Entity.Persistent characterState.Persistent
+         define Entity.CharacterState characterState
+         define Entity.HitPoints characterState.HitPointsMax]
