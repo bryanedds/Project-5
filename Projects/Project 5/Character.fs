@@ -84,35 +84,51 @@ type CharacterState =
     | StalkerState of StalkerState
     | PlayerState of PlayerState
 
-    member this.Persistent =
-        not this.IsPlayerState
+type CharacterType =
+    | Hunter
+    | Stalker
+    | Player
 
-    member this.IsEnemyState =
-        not this.IsPlayerState
+    member this.IsEnemy =
+        not this.IsPlayer
+
+    member this.Persistent =
+        not this.IsPlayer
 
     member this.HitPointsMax =
         match this with
-        | HunterState _ -> 1
-        | StalkerState _ -> Int32.MaxValue
-        | PlayerState _ -> 3
+        | Hunter -> 1
+        | Stalker -> Int32.MaxValue
+        | Player -> 3
 
     member this.WalkSpeed =
         match this with
-        | HunterState _ -> 1.375f
-        | StalkerState _ -> 1.0f
-        | PlayerState _ -> 1.75f
+        | Hunter -> 1.375f
+        | Stalker -> 1.0f
+        | Player -> 1.75f
 
     member this.TurnSpeed =
         match this with
-        | HunterState _ -> 2.5f
-        | StalkerState _ -> 2.0f
-        | PlayerState _ -> 1.0f
+        | Hunter -> 2.5f
+        | Stalker -> 2.0f
+        | Player -> 1.0f
 
     member this.AnimatedModel =
         match this with
-        | HunterState _ -> Assets.Gameplay.RhyoliteModel
-        | StalkerState _ -> Assets.Gameplay.CruciformModel
-        | PlayerState _ -> Assets.Gameplay.SophieModel
+        | Hunter -> Assets.Gameplay.RhyoliteModel
+        | Stalker -> Assets.Gameplay.CruciformModel
+        | Player -> Assets.Gameplay.SophieModel
+
+    member this.InitialState =
+        match this with
+        | Hunter -> HunterState HunterState.initial
+        | Stalker -> StalkerState StalkerState.initial
+        | Player -> PlayerState PlayerState.initial
+
+    member this.CharacterProperties =
+        match this with
+        | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f }
+        | Player -> CharacterProperties.defaultProperties
 
 type AttackState =
     { AttackTime : single
@@ -140,6 +156,9 @@ type ActionState =
 [<AutoOpen>]
 module CharacterExtensions =
     type Entity with
+        member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
+        member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
+        member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
         member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
@@ -161,17 +180,12 @@ module CharacterExtensions =
         member this.AttackEvent = Events.AttackEvent --> this
         member this.DieEvent = Events.DieEvent --> this
 
-        member this.GetIsEnemy world = (this.GetCharacterState world).IsEnemyState
-        member this.GetIsPlayer world = (this.GetCharacterState world).IsPlayerState
-        member this.GetHitPointsMax world = (this.GetCharacterState world).HitPointsMax
-        member this.GetWalkSpeed world = (this.GetCharacterState world).WalkSpeed
-        member this.GetTurnSpeed world = (this.GetCharacterState world).TurnSpeed
-        member this.GetAnimatedModel' world = (this.GetCharacterState world).AnimatedModel
-
-        member this.GetCharacterProperties world =
-            if this.GetIsEnemy world
-            then { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f }
-            else CharacterProperties.defaultProperties
+        member this.GetIsEnemy world = (this.GetCharacterType world).IsEnemy
+        member this.GetIsPlayer world = (this.GetCharacterType world).IsPlayer
+        member this.GetHitPointsMax world = (this.GetCharacterType world).HitPointsMax
+        member this.GetWalkSpeed world = (this.GetCharacterType world).WalkSpeed
+        member this.GetTurnSpeed world = (this.GetCharacterType world).TurnSpeed
+        member this.GetAnimatedModel' world = (this.GetCharacterType world).AnimatedModel
 
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
@@ -524,25 +538,31 @@ type HunterDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        let characterState = HunterState HunterState.initial
-        [define Entity.Persistent characterState.Persistent
-         define Entity.CharacterState characterState
-         define Entity.HitPoints characterState.HitPointsMax]
+        let characterType = Hunter
+        [define Entity.Persistent characterType.Persistent
+         define Entity.CharacterType characterType
+         define Entity.CharacterState characterType.InitialState
+         define Entity.HitPoints characterType.HitPointsMax
+         define Entity.CharacterProperties characterType.CharacterProperties]
 
 type StalkerDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        let characterState = StalkerState StalkerState.initial
-        [define Entity.Persistent characterState.Persistent
-         define Entity.CharacterState characterState
-         define Entity.HitPoints characterState.HitPointsMax]
+        let characterType = Stalker
+        [define Entity.Persistent characterType.Persistent
+         define Entity.CharacterType characterType
+         define Entity.CharacterState characterType.InitialState
+         define Entity.HitPoints characterType.HitPointsMax
+         define Entity.CharacterProperties characterType.CharacterProperties]
 
 type PlayerDispatcher () =
     inherit CharacterDispatcher ()
 
     static member Properties =
-        let characterState = PlayerState PlayerState.initial
-        [define Entity.Persistent characterState.Persistent
-         define Entity.CharacterState characterState
-         define Entity.HitPoints characterState.HitPointsMax]
+        let characterType = Player
+        [define Entity.Persistent characterType.Persistent
+         define Entity.CharacterType characterType
+         define Entity.CharacterState characterType.InitialState
+         define Entity.HitPoints characterType.HitPointsMax
+         define Entity.CharacterProperties characterType.CharacterProperties]
