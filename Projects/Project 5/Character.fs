@@ -216,18 +216,12 @@ type CharacterDispatcher () =
             | _ -> world
 
         // navigation
-        let (navSpeedsOpt, world) =
-            let actionState = entity.GetActionState world
-            match actionState with
+        let navSpeedsOpt =
+            match entity.GetActionState world with
             | NormalState ->
                 let characterType = entity.GetCharacterType world
-                let navSpeed =
-                    if actionState = NormalState
-                    then (characterType.WalkSpeed, characterType.TurnSpeed)
-                    else (0.0f, characterType.TurnSpeed * 3.0f)
-                let world = entity.SetActionState actionState world
-                (Some navSpeed, world)
-            | _ -> (None, world)
+                Some (characterType.WalkSpeed, characterType.TurnSpeed)
+            | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
             let position = entity.GetPosition world
