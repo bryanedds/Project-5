@@ -362,11 +362,12 @@ type CharacterDispatcher () =
                  Entity.Rotation @= entity.GetRotation world
                  Entity.Size .= entity.GetSize world
                  Entity.Offset .= entity.GetOffset world
+                 Entity.Presence .= Omnipresent
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
                  Entity.AnimatedModel @= entity.GetAnimatedModel' world]
                 world
-        let animatedModel = world.RecentEntity
+        let animatedModel = world.DeclaredEntity
 
         // process traversal animations
         let world =
@@ -434,6 +435,7 @@ type CharacterDispatcher () =
                 [Entity.Position @= weaponTransform.Translation
                  Entity.Rotation @= weaponTransform.Rotation
                  Entity.Offset .= v3 0.0f 0.5f 0.0f
+                 Entity.Presence .= Omnipresent
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
                  Entity.StaticModel @= entity.GetWeaponModel world

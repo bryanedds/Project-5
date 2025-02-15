@@ -41,7 +41,7 @@ type GameplayDispatcher () =
                      Entity.Size .= v3 1.5f 2.0f 1.5f
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
-            let player = world.RecentEntity
+            let player = world.DeclaredEntity
 
             // process attacks
             let (attacks, world) = World.doSubscription "Attack" (Events.AttackEvent --> Simulants.GameplayScene --> Address.Wildcard) world
