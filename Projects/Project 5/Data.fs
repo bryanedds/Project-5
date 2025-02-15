@@ -84,7 +84,13 @@ type CharacterState =
     | StalkerState of StalkerState
     | PlayerState of PlayerState
 
-type CharacterType =
+    member this.CharacterType =
+        match this with
+        | HunterState _ -> Hunter
+        | StalkerState _ -> Stalker
+        | PlayerState _ -> Player
+
+and CharacterType =
     | Hunter
     | Stalker
     | Player
@@ -125,16 +131,16 @@ type CharacterType =
         | Stalker -> Assets.Gameplay.CruciformModel
         | Player -> Assets.Gameplay.SophieModel
 
+    member this.CharacterProperties =
+        match this with
+        | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f }
+        | Player -> CharacterProperties.defaultProperties
+
     member this.InitialState =
         match this with
         | Hunter -> HunterState HunterState.initial
         | Stalker -> StalkerState StalkerState.initial
         | Player -> PlayerState PlayerState.initial
-
-    member this.CharacterProperties =
-        match this with
-        | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f }
-        | Player -> CharacterProperties.defaultProperties
 
 type AttackState =
     { AttackTime : single

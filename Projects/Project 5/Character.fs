@@ -8,12 +8,12 @@ open MyGame
 [<AutoOpen>]
 module CharacterExtensions =
     type Entity with
-        member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
-        member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
-        member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
         member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
+        member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
+        member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
+        member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
         member this.GetActionState world : ActionState = this.Get (nameof this.ActionState) world
         member this.SetActionState (value : ActionState) world = this.Set (nameof this.ActionState) value world
         member this.ActionState = lens (nameof this.ActionState) this this.GetActionState this.SetActionState
@@ -137,16 +137,20 @@ type CharacterDispatcher () =
         [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.Size (v3Dup 2.0f)
+        let characterType = Hunter
+        [define Entity.Persistent characterType.Persistent
+         define Entity.Size (v3Dup 2.0f)
          define Entity.Offset (v3 0.0f 1.0f 0.0f)
          define Entity.Static false
          define Entity.BodyType KinematicCharacter
          define Entity.BodyShape (CapsuleShape { Height = 1.0f; Radius = 0.35f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.85f 0.0f)); PropertiesOpt = None })
          define Entity.Substance (Mass 50.0f)
          define Entity.Observable true
-         define Entity.CharacterState (HunterState HunterState.initial)
+         define Entity.CharacterProperties characterType.CharacterProperties
+         define Entity.CharacterState characterType.InitialState
+         define Entity.CharacterType characterType
          define Entity.ActionState NormalState
-         define Entity.HitPoints 1
+         define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
@@ -381,8 +385,8 @@ type HunterDispatcher () =
     static member Properties =
         let characterType = Hunter
         [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterType characterType
          define Entity.CharacterState characterType.InitialState
+         define Entity.CharacterType characterType
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
 
@@ -392,8 +396,8 @@ type StalkerDispatcher () =
     static member Properties =
         let characterType = Stalker
         [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterType characterType
          define Entity.CharacterState characterType.InitialState
+         define Entity.CharacterType characterType
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
 
@@ -403,7 +407,7 @@ type PlayerDispatcher () =
     static member Properties =
         let characterType = Player
         [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterType characterType
          define Entity.CharacterState characterType.InitialState
+         define Entity.CharacterType characterType
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
