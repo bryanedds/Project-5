@@ -113,6 +113,12 @@ type CharacterType =
         | Stalker -> 2.0f
         | Player -> 1.0f
 
+    member this.InjuryTime =
+        match this with
+        | Hunter -> 0.667f
+        | Stalker -> 0.25f
+        | Player -> 0.5f
+
     member this.AnimatedModel =
         match this with
         | Hunter -> Assets.Gameplay.RhyoliteModel
@@ -180,13 +186,6 @@ module CharacterExtensions =
         member this.AttackEvent = Events.AttackEvent --> this
         member this.DieEvent = Events.DieEvent --> this
 
-        member this.GetIsEnemy world = (this.GetCharacterType world).IsEnemy
-        member this.GetIsPlayer world = (this.GetCharacterType world).IsPlayer
-        member this.GetHitPointsMax world = (this.GetCharacterType world).HitPointsMax
-        member this.GetWalkSpeed world = (this.GetCharacterType world).WalkSpeed
-        member this.GetTurnSpeed world = (this.GetCharacterType world).TurnSpeed
-        member this.GetAnimatedModel' world = (this.GetCharacterType world).AnimatedModel
-
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
@@ -221,10 +220,11 @@ type CharacterDispatcher () =
             let actionState = entity.GetActionState world
             match actionState with
             | NormalState ->
+                let characterType = entity.GetCharacterType world
                 let navSpeed =
                     if actionState = NormalState
-                    then (entity.GetWalkSpeed world, entity.GetTurnSpeed world)
-                    else (0.0f, entity.GetTurnSpeed world * 3.0f)
+                    then (characterType.WalkSpeed, characterType.TurnSpeed)
+                    else (0.0f, characterType.TurnSpeed * 3.0f)
                 let world = entity.SetActionState actionState world
                 (Some navSpeed, world)
             | _ -> (None, world)
@@ -263,13 +263,14 @@ type CharacterDispatcher () =
         // movement
         let bodyId = entity.GetBodyId world
         let grounded = World.getBodyGrounded bodyId world
+        let characterType = entity.GetCharacterType world
         if entity.GetActionState world = NormalState || not grounded then
 
             // compute new position
             let rotation = entity.GetRotation world
             let forward = rotation.Forward
             let right = rotation.Right
-            let walkSpeed = entity.GetWalkSpeed world * if grounded then 1.0f else 0.75f
+            let walkSpeed = characterType.WalkSpeed * if grounded then 1.0f else 0.75f
             let walkVelocity =
                 (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward * walkSpeed else v3Zero) +
                 (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward * walkSpeed else v3Zero) +
@@ -277,7 +278,7 @@ type CharacterDispatcher () =
                 (if World.isKeyboardKeyDown KeyboardKey.D world then right * walkSpeed else v3Zero)
 
             // compute new rotation
-            let turnSpeed = entity.GetTurnSpeed world * if grounded then 1.0f else 0.75f
+            let turnSpeed = characterType.TurnSpeed * if grounded then 1.0f else 0.75f
             let turnVelocity =
                 (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
                 (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
@@ -314,11 +315,12 @@ type CharacterDispatcher () =
 
         // process penetration
         let (penetrations, world) = World.doSubscription "Penetration" entity.BodyPenetrationEvent world
+        let characterType = entity.GetCharacterType world
         let world =
             FQueue.fold (fun world penetration ->
                 match penetration.BodyShapePenetratee.BodyId.BodySource with
                 | :? Entity as penetratee when penetratee.Is<CharacterDispatcher> world ->
-                    if entity.GetIsEnemy world && penetratee.GetIsEnemy world
+                    if characterType.IsEnemy && (penetratee.GetCharacterType world).IsEnemy
                     then entity.CharacterCollisions.Map (Set.add penetratee) world
                     else world
                 | _ -> world)
@@ -346,12 +348,11 @@ type CharacterDispatcher () =
         // process input
         let world =
             if world.Advancing then
-                match entity.GetCharacterState world with
-                | HunterState _ | StalkerState _ ->
+                if characterType.IsEnemy then
                     if Simulants.GameplayPlayer.GetExists world
                     then processEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
                     else world
-                | PlayerState _ -> processPlayerInput entity world
+                else processPlayerInput entity world
             else world
 
         // process action state
@@ -365,7 +366,7 @@ type CharacterDispatcher () =
                     if localTime <= 0.92f then actionState else NormalState
                 | InjuryState injury as actionState ->
                     let localTime = world.ClockTime - injury.InjuryTime
-                    let injuryTime = if entity.GetIsEnemy world then 0.667f else 0.5f
+                    let injuryTime = characterType.InjuryTime
                     if localTime < injuryTime then actionState else NormalState
             entity.SetActionState actionState world
 
@@ -379,7 +380,7 @@ type CharacterDispatcher () =
                  Entity.Presence .= Omnipresent
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
-                 Entity.AnimatedModel @= entity.GetAnimatedModel' world]
+                 Entity.AnimatedModel @= characterType.AnimatedModel]
                 world
         let animatedModel = world.DeclaredEntity
 
@@ -466,7 +467,7 @@ type CharacterDispatcher () =
                 | BodyPenetration penetration ->
                     match penetration.BodyShapePenetratee.BodyId.BodySource with
                     | :? Entity as penetratee when penetratee.Is<CharacterDispatcher> world && penetratee <> entity ->
-                        if entity.GetIsPlayer world <> penetratee.GetIsPlayer world
+                        if characterType.IsPlayer <> (penetratee.GetCharacterType world).IsPlayer
                         then entity.WeaponCollisions.Map (Set.add penetratee) world
                         else world
                     | _ -> world
@@ -501,7 +502,7 @@ type CharacterDispatcher () =
 
         // declare player hearts
         let world =
-            if entity.GetIsPlayer world then
+            if characterType.IsPlayer then
                 let hitPoints = entity.GetHitPoints world
                 Seq.fold (fun world i ->
                     World.doStaticSprite ("Heart+" + string i)
@@ -510,7 +511,7 @@ type CharacterDispatcher () =
                          Entity.MountOpt .= None
                          Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty]
                         world)
-                    world [0 .. dec (entity.GetHitPointsMax world)]
+                    world [0 .. dec characterType.HitPointsMax]
             else world
 
         // process death

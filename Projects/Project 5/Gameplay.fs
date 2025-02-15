@@ -66,11 +66,11 @@ type GameplayDispatcher () =
 
             // process enemy deaths
             let (deaths, world) = World.doSubscription "Die" (Events.DieEvent --> Simulants.GameplayScene --> Address.Wildcard) world
-            let enemyDeaths = FQueue.filter (fun (death : Entity) -> death.GetIsEnemy world) deaths
+            let enemyDeaths = FQueue.filter (fun (death : Entity) -> (death.GetCharacterType world).IsEnemy) deaths
             let world = FQueue.fold (fun world death -> World.destroyEntity death world) world enemyDeaths
-        
+
             // process player death
-            let playerDeaths = FQueue.filter (fun (death : Entity) -> death.GetIsPlayer world) deaths
+            let playerDeaths = FQueue.filter (fun (death : Entity) -> (death.GetCharacterType world).IsPlayer) deaths
             let world = if FQueue.notEmpty playerDeaths then gameplay.SetGameplayState Quit world else world
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
