@@ -35,6 +35,15 @@ module CharacterExtensions =
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
+    static let computeScanSegments (entity : Entity) world =
+        let entityPosition = entity.GetPosition world + v3Up * 1.25f
+        let entityRotation = entity.GetRotation world
+        seq {
+            for i in 0 .. dec 7 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.0f |> Math.DegreesToRadians)
+                let scanRotation = entityRotation * angle
+                Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f) }
+
     static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
             match entity.GetActionState world with
@@ -224,15 +233,10 @@ type CharacterDispatcher () =
                 | HunterState state ->
 
                     // process player sighting
-                    let entityPosition = entity.GetPosition world + v3Up * 1.25f
-                    let entityRotation = entity.GetRotation world
                     let playerSightings =
                         seq {
-                            for i in 0 .. dec 7 do
-                                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.0f |> Math.DegreesToRadians)
-                                let scanRotation = entityRotation * angle
-                                let segment = Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f)
-                                let intersected = World.rayCast3dBodies segment Int32.MaxValue false world
+                            for scanSegment in computeScanSegments entity world do
+                                let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
                                 if  intersected.Length > 1 &&
                                     intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
                                     true }
@@ -495,17 +499,9 @@ type CharacterDispatcher () =
         | ViewportOverlay _ ->
             match entity.GetCharacterState world with
             | HunterState _ ->
-
-                    // visualize player sighting
-                    let entityPosition = entity.GetPosition world + v3Up * 1.25f
-                    let entityRotation = entity.GetRotation world
-                    for i in 0 .. dec 7 do
-                        let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.5f |> Math.DegreesToRadians)
-                        let scanRotation = entityRotation * angle
-                        let segment = Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f)
-                        World.imGuiSegment3d segment 1.0f Color.Red world
-                    world
-
+                for scanSegment in computeScanSegments entity world do
+                    World.imGuiSegment3d scanSegment 1.0f Color.Red world
+                world
             | _ -> world
         | _ -> world
 
