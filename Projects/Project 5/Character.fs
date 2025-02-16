@@ -189,11 +189,11 @@ type CharacterDispatcher () =
                 | _ -> world)
                 world separationsImplicit
 
-        //// unmount when advancing to enable physics
-        //let world =
-        //    if world.Halted
-        //    then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
-        //    else entity.SetMountOptWithAdjustment None world
+        // unmount when advancing to enable physics
+        let world =
+            if world.Halted
+            then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
+            else entity.SetMountOptWithAdjustment None world
 
         // process input
         let world =
