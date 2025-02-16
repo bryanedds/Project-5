@@ -233,9 +233,30 @@ type CharacterDispatcher () =
                                  let wayPointPosition = wayPointEntity.GetPosition world
                                  let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
                                  if wayPointDistance < 0.5f then
-                                    let wayPointIndex = inc wayPointIndex % wayPoints.Length
-                                    let state = HunterState { state with HunterWayPointIndexOpt = Some wayPointIndex }
-                                    entity.SetCharacterState state world
+                                    let (wayPointIndexOpt, wayPointBouncing) =
+                                        match state.HunterWayPointPlayback with
+                                        | Once ->
+                                            let wayPointIndex = min (inc wayPointIndex) (dec wayPoints.Length)
+                                            (Some wayPointIndex, false)
+                                        | Loop ->
+                                            let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                            (Some wayPointIndex, false)
+                                        | Bounce ->
+                                            if not state.HunterWayPointBouncing then
+                                                let wayPointIndex = inc wayPointIndex
+                                                if wayPointIndex = wayPoints.Length
+                                                then (Some (dec wayPointIndex), true)
+                                                else (Some wayPointIndex, false)
+                                            else
+                                                let wayPointIndex = dec wayPointIndex
+                                                if wayPointIndex < 0
+                                                then (Some (inc wayPointIndex), false)
+                                                else (Some wayPointIndex, true)
+                                    let state =
+                                        { state with
+                                            HunterWayPointBouncing = wayPointBouncing
+                                            HunterWayPointIndexOpt = wayPointIndexOpt }
+                                    entity.SetCharacterState (HunterState state) world
                                  else processEnemyNavigation wayPointPosition entity world
                             | None -> world
                         | Some _ | None -> world
