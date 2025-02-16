@@ -53,7 +53,7 @@ type CharacterDispatcher () =
             world
         | None -> world
 
-    static let processEnemyInput (goalPosition : Vector3) (entity : Entity) world =
+    static let processEnemyAggression (targetPosition : Vector3) (entity : Entity) world =
 
         // attacking
         let world =
@@ -63,14 +63,14 @@ type CharacterDispatcher () =
                 let positionFlat = position.WithY 0.0f
                 let rotation = entity.GetRotation world
                 let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
-                let playerPositionFlat = goalPosition.WithY 0.0f
-                if position.Y - goalPosition.Y >= 0.25f then // above player
+                let playerPositionFlat = targetPosition.WithY 0.0f
+                if position.Y - targetPosition.Y >= 0.25f then // above player
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 0.75f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
                         let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
                         entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
                     else world
-                elif goalPosition.Y - position.Y < 1.3f then // at or a bit below player
+                elif targetPosition.Y - position.Y < 1.3f then // at or a bit below player
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.15f then
                         let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
@@ -92,9 +92,9 @@ type CharacterDispatcher () =
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
                 let sphere =
-                    if position.Y - goalPosition.Y >= 0.25f
-                    then Sphere (goalPosition, 0.1f) // when above player
-                    else Sphere (goalPosition, 0.4f) // when at or below player
+                    if position.Y - targetPosition.Y >= 0.25f
+                    then Sphere (targetPosition, 0.1f) // when above player
+                    else Sphere (targetPosition, 0.4f) // when at or below player
                 let nearest = sphere.Nearest position
                 let followOutput = World.nav3dFollow (Some 0.5f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
                 let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
@@ -217,54 +217,99 @@ type CharacterDispatcher () =
             then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
             else entity.SetMountOptWithAdjustment None world
 
-        // process input
+        // process character state
         let world =
             if world.Advancing then
                 match entity.GetCharacterState world with
                 | HunterState state ->
-                    match state.HunterWayPoints with
-                    | [||] -> world
-                    | wayPoints ->
-                        match state.HunterWayPointIndexOpt with
-                        | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
-                            let wayPoint = wayPoints.[wayPointIndex]
-                            match tryResolve entity wayPoint.WayPoint with
-                            | Some wayPointEntity ->
-                                 let wayPointPosition = wayPointEntity.GetPosition world
-                                 let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
-                                 if wayPointDistance < 0.5f then
-                                    let (wayPointIndexOpt, wayPointBouncing) =
-                                        match state.HunterWayPointPlayback with
-                                        | Once ->
-                                            let wayPointIndex = min (inc wayPointIndex) (dec wayPoints.Length)
-                                            (Some wayPointIndex, false)
-                                        | Loop ->
-                                            let wayPointIndex = inc wayPointIndex % wayPoints.Length
-                                            (Some wayPointIndex, false)
-                                        | Bounce ->
-                                            if not state.HunterWayPointBouncing then
-                                                let wayPointIndex = inc wayPointIndex
-                                                if wayPointIndex = wayPoints.Length
-                                                then (Some (dec wayPointIndex), true)
-                                                else (Some wayPointIndex, false)
-                                            else
-                                                let wayPointIndex = dec wayPointIndex
-                                                if wayPointIndex < 0
-                                                then (Some (inc wayPointIndex), false)
-                                                else (Some wayPointIndex, true)
-                                    let state =
-                                        { state with
-                                            HunterWayPointBouncing = wayPointBouncing
-                                            HunterWayPointIndexOpt = wayPointIndexOpt }
-                                    entity.SetCharacterState (HunterState state) world
-                                 else processEnemyNavigation wayPointPosition entity world
-                            | None -> world
-                        | Some _ | None -> world
+
+                    // process player sighting
+                    let entityPosition = entity.GetPosition world + v3Up * 1.25f
+                    let entityRotation = entity.GetRotation world
+                    let playerSightings =
+                        seq {
+                            for i in 0 .. dec 7 do
+                                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.0f |> Math.DegreesToRadians)
+                                let scanRotation = entityRotation * angle
+                                let segment = Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f)
+                                let intersected = World.rayCast3dBodies segment Int32.MaxValue false world
+                                if  intersected.Length > 1 &&
+                                    intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
+                                    true }
+                    let playerSighted = Seq.notEmpty playerSightings
+                    let state =
+                        if playerSighted then
+                            let state = { state with HunterAwareOfPlayerOpt = Some 8.0f }
+                            World.playSound 1.0f  Assets.Gameplay.InjureSound world
+                            state
+                        else state
+
+                    // process hunter state
+                    match state.HunterAwareOfPlayerOpt with
+                    | Some awareTime when Simulants.GameplayPlayer.GetExists world ->
+
+                        // process aggression
+                        let playerPosition = Simulants.GameplayPlayer.GetPosition world
+                        let awareTime = awareTime - world.ClockDelta
+                        let state =
+                            if awareTime > 0.0f
+                            then { state with HunterAwareOfPlayerOpt = Some awareTime }
+                            else { state with HunterAwareOfPlayerOpt = None }
+                        let world = entity.SetCharacterState (HunterState state) world
+                        processEnemyAggression playerPosition entity world
+
+                    | Some _ | None ->
+
+                        // process way point navigation
+                        match state.HunterWayPoints with
+                        | [||] -> world
+                        | wayPoints ->
+                            match state.HunterWayPointIndexOpt with
+                            | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
+                                let wayPoint = wayPoints.[wayPointIndex]
+                                match tryResolve entity wayPoint.WayPoint with
+                                | Some wayPointEntity ->
+                                    let wayPointPosition = wayPointEntity.GetPosition world
+                                    let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
+                                    if wayPointDistance < 0.5f then
+                                        let (wayPointIndexOpt, wayPointBouncing) =
+                                            match state.HunterWayPointPlayback with
+                                            | Once ->
+                                                let wayPointIndex = min (inc wayPointIndex) (dec wayPoints.Length)
+                                                (Some wayPointIndex, false)
+                                            | Loop ->
+                                                let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                                (Some wayPointIndex, false)
+                                            | Bounce ->
+                                                if not state.HunterWayPointBouncing then
+                                                    let wayPointIndex = inc wayPointIndex
+                                                    if wayPointIndex = wayPoints.Length
+                                                    then (Some (dec wayPointIndex), true)
+                                                    else (Some wayPointIndex, false)
+                                                else
+                                                    let wayPointIndex = dec wayPointIndex
+                                                    if wayPointIndex < 0
+                                                    then (Some (inc wayPointIndex), false)
+                                                    else (Some wayPointIndex, true)
+                                        let state =
+                                            { state with
+                                                HunterWayPointBouncing = wayPointBouncing
+                                                HunterWayPointIndexOpt = wayPointIndexOpt }
+                                        entity.SetCharacterState (HunterState state) world
+                                        else processEnemyNavigation wayPointPosition entity world
+                                | None -> world
+                            | Some _ | None -> world
+
+                // process stalker state
                 | StalkerState _ ->
-                    if Simulants.GameplayPlayer.GetExists world then
-                        processEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
+                    if Simulants.GameplayPlayer.GetExists world
+                    then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
                     else world
+
+                // process player state
                 | PlayerState _ -> processPlayerInput entity world
+
+            // nothing to do
             else world
 
         // process action state
@@ -444,6 +489,25 @@ type CharacterDispatcher () =
             let weapon = entity / Constants.Gameplay.CharacterWeaponName
             weapon.RayCast ray world
         | intersections -> intersections
+
+    override this.Edit (op, entity, world) =
+        match op with
+        | ViewportOverlay _ ->
+            match entity.GetCharacterState world with
+            | HunterState _ ->
+
+                    // visualize player sighting
+                    let entityPosition = entity.GetPosition world + v3Up * 1.25f
+                    let entityRotation = entity.GetRotation world
+                    for i in 0 .. dec 7 do
+                        let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.5f |> Math.DegreesToRadians)
+                        let scanRotation = entityRotation * angle
+                        let segment = Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f)
+                        World.imGuiSegment3d segment 1.0f Color.Red world
+                    world
+
+            | _ -> world
+        | _ -> world
 
 type HunterDispatcher () =
     inherit CharacterDispatcher ()

@@ -6912,28 +6912,28 @@
       [Static True]]
      [[WayPointDispatcher
        [[MountOpt [Some ^]]
-        [Name WayPointA]
+        [Name WayPointB]
         [Position [-6.75 0 4.5]]
         [PositionLocal [4.25 0 1]]
         [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/WayPoints/WayPoint]]]
        []]
       [WayPointDispatcher
        [[MountOpt [Some ^]]
-        [Name WayPointB]
+        [Name WayPointC]
         [Position [-6.75 0 1.25]]
         [PositionLocal [4.25 0 -2.25]]
         [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/WayPoints/WayPoint]]]
        []]
       [WayPointDispatcher
        [[MountOpt [Some ^]]
-        [Name WayPointC]
+        [Name WayPointD]
         [Position [-16 0 1.25]]
         [PositionLocal [-5 0 -2.25]]
         [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/WayPoints/WayPoint]]]
        []]
       [WayPointDispatcher
        [[MountOpt [Some ^]]
-        [Name WayPointD]
+        [Name WayPointA]
         [Position [-16 0 4.5]]
         [PositionLocal [-5 0 1]]
         [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/WayPoints/WayPoint]]]
@@ -6949,7 +6949,8 @@
          [HunterState
           [[HunterWayPoints
             [[^/^/WayPoints/WayPointA 4] [^/^/WayPoints/WayPointB 4] [^/^/WayPoints/WayPointC 4] [^/^/WayPoints/WayPointD 4]]]
-           [HunterWayPointPlayback Once]
+           [HunterWayPointPlayback Bounce]
+           [HunterWayPointBouncing False]
            [HunterWayPointIndexOpt [Some 0]]
            [HunterWayPointCountDownOpt None]
            [HunterAwareOfPlayerOpt None]]]]
