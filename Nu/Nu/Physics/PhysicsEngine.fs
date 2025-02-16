@@ -229,11 +229,12 @@ type [<NoEquality; NoComparison>] BodyUserObject =
       Dispose : unit -> unit }
 
 /// Describes the substantial nature of a body in terms of mass or density.
+/// TODO: P1: make this a Struct record again after updating Prime.
 [<Syntax
     ("", "", "", "", "",
      Constants.PrettyPrinter.DefaultThresholdMin,
      Constants.PrettyPrinter.SimpleThresholdMax)>]
-type [<Struct>] Substance =
+type Substance =
     | Mass of Mass : single
     | Density of Density : single
 
@@ -242,7 +243,7 @@ type [<Struct>] Substance =
     ("", "", "", "", "",
      Constants.PrettyPrinter.DefaultThresholdMin,
      Constants.PrettyPrinter.SimpleThresholdMax)>]
-type [<Struct>] CollisionDetection =
+type CollisionDetection =
     | Discontinuous
     | Continuous
 
