@@ -30,7 +30,7 @@ module CharacterExtensions =
         member this.SetWeaponModel (value : StaticModel AssetTag) world = this.Set (nameof this.WeaponModel) value world
         member this.WeaponModel = lens (nameof this.WeaponModel) this this.GetWeaponModel this.SetWeaponModel
         member this.AttackEvent = Events.AttackEvent --> this
-        member this.DieEvent = Events.DieEvent --> this
+        member this.DeathEvent = Events.DeathEvent --> this
 
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
@@ -157,8 +157,8 @@ type CharacterDispatcher () =
 
     override this.Process (entity, world) =
 
-        // process penetration
-        let (penetrations, world) = World.doSubscription "Penetration" entity.BodyPenetrationEvent world
+        // process penetrations
+        let (penetrations, world) = World.doSubscription "Penetrations" entity.BodyPenetrationEvent world
         let characterType = entity.GetCharacterType world
         let world =
             FQueue.fold (fun world penetration ->
@@ -170,8 +170,8 @@ type CharacterDispatcher () =
                 | _ -> world)
                 world penetrations
 
-        // process separation (explicit)
-        let (separationsExplicit, world) = World.doSubscription "SeparationExplicit" entity.BodySeparationExplicitEvent world
+        // process separations (explicit)
+        let (separationsExplicit, world) = World.doSubscription "SeparationsExplicit" entity.BodySeparationExplicitEvent world
         let world =
             FQueue.fold (fun world separation ->
                 match separation.BodyShapeSeparatee.BodyId.BodySource with
@@ -180,14 +180,20 @@ type CharacterDispatcher () =
                 | _ -> world)
                 world separationsExplicit
 
-        // process separation (implicit)
-        let (separationsImplicit, world) = World.doSubscription "SeparationImplicit" entity.BodySeparationImplicitEvent world
+        // process separations (implicit)
+        let (separationsImplicit, world) = World.doSubscription "SeparationsImplicit" entity.BodySeparationImplicitEvent world
         let world =
             FQueue.fold (fun world (separation : BodySeparationImplicitData) ->
                 match separation.BodyId.BodySource with
                 | :? Entity as separatee -> entity.CharacterCollisions.Map (Set.remove separatee) world
                 | _ -> world)
                 world separationsImplicit
+
+        // unmount when advancing to enable physics
+        let world =
+            if world.Halted
+            then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
+            else entity.SetMountOptWithAdjustment None world
 
         // process input
         let world =
@@ -362,7 +368,7 @@ type CharacterDispatcher () =
         let world =
             match entity.GetActionState world with
             | WoundState wound when wound.WoundTime >= world.ClockTime - 1.0f && not wound.WoundEventPublished ->
-                let world = World.publish entity entity.DieEvent entity world
+                let world = World.publish entity entity.DeathEvent entity world
                 let wound = { wound with WoundEventPublished = true}
                 entity.SetActionState (WoundState wound) world
             | _ -> world

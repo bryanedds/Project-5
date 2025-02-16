@@ -1,5 +1,6 @@
 ﻿namespace MyGame
 open System
+open System.Collections.Generic
 open System.Numerics
 open Prime
 open Nu
@@ -43,35 +44,59 @@ type GameplayDispatcher () =
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
 
+            // collect characters
+            let characters =
+                World.getEntitiesSovereign Simulants.GameplayScene world |>
+                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "Enemies")) |>
+                Seq.concat |>
+                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<CharacterDispatcher> world)) |>
+                Seq.concat |>
+                Seq.append [Simulants.GameplayPlayer] |>
+                Seq.toArray
+
+            // collect attacks
+            let (attacks, world) =
+                Seq.fold (fun (attacks, world) (character : Entity) ->
+                    let (attacks', world) = World.doSubscription "Attacks" character.AttackEvent world
+                    (FQueue.append attacks attacks', world))
+                    (FQueue.empty, world)
+                    characters
+
             // process attacks
-            let (attacks, world) = World.doSubscription "Attack" (Events.AttackEvent --> Simulants.GameplayScene --> Address.Wildcard) world
             let world =
-                FQueue.fold (fun world (attacked : Entity) ->
-                    let world = attacked.HitPoints.Map (dec >> max 0) world
-                    if attacked.GetHitPoints world > 0 then
-                        if not (attacked.GetActionState world).IsInjuryState then
-                            let world = attacked.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
-                            let world = attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                FQueue.fold (fun world (attack : Entity) ->
+                    let world = attack.HitPoints.Map (dec >> max 0) world
+                    if attack.GetHitPoints world > 0 then
+                        if not (attack.GetActionState world).IsInjuryState then
+                            let world = attack.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
+                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                             world
                         else world
                     else
-                        if not (attacked.GetActionState world).IsWoundState then
-                            let world = attacked.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
-                            let world = attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                        if not (attack.GetActionState world).IsWoundState then
+                            let world = attack.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
+                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                             world
                         else world)
                     world attacks
 
-            // process enemy deaths
-            let (deaths, world) = World.doSubscription "Die" (Events.DieEvent --> Simulants.GameplayScene --> Address.Wildcard) world
-            let enemyDeaths = FQueue.filter (fun (death : Entity) -> (death.GetCharacterType world).IsEnemy) deaths
-            let world = FQueue.fold (fun world death -> World.destroyEntity death world) world enemyDeaths
+            // collect deaths
+            let (deaths, world) =
+                Seq.fold (fun (attacks, world) (character : Entity) ->
+                    let (attacks', world) = World.doSubscription "Deaths" character.DeathEvent world
+                    (FQueue.append attacks attacks', world))
+                    (FQueue.empty, world)
+                    characters
 
-            // process player death
-            let playerDeaths = FQueue.filter (fun (death : Entity) -> (death.GetCharacterType world).IsPlayer) deaths
-            let world = if FQueue.notEmpty playerDeaths then gameplay.SetGameplayState Quit world else world
+            // process deaths
+            let world =
+                FQueue.fold (fun world (death : Entity) ->
+                    if (death.GetCharacterType world).IsEnemy
+                    then World.destroyEntity death world
+                    else gameplay.SetGameplayState Quit world)
+                    world deaths
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
             // in concept to - https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN#moving-the-light-in-texel-sized-increments
@@ -116,3 +141,12 @@ type GameplayDispatcher () =
 
         // otherwise, no processing
         else world
+
+    override this.Edit (op, _, world) =
+        match op with
+        | ViewportOverlay _ ->
+            let entitiesInView = World.getEntities3dInView (HashSet ()) world            
+            let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<WayPointDispatcher> world)
+            for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 10.0f false Color.Yellow world
+            world
+        | _ -> world
