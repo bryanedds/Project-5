@@ -35,33 +35,7 @@ module CharacterExtensions =
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
-    static let processEnemyInput (playerPosition : Vector3) (entity : Entity) world =
-
-        // attacking
-        let world =
-            match entity.GetActionState world with
-            | NormalState ->
-                let position = entity.GetPosition world
-                let positionFlat = position.WithY 0.0f
-                let rotation = entity.GetRotation world
-                let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
-                let playerPositionFlat = playerPosition.WithY 0.0f
-                if position.Y - playerPosition.Y >= 0.25f then // above player
-                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 0.75f &&
-                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
-                        entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                    else world
-                elif playerPosition.Y - position.Y < 1.3f then // at or a bit below player
-                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
-                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.15f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
-                        entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                    else world
-                else world
-            | _ -> world
-
-        // navigation
+    static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
             match entity.GetActionState world with
             | NormalState ->
@@ -72,17 +46,65 @@ type CharacterDispatcher () =
         | Some (moveSpeed, turnSpeed) ->
             let position = entity.GetPosition world
             let rotation = entity.GetRotation world
-            let sphere =
-                if position.Y - playerPosition.Y >= 0.25f
-                then Sphere (playerPosition, 0.1f) // when above player
-                else Sphere (playerPosition, 0.4f) // when at or below player
-            let nearest = sphere.Nearest position
-            let followOutput = World.nav3dFollow (Some 0.5f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+            let followOutput = World.nav3dFollow None None moveSpeed turnSpeed position rotation goalPosition Simulants.Gameplay world    
             let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
             let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
             let world = entity.SetRotation followOutput.NavRotation world
             world
         | None -> world
+
+    static let processEnemyInput (goalPosition : Vector3) (entity : Entity) world =
+
+        // attacking
+        let world =
+            match entity.GetActionState world with
+            | NormalState ->
+                let position = entity.GetPosition world
+                let positionFlat = position.WithY 0.0f
+                let rotation = entity.GetRotation world
+                let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
+                let playerPositionFlat = goalPosition.WithY 0.0f
+                if position.Y - goalPosition.Y >= 0.25f then // above player
+                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 0.75f &&
+                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
+                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
+                        entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
+                    else world
+                elif goalPosition.Y - position.Y < 1.3f then // at or a bit below player
+                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
+                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.15f then
+                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
+                        entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
+                    else world
+                else world
+            | _ -> world
+
+        // navigation
+        let world =
+            let navSpeedsOpt =
+                match entity.GetActionState world with
+                | NormalState ->
+                    let characterType = entity.GetCharacterType world
+                    Some (characterType.WalkSpeed, characterType.TurnSpeed)
+                | _ -> None
+            match navSpeedsOpt with
+            | Some (moveSpeed, turnSpeed) ->
+                let position = entity.GetPosition world
+                let rotation = entity.GetRotation world
+                let sphere =
+                    if position.Y - goalPosition.Y >= 0.25f
+                    then Sphere (goalPosition, 0.1f) // when above player
+                    else Sphere (goalPosition, 0.4f) // when at or below player
+                let nearest = sphere.Nearest position
+                let followOutput = World.nav3dFollow (Some 0.5f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+                let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+                let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
+                let world = entity.SetRotation followOutput.NavRotation world
+                world
+            | None -> world
+
+        // fin
+        world
 
     static let processPlayerInput (entity : Entity) world =
 
@@ -198,11 +220,30 @@ type CharacterDispatcher () =
         // process input
         let world =
             if world.Advancing then
-                if characterType.IsEnemy then
-                    if Simulants.GameplayPlayer.GetExists world
-                    then processEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
+                match entity.GetCharacterState world with
+                | HunterState state ->
+                    match state.HunterWayPoints with
+                    | [||] -> world
+                    | wayPoints ->
+                        match state.HunterWayPointIndexOpt with
+                        | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
+                            let wayPoint = wayPoints.[wayPointIndex]
+                            match tryResolve entity wayPoint.WayPoint with
+                            | Some wayPointEntity ->
+                                 let wayPointPosition = wayPointEntity.GetPosition world
+                                 let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
+                                 if wayPointDistance < 0.5f then
+                                    let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                    let state = HunterState { state with HunterWayPointIndexOpt = Some wayPointIndex }
+                                    entity.SetCharacterState state world
+                                 else processEnemyNavigation wayPointPosition entity world
+                            | None -> world
+                        | Some _ | None -> world
+                | StalkerState _ ->
+                    if Simulants.GameplayPlayer.GetExists world then
+                        processEnemyInput (Simulants.GameplayPlayer.GetPosition world) entity world
                     else world
-                else processPlayerInput entity world
+                | PlayerState _ -> processPlayerInput entity world
             else world
 
         // process action state

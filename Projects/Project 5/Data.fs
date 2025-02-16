@@ -10,14 +10,14 @@ type WayPoint =
       WayPointWaitTime : single }
 
 type [<SymbolicExpansion>] HunterState =
-    { HunterWayPoints : WayPoint list
+    { HunterWayPoints : WayPoint array
       HunterWayPointPlayback : Playback
       HunterWayPointIndexOpt : int option
       HunterWayPointCountDownOpt : single option
       HunterAwareOfPlayerOpt : single option }
 
     static member initial =
-        { HunterWayPoints = []
+        { HunterWayPoints = [||]
           HunterWayPointPlayback = Loop
           HunterWayPointIndexOpt = None
           HunterWayPointCountDownOpt = None
