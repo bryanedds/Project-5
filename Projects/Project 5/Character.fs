@@ -189,11 +189,11 @@ type CharacterDispatcher () =
                 | _ -> world)
                 world separationsImplicit
 
-        // unmount when advancing to enable physics
-        let world =
-            if world.Halted
-            then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
-            else entity.SetMountOptWithAdjustment None world
+        //// unmount when advancing to enable physics
+        //let world =
+        //    if world.Halted
+        //    then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
+        //    else entity.SetMountOptWithAdjustment None world
 
         // process input
         let world =
@@ -227,7 +227,6 @@ type CharacterDispatcher () =
                  Entity.Rotation @= entity.GetRotation world
                  Entity.Size .= entity.GetSize world
                  Entity.Offset .= entity.GetOffset world
-                 Entity.Presence .= Omnipresent
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
                  Entity.AnimatedModel @= characterType.AnimatedModel]
@@ -300,7 +299,6 @@ type CharacterDispatcher () =
                 [Entity.Position @= weaponTransform.Translation
                  Entity.Rotation @= weaponTransform.Rotation
                  Entity.Offset .= v3 0.0f 0.5f 0.0f
-                 Entity.Presence .= Omnipresent
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
                  Entity.StaticModel @= entity.GetWeaponModel world

@@ -7,3 +7,6 @@ open MyGame
 
 type WayPointDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
+
+    static member Properties =
+        [define Entity.Size (v3Dup 0.5f)]

@@ -7,23 +7,25 @@ open MyGame
 
 type WayPoint =
     { WayPoint : Entity Relation
-      WayPointWaitTime : GameTime }
+      WayPointWaitTime : single }
 
-type HunterState =
+type [<SymbolicExpansion>] HunterState =
     { HunterWayPoints : WayPoint list
+      HunterWayPointPlayback : Playback
       HunterWayPointIndexOpt : int option
-      HunterWayPointCountDownOpt : GameTime option
-      HunterAwareOfPlayerOpt : GameTime option }
+      HunterWayPointCountDownOpt : single option
+      HunterAwareOfPlayerOpt : single option }
 
     static member initial =
         { HunterWayPoints = []
+          HunterWayPointPlayback = Loop
           HunterWayPointIndexOpt = None
           HunterWayPointCountDownOpt = None
           HunterAwareOfPlayerOpt = None }
 
 type StalkerSpawn =
-    | StalkerUnspawned of CountDown : GameTime
-    | StalkerSpawned of SpawnPoint : Entity Relation * CountDown : GameTime
+    | StalkerUnspawned of CountDown : single
+    | StalkerSpawned of SpawnPoint : Entity Relation * CountDown : single
     | StalkerUnspawning of UnspawnPoint : Entity Relation
 
     static member update deltaTime spawnAllowed spawnPoints spawn =
@@ -31,12 +33,12 @@ type StalkerSpawn =
             match spawn with
             | StalkerUnspawned countDown ->
                 let countDown = countDown - deltaTime
-                if countDown <= GameTime.zero
-                then (true, StalkerSpawned (Gen.randomItem spawnPoints, GameTime.ofSeconds (90.0f + Gen.randomf1 90.0f)))
+                if countDown <= 0.0f
+                then (true, StalkerSpawned (Gen.randomItem spawnPoints, 90.0f + Gen.randomf1 90.0f))
                 else (false, StalkerUnspawned countDown)
             | StalkerSpawned (spawnPoint, countDown) ->
                 let countDown = countDown - deltaTime
-                if countDown <= GameTime.zero
+                if countDown <= 0.0f
                 then (true, StalkerUnspawning spawnPoint)
                 else (false, StalkerSpawned (spawnPoint, countDown))
             | StalkerUnspawning _ ->
@@ -47,9 +49,9 @@ type StalkerSpawn =
             | StalkerUnspawned _ | StalkerUnspawning _ -> (false, spawn)
 
     static member initial =
-        StalkerUnspawned (GameTime.ofSeconds (120.0f + Gen.randomf1 120.0f))
+        StalkerUnspawned (120.0f + Gen.randomf1 120.0f)
 
-type StalkerState =
+type [<SymbolicExpansion>] StalkerState =
     { StalkerSpawn : StalkerSpawn
       StalkerSpawnAllowed : bool
       StalkerSpawnPoints : Entity Relation list }
@@ -73,7 +75,7 @@ type HideState =
     { HideTime : GameTime
       HidePhase : HidePhase }
 
-type PlayerState =
+type [<SymbolicExpansion>] PlayerState =
     { HideStateOpt : HideState option }
 
     static member initial =
