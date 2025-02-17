@@ -3908,7 +3908,14 @@
       [Pickable False]
       [Position [13.75 0 5.5]]
       [Static True]]
-     []]
+     [[SpawnPointDispatcher
+       [[MountOpt [Some ^]]
+        [Name SpawnPoint]
+        [Position [13.75 0 6.5]]
+        [PositionLocal [0 0 1]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Points/SpawnPoint]]
+        [Size [1 1 1]]]
+       []]]]
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name WayPoints]
@@ -4840,7 +4847,14 @@
       [Pickable False]
       [Position [-11.5 0 -4]]
       [Static True]]
-     []]
+     [[SpawnPointDispatcher
+       [[MountOpt [Some ^]]
+        [Name SpawnPoint]
+        [Position [-14.75 0 -3.75]]
+        [PositionLocal [-3.25 0 0.25]]
+        [PropagationSourceOpt [Some Game/Gameplay/Scene/Palettes/Points/SpawnPoint]]
+        [Size [1 1 1]]]
+       []]]]
     [Entity3dDispatcher
      [[MountOpt [Some ^]]
       [Name WayPoints]

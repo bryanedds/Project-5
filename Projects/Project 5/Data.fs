@@ -90,7 +90,7 @@ and CharacterType =
     member this.WalkSpeed =
         match this with
         | Hunter -> 1.0f
-        | Stalker -> 1.0f
+        | Stalker -> 1.25f
         | Player -> 1.75f
 
     member this.TurnSpeed =
