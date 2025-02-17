@@ -6949,7 +6949,7 @@
          [HunterState
           [[HunterWayPoints
             [[^/^/WayPoints/WayPointA 4] [^/^/WayPoints/WayPointB 4] [^/^/WayPoints/WayPointC 4] [^/^/WayPoints/WayPointD 4]]]
-           [HunterWayPointPlayback Once]
+           [HunterWayPointPlayback Bounce]
            [HunterWayPointBouncing False]
            [HunterWayPointIndexOpt [Some 0]]
            [HunterWayPointCountDownOpt None]

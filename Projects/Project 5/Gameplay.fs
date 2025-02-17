@@ -98,6 +98,39 @@ type GameplayDispatcher () =
                     else gameplay.SetGameplayState Quit world)
                     world deaths
 
+            // determine ambience state
+            let anyHunterAwareOfPlayer =
+                characters |>
+                Array.exists (fun character ->
+                    match character.GetCharacterState world with
+                    | HunterState state -> state.HunterAwareOfPlayerOpt.IsSome
+                    | _ -> false)
+            let world =
+                if anyHunterAwareOfPlayer then
+                    match World.getSongOpt world with
+                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.AstrolabeSong ->
+                        let world = Simulants.GameplaySun.SetColor Color.Red world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AstrolabeSong world
+                        world
+                    | None ->
+                        let world = Simulants.GameplaySun.SetColor Color.Red world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AstrolabeSong world
+                        world
+                    | Some _ -> world
+                else
+                    match World.getSongOpt world with
+                    | Some songDescriptor ->
+                        if songDescriptor.Song = Assets.Gameplay.AstrolabeSong && not (World.getSongFadingOut world) then
+                            World.fadeOutSong 7.0f world
+                            world
+                        elif songDescriptor.Song <> Assets.Gameplay.AmbienceSong && not (World.getSongFadingOut world) then
+                            World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AmbienceSong world
+                            Simulants.GameplaySun.SetColor Color.White world
+                        else world
+                    | None ->
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AmbienceSong world
+                        Simulants.GameplaySun.SetColor Color.White world
+
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
             // in concept to - https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN#moving-the-light-in-texel-sized-increments
             let sun = Simulants.GameplaySun

@@ -36,13 +36,17 @@ type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
     static let computeScanSegments (entity : Entity) world =
-        let entityPosition = entity.GetPosition world + v3Up * 1.25f
-        let entityRotation = entity.GetRotation world
-        seq {
-            for i in 0 .. dec 13 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
-                let scanRotation = entityRotation * angle
-                Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f) }
+        match entity.GetCharacterState world with
+        | HunterState state ->
+            let sightDistance = if state.HunterAwareOfPlayerOpt.IsSome then 7.0f else 9.0f
+            let sightPosition = entity.GetPosition world + v3Up * 1.25f
+            let sightRotation = entity.GetRotation world
+            seq {
+                for i in 0 .. dec 13 do
+                    let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
+                    let scanRotation = sightRotation * angle
+                    Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
+        | _ -> Seq.empty
 
     static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
@@ -105,7 +109,7 @@ type CharacterDispatcher () =
                     then Sphere (targetPosition, 0.1f) // when above player
                     else Sphere (targetPosition, 0.4f) // when at or below player
                 let nearest = sphere.Nearest position
-                let followOutput = World.nav3dFollow (Some 0.5f) (Some 12.0f) moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+                let followOutput = World.nav3dFollow (Some 0.5f) None moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
                 let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
                 let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
                 let world = entity.SetRotation followOutput.NavRotation world
@@ -141,12 +145,13 @@ type CharacterDispatcher () =
             let rotation = entity.GetRotation world
             let forward = rotation.Forward
             let right = rotation.Right
+            let walkDirection =
+                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
             let walkSpeed = characterType.WalkSpeed * if grounded then 1.0f else 0.75f
-            let walkVelocity =
-                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward * walkSpeed else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward * walkSpeed else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.A world then -right * walkSpeed else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.D world then right * walkSpeed else v3Zero)
+            let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * walkSpeed else v3Zero
 
             // compute new rotation
             let turnSpeed = characterType.TurnSpeed * if grounded then 1.0f else 0.75f
@@ -242,7 +247,7 @@ type CharacterDispatcher () =
                                     true }
                     let state =
                         if Seq.notEmpty playerSightings
-                        then { state with HunterAwareOfPlayerOpt = Some 8.0f }
+                        then { state with HunterAwareOfPlayerOpt = Some 16.0f }
                         else state
 
                     // process hunter state
