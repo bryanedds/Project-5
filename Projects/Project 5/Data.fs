@@ -14,24 +14,62 @@ type [<SymbolicExpansion>] HunterState =
       HunterWayPointPlayback : Playback
       HunterWayPointBouncing : bool
       HunterWayPointIndexOpt : int option
-      HunterWayPointCountDownOpt : single option
-      HunterAwareOfPlayerOpt : single option }
+      HunterWayPointTimeOpt : single option
+      HunterAwareTimeOpt : single option }
+
+    member this.HunterAwareDurationOpt (time : single) =
+        match this.HunterAwareTimeOpt with
+        | Some start ->
+            let awareTime = time - start
+            if awareTime >= 16.0f then None else Some awareTime
+        | None -> None
+
+    member this.HunterAwareProgressOpt (time : single) =
+        match this.HunterAwareDurationOpt time with
+        | Some awareTime -> Some (awareTime / 16.0f)
+        | None -> None
+
+    member this.HunterSightDistance (time : single) =
+        match this.HunterAwareDurationOpt time with
+        | Some _ -> 7.0f
+        | None -> 9.0f
+
+    static member computeScanSegments (time : single) position rotation (state : HunterState) =
+        let sightDistance = state.HunterSightDistance time
+        let sightPosition = position + v3Up * 1.25f
+        let sightRotation = rotation
+        seq {
+            for i in 0 .. dec 13 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
+                let scanRotation = sightRotation * angle
+                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
     static member initial =
         { HunterWayPoints = [||]
           HunterWayPointPlayback = Loop
           HunterWayPointBouncing = false
           HunterWayPointIndexOpt = None
-          HunterWayPointCountDownOpt = None
-          HunterAwareOfPlayerOpt = None }
+          HunterWayPointTimeOpt = None
+          HunterAwareTimeOpt = None }
 
 type StalkerSpawnState =
     | StalkerUnspawned of CountDown : single
-    | StalkerSpawned of SpawnPoint : Entity * CountDown : single
+    | StalkerSpawned of SpawnPoint : Entity * SpawnTime : single
     | StalkerUnspawning of UnspawnPoint : Entity
 
+    member this.SpawnTimeOpt =
+        match this with
+        | StalkerUnspawned _ -> None
+        | StalkerSpawned (_, spawnTime) -> Some spawnTime
+        | StalkerUnspawning _ -> None
+
+    member this.SpawnDurationOpt time =
+        match this.SpawnTimeOpt with
+        | Some spawnTime -> Some (time - spawnTime)
+        | None -> None
+
     static member initial =
-        StalkerUnspawned (120.0f + Gen.randomf1 120.0f)
+        StalkerUnspawned Single.MaxValue
 
 type [<SymbolicExpansion>] StalkerState =
     { Unused : unit }

@@ -35,19 +35,6 @@ module CharacterExtensions =
 type CharacterDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
-    static let computeScanSegments (entity : Entity) world =
-        match entity.GetCharacterState world with
-        | HunterState state ->
-            let sightDistance = if state.HunterAwareOfPlayerOpt.IsSome then 7.0f else 9.0f
-            let sightPosition = entity.GetPosition world + v3Up * 1.25f
-            let sightRotation = entity.GetRotation world
-            seq {
-                for i in 0 .. dec 13 do
-                    let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
-                    let scanRotation = sightRotation * angle
-                    Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
-        | _ -> Seq.empty
-
     static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
             match entity.GetActionState world with
@@ -119,33 +106,30 @@ type CharacterDispatcher () =
         // fin
         world
 
-    static let processHunterState (state : HunterState) entity world =
+    static let processHunterState (state : HunterState) (entity : Entity) (world : World) =
 
         // process player sighting
         let playerSightings =
             seq {
-                for scanSegment in computeScanSegments entity world do
+                let position = entity.GetPosition world
+                let rotation = entity.GetRotation world
+                for scanSegment in HunterState.computeScanSegments world.ClockTime position rotation state do
                     let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
                     if  intersected.Length > 1 &&
                         intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
                         true }
         let state =
-            if Seq.notEmpty playerSightings
-            then { state with HunterAwareOfPlayerOpt = Some 16.0f }
+            if Seq.notEmpty playerSightings && (state.HunterAwareDurationOpt world.ClockTime).IsNone
+            then { state with HunterAwareTimeOpt = Some world.ClockTime }
             else state
+        let world = entity.SetCharacterState (HunterState state) world
 
         // process hunter state
-        match state.HunterAwareOfPlayerOpt with
-        | Some awareTime when Simulants.GameplayPlayer.GetExists world ->
+        match state.HunterAwareDurationOpt world.ClockTime with
+        | Some _ when Simulants.GameplayPlayer.GetExists world ->
 
             // process aggression
             let playerPosition = Simulants.GameplayPlayer.GetPosition world
-            let awareTime = awareTime - world.ClockDelta
-            let state =
-                if awareTime > 0.0f
-                then { state with HunterAwareOfPlayerOpt = Some awareTime }
-                else { state with HunterAwareOfPlayerOpt = None }
-            let world = entity.SetCharacterState (HunterState state) world
             processEnemyAggression playerPosition entity world
 
         | Some _ | None ->
@@ -196,6 +180,8 @@ type CharacterDispatcher () =
                     world
 
     static let processStalkerState (_ : StalkerState) entity world =
+
+        // process aggression
         if Simulants.GameplayPlayer.GetExists world
         then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
         else world
@@ -509,8 +495,10 @@ type CharacterDispatcher () =
         match op with
         | ViewportOverlay _ ->
             match entity.GetCharacterState world with
-            | HunterState _ ->
-                for scanSegment in computeScanSegments entity world do
+            | HunterState state ->
+                let position = entity.GetPosition world
+                let rotation = entity.GetRotation world
+                for scanSegment in HunterState.computeScanSegments world.ClockTime position rotation state do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             | _ -> world

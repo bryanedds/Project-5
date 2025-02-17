@@ -13,15 +13,23 @@ type GameplayState =
 [<AutoOpen>]
 module GameplayExtensions =
     type Screen with
+
         member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
         member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
         member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
-        member this.GetStalkerSpawnState world : StalkerSpawnState = this.Get (nameof Screen.StalkerSpawnState) world
-        member this.SetStalkerSpawnState (value : StalkerSpawnState) world = this.Set (nameof Screen.StalkerSpawnState) value world
-        member this.StalkerSpawnState = lens (nameof Screen.StalkerSpawnState) this this.GetStalkerSpawnState this.SetStalkerSpawnState
+
+        member this.GetHuntedTimeOpt world : single option = this.Get (nameof Screen.HuntedTimeOpt) world
+        member this.SetHuntedTimeOpt (value : single option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
+        member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
+        member this.GetHuntedDurationOpt world = match this.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
+
         member this.GetStalkerSpawnAllowed world : bool = this.Get (nameof Screen.StalkerSpawnAllowed) world
         member this.SetStalkerSpawnAllowed (value : bool) world = this.Set (nameof Screen.StalkerSpawnAllowed) value world
         member this.StalkerSpawnAllowed = lens (nameof Screen.StalkerSpawnAllowed) this this.GetStalkerSpawnAllowed this.SetStalkerSpawnAllowed
+        member this.GetStalkerSpawnState world : StalkerSpawnState = this.Get (nameof Screen.StalkerSpawnState) world
+        member this.SetStalkerSpawnState (value : StalkerSpawnState) world = this.Set (nameof Screen.StalkerSpawnState) value world
+        member this.StalkerSpawnState = lens (nameof Screen.StalkerSpawnState) this this.GetStalkerSpawnState this.SetStalkerSpawnState
+        member this.GetStalkedDurationOpt world = (this.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
@@ -30,8 +38,9 @@ type GameplayDispatcher () =
     // here we define default property values
     static member Properties =
         [define Screen.GameplayState Quit
-         define Screen.StalkerSpawnState StalkerSpawnState.initial
-         define Screen.StalkerSpawnAllowed true]
+         define Screen.HuntedTimeOpt None
+         define Screen.StalkerSpawnAllowed true
+         define Screen.StalkerSpawnState StalkerSpawnState.initial]
 
     // here we define the behavior of our gameplay
     override this.Process (screenResults, gameplay, world) =
@@ -76,20 +85,20 @@ type GameplayDispatcher () =
             let world =
                 if gameplay.GetStalkerSpawnAllowed world then
                     match gameplay.GetStalkerSpawnState world with
-                    | StalkerUnspawned countDown ->
-                        let countDown = countDown - world.ClockDelta
+                    | StalkerUnspawned unspawnTime as state ->
+                        let unspawnDuration = world.ClockTime - unspawnTime
                         let state =
-                            if countDown <= 0.0f && spawnPoints.Length > 0 then
+                            if unspawnDuration >= 180.0f && spawnPoints.Length > 0 then
                                 let spawnPoint = Gen.randomItem spawnPoints
-                                StalkerSpawned (spawnPoint, 60.0f + Gen.randomf1 60.0f)
-                            else StalkerUnspawned countDown
+                                StalkerSpawned (spawnPoint, world.ClockTime)
+                            else state
                         gameplay.SetStalkerSpawnState state world
-                    | StalkerSpawned (spawnPoint, countDown) ->
-                        let countDown = countDown - world.ClockDelta
+                    | StalkerSpawned (spawnPoint, spawnTime) as state ->
+                        let spawnDuration = world.ClockTime - spawnTime
                         let state =
-                            if countDown <= 0.0f
+                            if spawnDuration >= 120.0f
                             then StalkerUnspawning spawnPoint
-                            else StalkerSpawned (spawnPoint, countDown)
+                            else state
                         gameplay.SetStalkerSpawnState state world
                     | StalkerUnspawning _ ->
                         world
@@ -108,57 +117,61 @@ type GameplayDispatcher () =
                     World.doEntity<StalkerDispatcher> "Stalker" [Entity.Position .= spawnPoint.GetPosition world] world
                 | _ -> world
 
-            // determine scenario state
-            let hunted =
-                characters |>
-                Array.exists (fun character ->
-                    match character.GetCharacterState world with
-                    | HunterState state -> state.HunterAwareOfPlayerOpt.IsSome
-                    | _ -> false)
-            let stalked =
-                characters |>
-                Array.exists (fun character ->
-                    match character.GetCharacterState world with
-                    | StalkerState _ -> true
-                    | _ -> false)
+            // process hunted time
             let world =
-                if stalked then
-                    match World.getSongOpt world with
-                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.StalkedSong ->
-                        let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
-                        world
-                    | None ->
-                        let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
-                        world
-                    | Some _ -> world
-                elif hunted then
-                    match World.getSongOpt world with
-                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.HuntedSong ->
-                        let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
-                        world
-                    | None ->
-                        let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
-                        world
-                    | Some _ -> world
-                else
-                    match World.getSongOpt world with
-                    | Some songDescriptor ->
-                        if  (songDescriptor.Song = Assets.Gameplay.HuntedSong ||
-                             songDescriptor.Song = Assets.Gameplay.StalkedSong) &&
-                            not (World.getSongFadingOut world) then
-                            World.fadeOutSong 7.0f world
-                            world
-                        elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
-                            World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
-                            Simulants.GameplaySun.SetColor Color.White world
-                        else world
-                    | None ->
+                let hunted =
+                    characters |>
+                    Array.exists (fun character ->
+                        match character.GetCharacterState world with
+                        | HunterState state -> (state.HunterAwareDurationOpt world.ClockTime).IsSome
+                        | _ -> false)
+                match (hunted, gameplay.GetHuntedTimeOpt world) with
+                | (true, None) -> gameplay.SetHuntedTimeOpt (Some world.ClockTime) world
+                | (false, _) -> gameplay.SetHuntedTimeOpt None world
+                | (_, _) -> world
+
+            // process song playback
+            let huntedDurationOpt = gameplay.GetHuntedDurationOpt world
+            let stalkedDurationOpt = gameplay.GetStalkedDurationOpt world
+            match (huntedDurationOpt, stalkedDurationOpt) with
+            | (_, Some _) ->
+                match World.getSongOpt world with
+                | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.StalkedSong ->
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
+                | None ->
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
+                | Some _ -> ()
+            | (Some _, _) ->
+                match World.getSongOpt world with
+                | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.HuntedSong ->
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
+                | None ->
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
+                | Some _ -> ()
+            | (None, None) ->
+                match World.getSongOpt world with
+                | Some songDescriptor ->
+                    if  (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) &&
+                        not (World.getSongFadingOut world) then
+                        World.fadeOutSong 7.0f world
+                    elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
                         World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
-                        Simulants.GameplaySun.SetColor Color.White world
+                | None ->
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
+
+            // process lighting
+            let world =               
+                let dangerDurationOpt =
+                    match (huntedDurationOpt, stalkedDurationOpt) with
+                    | (Some huntedDuration, Some stalkedDuration) -> if huntedDuration > stalkedDuration then huntedDurationOpt else stalkedDurationOpt
+                    | (Some _, _) -> huntedDurationOpt
+                    | (_, Some _) -> stalkedDurationOpt
+                    | (_, _) -> None
+                match dangerDurationOpt with
+                | Some dangerDuration ->
+                    let sunColor = Color.Lerp (Color.White, Color.Red, min 1.0f dangerDuration)
+                    Simulants.GameplaySun.SetColor sunColor world
+                | None -> Simulants.GameplaySun.SetColor Color.White world
 
             // collect attacks
             let (attacks, world) =
