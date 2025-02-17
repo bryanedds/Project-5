@@ -21,7 +21,6 @@ module GameplayExtensions =
         member this.GetHuntedTimeOpt world : single option = this.Get (nameof Screen.HuntedTimeOpt) world
         member this.SetHuntedTimeOpt (value : single option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
-        member this.GetHuntedDurationOpt world = match this.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
 
         member this.GetStalkerSpawnAllowed world : bool = this.Get (nameof Screen.StalkerSpawnAllowed) world
         member this.SetStalkerSpawnAllowed (value : bool) world = this.Set (nameof Screen.StalkerSpawnAllowed) value world
@@ -29,7 +28,6 @@ module GameplayExtensions =
         member this.GetStalkerSpawnState world : StalkerSpawnState = this.Get (nameof Screen.StalkerSpawnState) world
         member this.SetStalkerSpawnState (value : StalkerSpawnState) world = this.Set (nameof Screen.StalkerSpawnState) value world
         member this.StalkerSpawnState = lens (nameof Screen.StalkerSpawnState) this this.GetStalkerSpawnState this.SetStalkerSpawnState
-        member this.GetStalkedDurationOpt world = (this.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
@@ -137,8 +135,8 @@ type GameplayDispatcher () =
                 | (_, _) -> world
 
             // process song playback
-            let huntedDurationOpt = gameplay.GetHuntedDurationOpt world
-            let stalkedDurationOpt = gameplay.GetStalkedDurationOpt world
+            let huntedDurationOpt = match gameplay.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
+            let stalkedDurationOpt = (gameplay.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
             match (huntedDurationOpt, stalkedDurationOpt) with
             | (_, Some _) ->
                 match World.getSongOpt world with
