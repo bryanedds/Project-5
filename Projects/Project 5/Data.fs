@@ -54,6 +54,12 @@ type StalkerSpawn =
         StalkerUnspawned (120.0f + Gen.randomf1 120.0f)
 
 type [<SymbolicExpansion>] StalkerState =
+    { Unused : unit }
+
+    static member initial =
+        { Unused = () }
+
+type [<SymbolicExpansion>] StalkerController =
     { StalkerSpawn : StalkerSpawn
       StalkerSpawnAllowed : bool
       StalkerSpawnPoints : Entity Relation list }
