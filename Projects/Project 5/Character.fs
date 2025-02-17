@@ -39,8 +39,8 @@ type CharacterDispatcher () =
         let entityPosition = entity.GetPosition world + v3Up * 1.25f
         let entityRotation = entity.GetRotation world
         seq {
-            for i in 0 .. dec 7 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 10.0f - 30.0f |> Math.DegreesToRadians)
+            for i in 0 .. dec 13 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
                 let scanRotation = entityRotation * angle
                 Segment3 (entityPosition, entityPosition + scanRotation.Forward * 8.0f) }
 
@@ -276,8 +276,10 @@ type CharacterDispatcher () =
                                         let (wayPointIndexOpt, wayPointBouncing) =
                                             match state.HunterWayPointPlayback with
                                             | Once ->
-                                                let wayPointIndex = min (inc wayPointIndex) (dec wayPoints.Length)
-                                                (Some wayPointIndex, false)
+                                                let wayPointIndex = inc wayPointIndex
+                                                if wayPointIndex < wayPoints.Length
+                                                then (Some wayPointIndex, false)
+                                                else (None, false)
                                             | Loop ->
                                                 let wayPointIndex = inc wayPointIndex % wayPoints.Length
                                                 (Some wayPointIndex, false)
@@ -297,9 +299,12 @@ type CharacterDispatcher () =
                                                 HunterWayPointBouncing = wayPointBouncing
                                                 HunterWayPointIndexOpt = wayPointIndexOpt }
                                         entity.SetCharacterState (HunterState state) world
-                                        else processEnemyNavigation wayPointPosition entity world
+                                    else processEnemyNavigation wayPointPosition entity world
                                 | None -> world
-                            | Some _ | None -> world
+                            | Some _ | None ->
+                                let world = entity.LinearVelocity.Map ((*) 0.5f) world
+                                let world = entity.AngularVelocity.Map ((*) 0.5f) world
+                                world
 
                 // process stalker state
                 | StalkerState _ ->
