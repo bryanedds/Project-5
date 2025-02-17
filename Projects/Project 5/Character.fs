@@ -119,6 +119,87 @@ type CharacterDispatcher () =
         // fin
         world
 
+    static let processHunterState (state : HunterState) entity world =
+
+        // process player sighting
+        let playerSightings =
+            seq {
+                for scanSegment in computeScanSegments entity world do
+                    let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
+                    if  intersected.Length > 1 &&
+                        intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
+                        true }
+        let state =
+            if Seq.notEmpty playerSightings
+            then { state with HunterAwareOfPlayerOpt = Some 16.0f }
+            else state
+
+        // process hunter state
+        match state.HunterAwareOfPlayerOpt with
+        | Some awareTime when Simulants.GameplayPlayer.GetExists world ->
+
+            // process aggression
+            let playerPosition = Simulants.GameplayPlayer.GetPosition world
+            let awareTime = awareTime - world.ClockDelta
+            let state =
+                if awareTime > 0.0f
+                then { state with HunterAwareOfPlayerOpt = Some awareTime }
+                else { state with HunterAwareOfPlayerOpt = None }
+            let world = entity.SetCharacterState (HunterState state) world
+            processEnemyAggression playerPosition entity world
+
+        | Some _ | None ->
+
+            // process way point navigation
+            match state.HunterWayPoints with
+            | [||] -> world
+            | wayPoints ->
+                match state.HunterWayPointIndexOpt with
+                | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
+                    let wayPoint = wayPoints.[wayPointIndex]
+                    match tryResolve entity wayPoint.WayPoint with
+                    | Some wayPointEntity ->
+                        let wayPointPosition = wayPointEntity.GetPosition world
+                        let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
+                        if wayPointDistance < 0.5f then
+                            let (wayPointIndexOpt, wayPointBouncing) =
+                                match state.HunterWayPointPlayback with
+                                | Once ->
+                                    let wayPointIndex = inc wayPointIndex
+                                    if wayPointIndex < wayPoints.Length
+                                    then (Some wayPointIndex, false)
+                                    else (None, false)
+                                | Loop ->
+                                    let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                    (Some wayPointIndex, false)
+                                | Bounce ->
+                                    if not state.HunterWayPointBouncing then
+                                        let wayPointIndex = inc wayPointIndex
+                                        if wayPointIndex = wayPoints.Length
+                                        then (Some (dec wayPointIndex), true)
+                                        else (Some wayPointIndex, false)
+                                    else
+                                        let wayPointIndex = dec wayPointIndex
+                                        if wayPointIndex < 0
+                                        then (Some (inc wayPointIndex), false)
+                                        else (Some wayPointIndex, true)
+                            let state =
+                                { state with
+                                    HunterWayPointBouncing = wayPointBouncing
+                                    HunterWayPointIndexOpt = wayPointIndexOpt }
+                            entity.SetCharacterState (HunterState state) world
+                        else processEnemyNavigation wayPointPosition entity world
+                    | None -> world
+                | Some _ | None ->
+                    let world = entity.LinearVelocity.Map ((*) 0.5f) world
+                    let world = entity.AngularVelocity.Map ((*) 0.5f) world
+                    world
+
+    static let processStalkerState (_ : StalkerState) entity world =
+        if Simulants.GameplayPlayer.GetExists world
+        then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
+        else world
+
     static let processPlayerInput (entity : Entity) world =
 
         // action
@@ -168,6 +249,9 @@ type CharacterDispatcher () =
 
         // no movement
         else world
+
+    static let processPlayerState (_ : PlayerState) entity world =
+        processPlayerInput entity world
 
     static member Facets =
         [typeof<RigidBodyFacet>]
@@ -235,92 +319,9 @@ type CharacterDispatcher () =
         let world =
             if world.Advancing then
                 match entity.GetCharacterState world with
-                | HunterState state ->
-
-                    // process player sighting
-                    let playerSightings =
-                        seq {
-                            for scanSegment in computeScanSegments entity world do
-                                let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
-                                if  intersected.Length > 1 &&
-                                    intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
-                                    true }
-                    let state =
-                        if Seq.notEmpty playerSightings
-                        then { state with HunterAwareOfPlayerOpt = Some 16.0f }
-                        else state
-
-                    // process hunter state
-                    match state.HunterAwareOfPlayerOpt with
-                    | Some awareTime when Simulants.GameplayPlayer.GetExists world ->
-
-                        // process aggression
-                        let playerPosition = Simulants.GameplayPlayer.GetPosition world
-                        let awareTime = awareTime - world.ClockDelta
-                        let state =
-                            if awareTime > 0.0f
-                            then { state with HunterAwareOfPlayerOpt = Some awareTime }
-                            else { state with HunterAwareOfPlayerOpt = None }
-                        let world = entity.SetCharacterState (HunterState state) world
-                        processEnemyAggression playerPosition entity world
-
-                    | Some _ | None ->
-
-                        // process way point navigation
-                        match state.HunterWayPoints with
-                        | [||] -> world
-                        | wayPoints ->
-                            match state.HunterWayPointIndexOpt with
-                            | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
-                                let wayPoint = wayPoints.[wayPointIndex]
-                                match tryResolve entity wayPoint.WayPoint with
-                                | Some wayPointEntity ->
-                                    let wayPointPosition = wayPointEntity.GetPosition world
-                                    let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
-                                    if wayPointDistance < 0.5f then
-                                        let (wayPointIndexOpt, wayPointBouncing) =
-                                            match state.HunterWayPointPlayback with
-                                            | Once ->
-                                                let wayPointIndex = inc wayPointIndex
-                                                if wayPointIndex < wayPoints.Length
-                                                then (Some wayPointIndex, false)
-                                                else (None, false)
-                                            | Loop ->
-                                                let wayPointIndex = inc wayPointIndex % wayPoints.Length
-                                                (Some wayPointIndex, false)
-                                            | Bounce ->
-                                                if not state.HunterWayPointBouncing then
-                                                    let wayPointIndex = inc wayPointIndex
-                                                    if wayPointIndex = wayPoints.Length
-                                                    then (Some (dec wayPointIndex), true)
-                                                    else (Some wayPointIndex, false)
-                                                else
-                                                    let wayPointIndex = dec wayPointIndex
-                                                    if wayPointIndex < 0
-                                                    then (Some (inc wayPointIndex), false)
-                                                    else (Some wayPointIndex, true)
-                                        let state =
-                                            { state with
-                                                HunterWayPointBouncing = wayPointBouncing
-                                                HunterWayPointIndexOpt = wayPointIndexOpt }
-                                        entity.SetCharacterState (HunterState state) world
-                                    else processEnemyNavigation wayPointPosition entity world
-                                | None -> world
-                            | Some _ | None ->
-                                let world = entity.LinearVelocity.Map ((*) 0.5f) world
-                                let world = entity.AngularVelocity.Map ((*) 0.5f) world
-                                world
-
-                // process stalker state
-                | StalkerState _ ->
-                    if Simulants.GameplayPlayer.GetExists world
-                    then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
-                    else world
-
-                // process player state
-                | PlayerState _ -> processPlayerInput entity world
-
-            // nothing to do
+                | HunterState state -> processHunterState state entity world
+                | StalkerState state -> processStalkerState state entity world
+                | PlayerState state -> processPlayerState state entity world
             else world
 
         // process action state

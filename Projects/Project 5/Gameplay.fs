@@ -9,6 +9,12 @@ type GameplayState =
     | Playing
     | Quit
 
+type ScenarioState =
+    | Stealth
+    | Hunted
+    | Stalked
+    | Narrative
+
 // this extends the Screen API to expose the Gameplay model as well as the Quit event.
 [<AutoOpen>]
 module GameplayExtensions =
@@ -46,12 +52,13 @@ type GameplayDispatcher () =
 
             // collect characters
             let characters =
-                World.getEntitiesSovereign Simulants.GameplayScene world |>
+                let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
+                entitiesSovereign |>
                 Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "Enemies")) |>
                 Seq.concat |>
                 Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<CharacterDispatcher> world)) |>
                 Seq.concat |>
-                Seq.append [Simulants.GameplayPlayer] |>
+                Seq.append (entitiesSovereign |> Seq.filter (fun entity -> entity.Is<CharacterDispatcher> world)) |>
                 Seq.toArray
 
             // collect attacks
@@ -99,36 +106,55 @@ type GameplayDispatcher () =
                     world deaths
 
             // determine ambience state
-            let anyHunterAwareOfPlayer =
+            let hunted =
                 characters |>
                 Array.exists (fun character ->
                     match character.GetCharacterState world with
                     | HunterState state -> state.HunterAwareOfPlayerOpt.IsSome
                     | _ -> false)
+            let stalked =
+                characters |>
+                Array.exists (fun character ->
+                    match character.GetCharacterState world with
+                    | StalkerState _ -> true
+                    | _ -> false)
             let world =
-                if anyHunterAwareOfPlayer then
+                if stalked then
                     match World.getSongOpt world with
-                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.AstrolabeSong ->
+                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.StalkedSong ->
                         let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AstrolabeSong world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
                         world
                     | None ->
                         let world = Simulants.GameplaySun.SetColor Color.Red world
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AstrolabeSong world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StalkedSong world
+                        world
+                    | Some _ -> world
+                elif hunted then
+                    match World.getSongOpt world with
+                    | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.HuntedSong ->
+                        let world = Simulants.GameplaySun.SetColor Color.Red world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
+                        world
+                    | None ->
+                        let world = Simulants.GameplaySun.SetColor Color.Red world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.HuntedSong world
                         world
                     | Some _ -> world
                 else
                     match World.getSongOpt world with
                     | Some songDescriptor ->
-                        if songDescriptor.Song = Assets.Gameplay.AstrolabeSong && not (World.getSongFadingOut world) then
+                        if  (songDescriptor.Song = Assets.Gameplay.HuntedSong ||
+                             songDescriptor.Song = Assets.Gameplay.StalkedSong) &&
+                            not (World.getSongFadingOut world) then
                             World.fadeOutSong 7.0f world
                             world
-                        elif songDescriptor.Song <> Assets.Gameplay.AmbienceSong && not (World.getSongFadingOut world) then
-                            World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AmbienceSong world
+                        elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
+                            World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
                             Simulants.GameplaySun.SetColor Color.White world
                         else world
                     | None ->
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.AmbienceSong world
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
                         Simulants.GameplaySun.SetColor Color.White world
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
