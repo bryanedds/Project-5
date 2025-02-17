@@ -150,7 +150,7 @@ type CharacterDispatcher () =
 
         | Some _ | None ->
 
-            // process way point navigation
+            // process navigation
             match state.HunterWayPoints with
             | [||] -> world
             | wayPoints ->
@@ -326,18 +326,20 @@ type CharacterDispatcher () =
 
         // process action state
         let world =
-            let actionState =
+            if world.Advancing then
                 match entity.GetActionState world with
-                | NormalState | WoundState _ as actionState ->
-                    actionState
+                | NormalState -> world
                 | AttackState attack as actionState ->
                     let localTime = world.ClockTime - attack.AttackTime
-                    if localTime <= 0.92f then actionState else NormalState
+                    let actionState = if localTime <= 0.92f then actionState else NormalState
+                    entity.SetActionState actionState world
                 | InjuryState injury as actionState ->
                     let localTime = world.ClockTime - injury.InjuryTime
                     let injuryTime = characterType.InjuryTime
-                    if localTime < injuryTime then actionState else NormalState
-            entity.SetActionState actionState world
+                    let actionState = if localTime < injuryTime then actionState else NormalState
+                    entity.SetActionState actionState world
+                | WoundState _ -> world
+            else world
 
         // declare animated model
         let world =
@@ -495,7 +497,6 @@ type CharacterDispatcher () =
         // fin
         world
 
-    // custom definition of ray cast to utilize animated model and weapon
     override this.RayCast (ray, entity, world) =
         let animatedModel = entity / Constants.Gameplay.CharacterAnimatedModelName
         match animatedModel.RayCast ray world with
