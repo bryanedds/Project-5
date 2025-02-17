@@ -41,16 +41,16 @@ type GameplayDispatcher () =
          define Screen.StalkerSpawnState StalkerSpawnState.initial]
 
     // here we define the behavior of our gameplay
-    override this.Process (screenResults, gameplay, world) =
+    override this.Process (screenResults, screen, world) =
 
         // only process when selected
-        if gameplay.GetSelected world then
+        if screen.GetSelected world then
 
             // initialize gameplay state
             let initializing = FQueue.contains Select screenResults
             let world =
                 if initializing
-                then gameplay.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
+                then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
                 else world
 
             // begin scene declaration
@@ -87,8 +87,8 @@ type GameplayDispatcher () =
 
             // process stalker spawn state
             let world =
-                if gameplay.GetStalkerSpawnAllowed world then
-                    match gameplay.GetStalkerSpawnState world with
+                if screen.GetStalkerSpawnAllowed world then
+                    match screen.GetStalkerSpawnState world with
                     | StalkerUnspawned unspawnTime as state ->
                         let unspawnDuration = world.ClockTime - unspawnTime
                         let state =
@@ -96,27 +96,27 @@ type GameplayDispatcher () =
                                 let spawnPoint = Gen.randomItem spawnPoints
                                 StalkerSpawned (spawnPoint, world.ClockTime)
                             else state
-                        gameplay.SetStalkerSpawnState state world
+                        screen.SetStalkerSpawnState state world
                     | StalkerSpawned (spawnPoint, spawnTime) as state ->
                         let spawnDuration = world.ClockTime - spawnTime
                         let state =
                             if spawnDuration >= 120.0f
                             then StalkerUnspawning spawnPoint
                             else state
-                        gameplay.SetStalkerSpawnState state world
+                        screen.SetStalkerSpawnState state world
                     | StalkerUnspawning _ ->
                         world
                 else
-                    match gameplay.GetStalkerSpawnState world with
+                    match screen.GetStalkerSpawnState world with
                     | StalkerSpawned (spawnPoint, _) ->
                         let state = StalkerUnspawning spawnPoint
-                        gameplay.SetStalkerSpawnState state world
+                        screen.SetStalkerSpawnState state world
                     | StalkerUnspawned _ | StalkerUnspawning _ ->
                         world
 
             // declare stalker
             let world =
-                match gameplay.GetStalkerSpawnState world with
+                match screen.GetStalkerSpawnState world with
                 | StalkerSpawned (spawnPoint, _) ->
                     World.doEntity<StalkerDispatcher> "Stalker" [Entity.Position .= spawnPoint.GetPosition world] world
                 | _ -> world
@@ -129,14 +129,14 @@ type GameplayDispatcher () =
                         match character.GetCharacterState world with
                         | HunterState state -> (state.HunterAwareDurationOpt world.ClockTime).IsSome
                         | _ -> false)
-                match (hunted, gameplay.GetHuntedTimeOpt world) with
-                | (true, None) -> gameplay.SetHuntedTimeOpt (Some world.ClockTime) world
-                | (false, _) -> gameplay.SetHuntedTimeOpt None world
+                match (hunted, screen.GetHuntedTimeOpt world) with
+                | (true, None) -> screen.SetHuntedTimeOpt (Some world.ClockTime) world
+                | (false, _) -> screen.SetHuntedTimeOpt None world
                 | (_, _) -> world
 
             // process song playback
-            let huntedDurationOpt = match gameplay.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
-            let stalkedDurationOpt = (gameplay.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
+            let huntedDurationOpt = match screen.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
+            let stalkedDurationOpt = (screen.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
             match (huntedDurationOpt, stalkedDurationOpt) with
             | (_, Some _) ->
                 match World.getSongOpt world with
@@ -211,7 +211,7 @@ type GameplayDispatcher () =
                 FQueue.fold (fun world (death : Entity) ->
                     if (death.GetCharacterType world).IsEnemy
                     then World.destroyEntity death world
-                    else gameplay.SetGameplayState Quit world)
+                    else screen.SetGameplayState Quit world)
                     world deaths
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
@@ -244,7 +244,7 @@ type GameplayDispatcher () =
                 else world
 
             // process nav sync
-            let world = if initializing then World.synchronizeNav3d gameplay world else world
+            let world = if initializing then World.synchronizeNav3d screen world else world
 
             // end scene declaration
             let world = World.endGroup world
@@ -252,7 +252,7 @@ type GameplayDispatcher () =
             // declare gui group
             let world = World.beginGroup "Gui" [] world
             let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
-            let world = if clicked then gameplay.SetGameplayState Quit world else world
+            let world = if clicked then screen.SetGameplayState Quit world else world
             World.endGroup world
 
         // otherwise, no processing
