@@ -9,12 +9,6 @@ type GameplayState =
     | Playing
     | Quit
 
-type ScenarioState =
-    | Stealth
-    | Hunted
-    | Stalked
-    | Narrative
-
 // this extends the Screen API to expose the Gameplay model as well as the Quit event.
 [<AutoOpen>]
 module GameplayExtensions =
@@ -22,6 +16,12 @@ module GameplayExtensions =
         member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
         member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
         member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
+        member this.GetStalkerSpawnState world : StalkerSpawnState = this.Get (nameof Screen.StalkerSpawnState) world
+        member this.SetStalkerSpawnState (value : StalkerSpawnState) world = this.Set (nameof Screen.StalkerSpawnState) value world
+        member this.StalkerSpawnState = lens (nameof Screen.StalkerSpawnState) this this.GetStalkerSpawnState this.SetStalkerSpawnState
+        member this.GetStalkerSpawnAllowed world : bool = this.Get (nameof Screen.StalkerSpawnAllowed) world
+        member this.SetStalkerSpawnAllowed (value : bool) world = this.Set (nameof Screen.StalkerSpawnAllowed) value world
+        member this.StalkerSpawnAllowed = lens (nameof Screen.StalkerSpawnAllowed) this this.GetStalkerSpawnAllowed this.SetStalkerSpawnAllowed
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
@@ -29,7 +29,9 @@ type GameplayDispatcher () =
 
     // here we define default property values
     static member Properties =
-        [define Screen.GameplayState Quit]
+        [define Screen.GameplayState Quit
+         define Screen.StalkerSpawnState StalkerSpawnState.initial
+         define Screen.StalkerSpawnAllowed true]
 
     // here we define the behavior of our gameplay
     override this.Process (screenResults, gameplay, world) =
@@ -41,6 +43,26 @@ type GameplayDispatcher () =
             let initializing = FQueue.contains Select screenResults
             let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
 
+            // collect spawn points
+            let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
+            let spawnPoints =
+                entitiesSovereign |>
+                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "SpawnPoints")) |>
+                Seq.concat |>
+                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<SpawnPointDispatcher> world)) |>
+                Seq.concat |>
+                Seq.toArray
+
+            // collect characters
+            let characters =
+                entitiesSovereign |>
+                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "Enemies")) |>
+                Seq.concat |>
+                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<CharacterDispatcher> world)) |>
+                Seq.concat |>
+                Seq.append (entitiesSovereign |> Seq.filter (fun entity -> entity.Is<CharacterDispatcher> world)) |>
+                Seq.toArray
+
             // declare player
             let world =
                 World.doEntity<PlayerDispatcher> "Player"
@@ -50,62 +72,43 @@ type GameplayDispatcher () =
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
 
-            // collect characters
-            let characters =
-                let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
-                entitiesSovereign |>
-                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "Enemies")) |>
-                Seq.concat |>
-                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<CharacterDispatcher> world)) |>
-                Seq.concat |>
-                Seq.append (entitiesSovereign |> Seq.filter (fun entity -> entity.Is<CharacterDispatcher> world)) |>
-                Seq.toArray
-
-            // collect attacks
-            let (attacks, world) =
-                Seq.fold (fun (attacks, world) (character : Entity) ->
-                    let (attacks', world) = World.doSubscription "Attacks" character.AttackEvent world
-                    (FQueue.append attacks attacks', world))
-                    (FQueue.empty, world)
-                    characters
-
-            // process attacks
+            // process stalker spawn state
             let world =
-                FQueue.fold (fun world (attack : Entity) ->
-                    let world = attack.HitPoints.Map (dec >> max 0) world
-                    if attack.GetHitPoints world > 0 then
-                        if not (attack.GetActionState world).IsInjuryState then
-                            let world = attack.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
-                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
-                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
-                            world
-                        else world
-                    else
-                        if not (attack.GetActionState world).IsWoundState then
-                            let world = attack.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
-                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
-                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
-                            world
-                        else world)
-                    world attacks
+                if gameplay.GetStalkerSpawnAllowed world then
+                    match gameplay.GetStalkerSpawnState world with
+                    | StalkerUnspawned countDown ->
+                        let countDown = countDown - world.ClockDelta
+                        let state =
+                            if countDown <= 0.0f && spawnPoints.Length > 0 then
+                                let spawnPoint = Gen.randomItem spawnPoints
+                                StalkerSpawned (spawnPoint, 60.0f + Gen.randomf1 60.0f)
+                            else StalkerUnspawned countDown
+                        gameplay.SetStalkerSpawnState state world
+                    | StalkerSpawned (spawnPoint, countDown) ->
+                        let countDown = countDown - world.ClockDelta
+                        let state =
+                            if countDown <= 0.0f
+                            then StalkerUnspawning spawnPoint
+                            else StalkerSpawned (spawnPoint, countDown)
+                        gameplay.SetStalkerSpawnState state world
+                    | StalkerUnspawning _ ->
+                        world
+                else
+                    match gameplay.GetStalkerSpawnState world with
+                    | StalkerSpawned (spawnPoint, _) ->
+                        let state = StalkerUnspawning spawnPoint
+                        gameplay.SetStalkerSpawnState state world
+                    | StalkerUnspawned _ | StalkerUnspawning _ ->
+                        world
 
-            // collect deaths
-            let (deaths, world) =
-                Seq.fold (fun (attacks, world) (character : Entity) ->
-                    let (attacks', world) = World.doSubscription "Deaths" character.DeathEvent world
-                    (FQueue.append attacks attacks', world))
-                    (FQueue.empty, world)
-                    characters
-
-            // process deaths
+            // declare stalker
             let world =
-                FQueue.fold (fun world (death : Entity) ->
-                    if (death.GetCharacterType world).IsEnemy
-                    then World.destroyEntity death world
-                    else gameplay.SetGameplayState Quit world)
-                    world deaths
+                match gameplay.GetStalkerSpawnState world with
+                | StalkerSpawned (spawnPoint, _) ->
+                    World.doEntity<StalkerDispatcher> "Stalker" [Entity.Position .= spawnPoint.GetPosition world] world
+                | _ -> world
 
-            // determine ambience state
+            // determine scenario state
             let hunted =
                 characters |>
                 Array.exists (fun character ->
@@ -157,6 +160,50 @@ type GameplayDispatcher () =
                         World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
                         Simulants.GameplaySun.SetColor Color.White world
 
+            // collect attacks
+            let (attacks, world) =
+                Seq.fold (fun (attacks, world) (character : Entity) ->
+                    let (attacks', world) = World.doSubscription "Attacks" character.AttackEvent world
+                    (FQueue.append attacks attacks', world))
+                    (FQueue.empty, world)
+                    characters
+
+            // process attacks
+            let world =
+                FQueue.fold (fun world (attack : Entity) ->
+                    let world = attack.HitPoints.Map (dec >> max 0) world
+                    if attack.GetHitPoints world > 0 then
+                        if not (attack.GetActionState world).IsInjuryState then
+                            let world = attack.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
+                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
+                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                            world
+                        else world
+                    else
+                        if not (attack.GetActionState world).IsWoundState then
+                            let world = attack.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
+                            let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
+                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                            world
+                        else world)
+                    world attacks
+
+            // collect deaths
+            let (deaths, world) =
+                Seq.fold (fun (attacks, world) (character : Entity) ->
+                    let (attacks', world) = World.doSubscription "Deaths" character.DeathEvent world
+                    (FQueue.append attacks attacks', world))
+                    (FQueue.empty, world)
+                    characters
+
+            // process deaths
+            let world =
+                FQueue.fold (fun world (death : Entity) ->
+                    if (death.GetCharacterType world).IsEnemy
+                    then World.destroyEntity death world
+                    else gameplay.SetGameplayState Quit world)
+                    world deaths
+
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
             // in concept to - https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN#moving-the-light-in-texel-sized-increments
             let sun = Simulants.GameplaySun
@@ -204,8 +251,15 @@ type GameplayDispatcher () =
     override this.Edit (op, _, world) =
         match op with
         | ViewportOverlay _ ->
+
+            // show spawn points
             let entitiesInView = World.getEntities3dInView (HashSet ()) world            
+            let spawnPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<SpawnPointDispatcher> world)
+            for spawnPoint in spawnPoints do World.imGuiCircle3d (spawnPoint.GetPosition world) 10.0f false Color.Magenta world
+
+            // show way points
             let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<WayPointDispatcher> world)
             for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 10.0f false Color.Yellow world
             world
+
         | _ -> world

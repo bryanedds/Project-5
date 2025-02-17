@@ -25,30 +25,10 @@ type [<SymbolicExpansion>] HunterState =
           HunterWayPointCountDownOpt = None
           HunterAwareOfPlayerOpt = None }
 
-type StalkerSpawn =
+type StalkerSpawnState =
     | StalkerUnspawned of CountDown : single
-    | StalkerSpawned of SpawnPoint : Entity Relation * CountDown : single
-    | StalkerUnspawning of UnspawnPoint : Entity Relation
-
-    static member update deltaTime spawnAllowed spawnPoints spawn =
-        if spawnAllowed then
-            match spawn with
-            | StalkerUnspawned countDown ->
-                let countDown = countDown - deltaTime
-                if countDown <= 0.0f
-                then (true, StalkerSpawned (Gen.randomItem spawnPoints, 90.0f + Gen.randomf1 90.0f))
-                else (false, StalkerUnspawned countDown)
-            | StalkerSpawned (spawnPoint, countDown) ->
-                let countDown = countDown - deltaTime
-                if countDown <= 0.0f
-                then (true, StalkerUnspawning spawnPoint)
-                else (false, StalkerSpawned (spawnPoint, countDown))
-            | StalkerUnspawning _ ->
-                (false, spawn)
-        else
-            match spawn with
-            | StalkerSpawned (spawnPoint, _) -> (true, StalkerUnspawning spawnPoint)
-            | StalkerUnspawned _ | StalkerUnspawning _ -> (false, spawn)
+    | StalkerSpawned of SpawnPoint : Entity * CountDown : single
+    | StalkerUnspawning of UnspawnPoint : Entity
 
     static member initial =
         StalkerUnspawned (120.0f + Gen.randomf1 120.0f)
@@ -58,16 +38,6 @@ type [<SymbolicExpansion>] StalkerState =
 
     static member initial =
         { Unused = () }
-
-type [<SymbolicExpansion>] StalkerController =
-    { StalkerSpawn : StalkerSpawn
-      StalkerSpawnAllowed : bool
-      StalkerSpawnPoints : Entity Relation list }
-
-    static member initial =
-        { StalkerSpawn = StalkerSpawn.initial
-          StalkerSpawnAllowed = true
-          StalkerSpawnPoints = [] }
 
 type HideType =
     | HideStanding // like a locker or tall cupboard
@@ -137,8 +107,8 @@ and CharacterType =
 
     member this.AnimatedModel =
         match this with
-        | Hunter -> Assets.Gameplay.RhyoliteModel
-        | Stalker -> Assets.Gameplay.CruciformModel
+        | Hunter -> Assets.Gameplay.CruciformModel
+        | Stalker -> Assets.Gameplay.RhyoliteModel
         | Player -> Assets.Gameplay.SophieModel
 
     member this.CharacterProperties =

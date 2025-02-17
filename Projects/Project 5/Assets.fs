@@ -29,6 +29,6 @@ module Assets =
         let HeartFull = asset<Image> PackageName "HeartFull"
         let HeartEmpty = asset<Image> PackageName "HeartEmpty"
         let SophieModel = asset<AnimatedModel> PackageName "Sophie"
-        let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let CruciformModel = asset<AnimatedModel> PackageName "Cruciform"
+        let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
