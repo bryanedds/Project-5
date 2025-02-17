@@ -118,8 +118,10 @@ type GameplayDispatcher () =
             // declare stalker
             let world =
                 match screen.GetStalkerSpawnState world with
-                | StalkerSpawned (spawnPoint, _) ->
-                    World.doEntity<StalkerDispatcher> "Stalker" [Entity.Position .= spawnPoint.GetPosition world] world
+                | StalkerSpawned (spawnPoint, spawnTime) ->
+                    World.doEntity<StalkerDispatcher> "Stalker"
+                        [if spawnTime = world.ClockTime then Entity.Position @= spawnPoint.GetPosition world]
+                        world
                 | _ -> world
 
             // process hunted time
