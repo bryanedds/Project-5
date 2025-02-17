@@ -53,7 +53,7 @@ type [<SymbolicExpansion>] HunterState =
           HunterAwareTimeOpt = None }
 
 type StalkerSpawnState =
-    | StalkerUnspawned of CountDown : single
+    | StalkerUnspawned of UnspawnTime : single
     | StalkerSpawned of SpawnPoint : Entity * SpawnTime : single
     | StalkerUnspawning of UnspawnPoint : Entity
 

@@ -48,8 +48,14 @@ type GameplayDispatcher () =
         // only process when selected
         if gameplay.GetSelected world then
 
-            // begin scene declaration
+            // initialize gameplay state
             let initializing = FQueue.contains Select screenResults
+            let world =
+                if initializing
+                then gameplay.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
+                else world
+
+            // begin scene declaration
             let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
 
             // collect spawn points
@@ -151,8 +157,7 @@ type GameplayDispatcher () =
             | (None, None) ->
                 match World.getSongOpt world with
                 | Some songDescriptor ->
-                    if  (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) &&
-                        not (World.getSongFadingOut world) then
+                    if (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) && not (World.getSongFadingOut world) then
                         World.fadeOutSong 7.0f world
                     elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
                         World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
@@ -160,14 +165,8 @@ type GameplayDispatcher () =
                     World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
 
             // process lighting
-            let world =               
-                let dangerDurationOpt =
-                    match (huntedDurationOpt, stalkedDurationOpt) with
-                    | (Some huntedDuration, Some stalkedDuration) -> if huntedDuration > stalkedDuration then huntedDurationOpt else stalkedDurationOpt
-                    | (Some _, _) -> huntedDurationOpt
-                    | (_, Some _) -> stalkedDurationOpt
-                    | (_, _) -> None
-                match dangerDurationOpt with
+            let world =
+                match max huntedDurationOpt stalkedDurationOpt with
                 | Some dangerDuration ->
                     let sunColor = Color.Lerp (Color.White, Color.Red, min 1.0f dangerDuration)
                     Simulants.GameplaySun.SetColor sunColor world
