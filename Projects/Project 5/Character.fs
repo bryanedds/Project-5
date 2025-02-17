@@ -240,12 +240,9 @@ type CharacterDispatcher () =
                                 if  intersected.Length > 1 &&
                                     intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
                                     true }
-                    let playerSighted = Seq.notEmpty playerSightings
                     let state =
-                        if playerSighted then
-                            let state = { state with HunterAwareOfPlayerOpt = Some 8.0f }
-                            World.playSound 1.0f  Assets.Gameplay.InjureSound world
-                            state
+                        if Seq.notEmpty playerSightings
+                        then { state with HunterAwareOfPlayerOpt = Some 8.0f }
                         else state
 
                     // process hunter state
@@ -411,8 +408,10 @@ type CharacterDispatcher () =
                  Entity.Rotation @= weaponTransform.Rotation
                  Entity.Offset .= v3 0.0f 0.5f 0.0f
                  Entity.MountOpt .= None
+                 Entity.Visible @= false
                  Entity.Pickable .= false
                  Entity.StaticModel @= entity.GetWeaponModel world
+                 Entity.BodyEnabled @= characterType.IsEnemy
                  Entity.BodyType .= Static
                  Entity.BodyShape .= BoxShape { Size = v3 0.3f 1.2f 0.3f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.6f 0.0f)); PropertiesOpt = None }
                  Entity.Sensor .= true
