@@ -157,7 +157,7 @@ type GameplayDispatcher () =
                 match World.getSongOpt world with
                 | Some songDescriptor ->
                     if (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) && not (World.getSongFadingOut world) then
-                        World.fadeOutSong 7.0f world
+                        World.fadeOutSong 7.5f world
                     elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
                         World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
                 | None ->
@@ -168,7 +168,7 @@ type GameplayDispatcher () =
                 screen.Danger.Map (fun danger ->
                     match max huntedDurationOpt stalkedDurationOpt with
                     | Some dangerDuration -> min 1.0f dangerDuration
-                    | None -> max 0.0f (danger - world.ClockDelta * 0.2f))
+                    | None -> max 0.0f (danger - world.ClockDelta / 7.5f))
                     world
 
             // process lighting
