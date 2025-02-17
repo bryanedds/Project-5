@@ -13,21 +13,21 @@ type GameplayState =
 [<AutoOpen>]
 module GameplayExtensions =
     type Screen with
-
         member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
         member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
         member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
-
         member this.GetHuntedTimeOpt world : single option = this.Get (nameof Screen.HuntedTimeOpt) world
         member this.SetHuntedTimeOpt (value : single option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
-
         member this.GetStalkerSpawnAllowed world : bool = this.Get (nameof Screen.StalkerSpawnAllowed) world
         member this.SetStalkerSpawnAllowed (value : bool) world = this.Set (nameof Screen.StalkerSpawnAllowed) value world
         member this.StalkerSpawnAllowed = lens (nameof Screen.StalkerSpawnAllowed) this this.GetStalkerSpawnAllowed this.SetStalkerSpawnAllowed
         member this.GetStalkerSpawnState world : StalkerSpawnState = this.Get (nameof Screen.StalkerSpawnState) world
         member this.SetStalkerSpawnState (value : StalkerSpawnState) world = this.Set (nameof Screen.StalkerSpawnState) value world
         member this.StalkerSpawnState = lens (nameof Screen.StalkerSpawnState) this this.GetStalkerSpawnState this.SetStalkerSpawnState
+        member this.GetDanger world : single = this.Get (nameof Screen.Danger) world
+        member this.SetDanger (value : single) world = this.Set (nameof Screen.Danger) value world
+        member this.Danger = lens (nameof Screen.Danger) this this.GetDanger this.SetDanger
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
@@ -38,7 +38,8 @@ type GameplayDispatcher () =
         [define Screen.GameplayState Quit
          define Screen.HuntedTimeOpt None
          define Screen.StalkerSpawnAllowed true
-         define Screen.StalkerSpawnState StalkerSpawnState.initial]
+         define Screen.StalkerSpawnState StalkerSpawnState.initial
+         define Screen.Danger 0.0f]
 
     // here we define the behavior of our gameplay
     override this.Process (screenResults, screen, world) =
@@ -162,13 +163,18 @@ type GameplayDispatcher () =
                 | None ->
                     World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
 
+            // process danger
+            let world =
+                screen.Danger.Map (fun danger ->
+                    match max huntedDurationOpt stalkedDurationOpt with
+                    | Some dangerDuration -> min 1.0f dangerDuration
+                    | None -> max 0.0f (danger - world.ClockDelta * 0.2f))
+                    world
+
             // process lighting
             let world =
-                match max huntedDurationOpt stalkedDurationOpt with
-                | Some dangerDuration ->
-                    let sunColor = Color.Lerp (Color.White, Color.Red, min 1.0f dangerDuration)
-                    Simulants.GameplaySun.SetColor sunColor world
-                | None -> Simulants.GameplaySun.SetColor Color.White world
+                let sunColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world)
+                Simulants.GameplaySun.SetColor sunColor world
 
             // collect attacks
             let (attacks, world) =
