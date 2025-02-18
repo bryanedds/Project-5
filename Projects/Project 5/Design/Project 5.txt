@@ -1,0 +1,49 @@
+when hiding, player fades to transparent and camera goes into first person view, meaning we don't have to have custom character hiding animations.
+
+out of stalker view after time, goes back to originating spawn point, then disappears.
+
+hunter tracks player by last seen while player not in sight.
+
+hold down interact button for ten seconds to investigate (in a drawer, plays a sound like shuffling contents around during that time, or with a book, flipping pages).
+
+hostile furniture - after hiding in a piece of furniture or closet, once you step out, the door closes and can't be opened again.
+
+you can kill hunters, but you have to find a one-use item to hit them with from behind first. item can't be used if hunter is aware of you (item icon has an X marked over it).
+
+Stage Ideas -
+
+1) Normal lighting, no enemies.
+
+2) Dark + Flashlight, no enemies.
+
+3) Normal lighting, Stalker only.
+
+4) Normal lighting, Hunters only.
+
+5) Dark + flashlight. Stalker is the only enemy on this stage.
+
+6) Dark + flashlight. Hunters are the only enemies on this stage.
+
+7) Normal lighting, Stalker + Hunters
+
+8) Dark + Flashlight, Stalker + Hunters
+
+Progression Types -
+
+A) Investigate POIs. Find a hidden key to leave.
+
+B) Kill Hunter. Investigate its corpse to find key to leave.
+
+Intro Stage - 1A, 2A. Find your keys before leaving the house ("Need to drive and don't want to lock myself out.") Upon finding your keys, you realize you also need to find your wallet, then suddenly a dry lightning flashes and the power goes out. Fortunately there's a small flash light on your keychain. Upon finding your wallet in the dark, leave the house / stage. "God I'm exhausted... I better get some coffee on the way."
+
+Narrative Slides - Car crash on a long country road. Car is in a ditch, you don't remember the crash. You must've fallen asleep at the wheel. You search the car for your cell phone - can't find it. Might have been flung out the broken windshield. Look for the cell phone outside the car. Find cell phone - it's broken. The only thing you see is an abandoned, dilapidated plantation-style farm house. It's 4AM. You wait an hour for another car to pass by. None do. Approach the house.
+
+Stage 1 - 2A - Enter dilapidated house. Darkness, no electricity.  You hear a sound, like a child's voice. "Hello? Is anyone here? Are you alone?" You hear nothing more. Find a door downstairs, locked. Find a key - enter.
+
+Stage 2 - 6A - You hear a little girl's voice... "They want to play with you...". You hear a loud bang. "Hello? Where are you? Are you okay?" You hear a gurgling growl. If the player tries to leave, notice door is locked behind them. No way to kill stalkers; need to rummage through POIs in order to find key to next area.
+
+Stage 3 - 5A - "We're going to eat you...!" The little girl's voice again. Stalker appears! Possible to hide for it to go away. When Stalker goes away, girl whispers "Coward..."
+
+...
+
+Stage Final - 8B
