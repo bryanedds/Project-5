@@ -1,3 +1,11 @@
+enemy types -
+
+hunter - hunts in confined way path. can be killed with stage weapon.
+
+stalker - intermittently stalks like scissorman. can't be killer.
+
+murderer - hunts in mostly exhaustive path. can't be killed. only appears or goes away based on game event progression.
+
 when hiding, player fades to transparent and camera goes into first person view, meaning we don't have to have custom character hiding animations.
 
 out of stalker view after time, goes back to originating spawn point, then disappears.
