@@ -47,3 +47,13 @@ Stage 3 - 5A - "We're going to eat you...!" The little girl's voice again. Stalk
 ...
 
 Stage Final - 8B
+
+Asset Notes:
+
+Abandoned Mansion texture fix-ups -
+
+R <- G
+G <- B
+B <- R
+
+deexponentiate roughness (red) with Paint.NET curve editor.

@@ -15,7 +15,7 @@ module Assets =
 
         let PackageName = "Gui"
 
-    // these are assets from the Gui package. Also no assets here yet.
+    // these are assets from the Gameplay package. Also no assets here yet.
     [<RequireQualifiedAccess>]
     module Gameplay =
 
@@ -32,3 +32,9 @@ module Assets =
         let CruciformModel = asset<AnimatedModel> PackageName "Cruciform"
         let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
+
+    // these are assets from the Mansion package. Also no assets here yet.
+    [<RequireQualifiedAccess>]
+    module AbandonedMansion =
+
+        let PackageName = "AbandonedMansion"

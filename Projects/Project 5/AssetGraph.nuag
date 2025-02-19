@@ -18,4 +18,11 @@
    [Assets Assets/Gameplay [cbm fbx gltf glb dae obj mtl glsl raw] [] [Render3d]]
    [Assets Assets/Gameplay [wav ogg mp3] [] [Audio]]
    [Assets Assets/Gameplay [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Gameplay [nuentity nugroup tsx tmx atlas bin] [] []]]]]
+   [Assets Assets/Gameplay [nuentity nugroup tsx tmx atlas bin] [] []]]]
+ [AbandonedMansion
+  [[Assets Assets/AbandonedMansion [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
+   [Assets Assets/AbandonedMansion [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]
+   [Assets Assets/AbandonedMansion [cbm fbx gltf glb dae obj mtl glsl raw] [] [Render3d]]
+   [Assets Assets/AbandonedMansion [wav ogg mp3] [] [Audio]]
+   [Assets Assets/AbandonedMansion [nueffect nuscript csv] [] [Symbol]]
+   [Assets Assets/AbandonedMansion [nuentity nugroup tsx tmx atlas bin] [] []]]]]
