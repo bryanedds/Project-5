@@ -48,18 +48,12 @@ flat out vec4 heightPlusOut;
 void main()
 {
     // compute blended bone influences
-    float weightTotal = 0.0;
     mat4 boneBlended = mat4(0.0);
     for (int i = 0; i < BONES_INFLUENCE_MAX; ++i)
     {
         int boneId = int(boneIds[i]);
-        if (boneId >= 0)
-        {
-            weightTotal += weights[i];
-            boneBlended += bones[boneId] * weights[i];
-        }
+        if (boneId >= 0) boneBlended += bones[boneId] * weights[i];
     }
-    boneBlended /= weightTotal;
 
     // compute blended position and normal
     vec4 positionBlended = boneBlended * vec4(position, 1.0);
@@ -67,6 +61,7 @@ void main()
 
     // compute remaining values
     positionOut = model * positionBlended;
+    positionOut.xyzw /= positionOut.w; // NOTE: normalizing by w seems to fix a bug caused by weights not summing to 1.0.
     int texCoordsOffsetIndex = gl_VertexID % TEX_COORDS_OFFSET_VERTS;
     vec2 texCoordsOffsetFilter = TEX_COORDS_OFFSET_FILTERS[texCoordsOffsetIndex];
     vec2 texCoordsOffsetFilter2 = TEX_COORDS_OFFSET_FILTERS_2[texCoordsOffsetIndex];
@@ -112,7 +107,7 @@ void main()
     if (depthCutoff >= 0.0) { if (depth > depthCutoff) discard; }
     else if (depth <= -depthCutoff) discard;
 
-    // forward position, marking w for writter
+    // forward position, marking w for written
     position.xyz = positionOut.xyz;
     position.w = 1.0;
 

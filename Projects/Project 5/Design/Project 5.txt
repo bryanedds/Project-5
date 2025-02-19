@@ -6,6 +6,8 @@ stalker - intermittently stalks like scissorman. can't be killer.
 
 murderer - hunts in mostly exhaustive path. can't be killed. only appears or goes away based on game event progression.
 
+murderer (butt clencher variant) - like the other murderer, but this one starts slow but gains speed over straights.
+
 when hiding, player fades to transparent and camera goes into first person view, meaning we don't have to have custom character hiding animations.
 
 out of stalker view after time, goes back to originating spawn point, then disappears.
@@ -65,3 +67,7 @@ G <- B
 B <- R
 
 deexponentiate roughness (red) with Paint.NET curve editor.
+
+MISC
+
+having something small in the scene with just a bit of motion (like the small spinning table fan in RE7) can trick the player into thinking something dangerous is near - then realize it was just a harmless prop. that's effective for horror for two reasons - creates sudden tension and also make next encounter with danger more surprising.
