@@ -102,15 +102,15 @@ type GameplayDispatcher () =
                         let spawnDuration = world.ClockTime - spawnTime
                         let state =
                             if spawnDuration >= 120.0f
-                            then StalkerUnspawning spawnPoint
+                            then StalkerUnspawning (spawnPoint, spawnTime)
                             else state
                         screen.SetStalkerSpawnState state world
                     | StalkerUnspawning _ ->
                         world
                 else
                     match screen.GetStalkerSpawnState world with
-                    | StalkerSpawned (spawnPoint, _) ->
-                        let state = StalkerUnspawning spawnPoint
+                    | StalkerSpawned (spawnPoint, spawnTime) ->
+                        let state = StalkerUnspawning (spawnPoint, spawnTime)
                         screen.SetStalkerSpawnState state world
                     | StalkerUnspawned _ | StalkerUnspawning _ ->
                         world
@@ -119,10 +119,43 @@ type GameplayDispatcher () =
             let world =
                 match screen.GetStalkerSpawnState world with
                 | StalkerSpawned (spawnPoint, spawnTime) ->
+
+                    // declare stalker in spawned state
                     World.doEntity<StalkerDispatcher> "Stalker"
-                        [if spawnTime = world.ClockTime then Entity.Position @= spawnPoint.GetPosition world]
+                        [if spawnTime = world.ClockTime then Entity.Position @= spawnPoint.GetPosition world
+                         Entity.CharacterState @= StalkerState Spawned]
                         world
-                | _ -> world
+
+                | StalkerUnspawning (unspawnPoint, _) ->
+
+                    // declare stalked in unspawning state
+                    let unspawnPosition = unspawnPoint.GetPosition world
+                    let stalkerState = Unspawning unspawnPosition
+                    let world =
+                        World.doEntity<StalkerDispatcher> "Stalker"
+                            [Entity.CharacterState @= StalkerState stalkerState]
+                            world
+                    let stalker = world.DeclaredEntity
+                    
+                    // process player sighting
+                    let playerSightings =
+                        seq {
+                            let position = stalker.GetPosition world
+                            let rotation = stalker.GetRotation world
+                            for scanSegment in StalkerState.computeScanSegments position rotation stalkerState do
+                                let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
+                                if  intersected.Length > 1 &&
+                                    intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
+                                    true }
+
+                    // process unspawn or resetting to late spawn state
+                    if Seq.isEmpty playerSightings then
+                        if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
+                        then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
+                        else world
+                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.ClockTime - 110.0f)) world
+
+                | StalkerUnspawned _ -> world
 
             // process hunted time
             let world =

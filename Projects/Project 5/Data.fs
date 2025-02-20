@@ -52,16 +52,32 @@ type [<SymbolicExpansion>] HunterState =
           HunterWayPointTimeOpt = None
           HunterAwareTimeOpt = None }
 
+type [<SymbolicExpansion>] StalkerState =
+    | Spawned
+    | Unspawning of UnspawnPoint : Vector3
+
+    static member initial = Spawned
+
+    static member computeScanSegments position rotation (_ : StalkerState) =
+        let sightDistance = 7.0f
+        let sightPosition = position + v3Up * 1.25f
+        let sightRotation = rotation
+        seq {
+            for i in 0 .. dec 13 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
+                let scanRotation = sightRotation * angle
+                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
+
 type StalkerSpawnState =
     | StalkerUnspawned of UnspawnTime : single
     | StalkerSpawned of SpawnPoint : Entity * SpawnTime : single
-    | StalkerUnspawning of UnspawnPoint : Entity
+    | StalkerUnspawning of UnspawnPoint : Entity * SpawnTime : single
 
     member this.SpawnTimeOpt =
         match this with
         | StalkerUnspawned _ -> None
         | StalkerSpawned (_, spawnTime) -> Some spawnTime
-        | StalkerUnspawning _ -> None
+        | StalkerUnspawning (_, spawnTime) -> Some spawnTime
 
     member this.SpawnDurationOpt time =
         match this.SpawnTimeOpt with
@@ -70,12 +86,6 @@ type StalkerSpawnState =
 
     static member initial =
         StalkerUnspawned Single.MaxValue
-
-type [<SymbolicExpansion>] StalkerState =
-    { Unused : unit }
-
-    static member initial =
-        { Unused = () }
 
 type HideType =
     | HideStanding // like a locker or tall cupboard

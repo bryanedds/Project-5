@@ -179,12 +179,19 @@ type CharacterDispatcher () =
                     let world = entity.AngularVelocity.Map ((*) 0.5f) world
                     world
 
-    static let processStalkerState (_ : StalkerState) entity world =
+    static let processStalkerState (state : StalkerState) (entity : Entity) world =
+        match state with
+        | Spawned ->
 
-        // process aggression
-        if Simulants.GameplayPlayer.GetExists world
-        then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
-        else world
+            // process aggression
+            if Simulants.GameplayPlayer.GetExists world
+            then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
+            else world
+
+        | Unspawning unspawnPoint ->
+
+            // process navigation
+            processEnemyNavigation unspawnPoint entity world
 
     static let processPlayerInput (entity : Entity) world =
 
@@ -499,6 +506,12 @@ type CharacterDispatcher () =
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
                 for scanSegment in HunterState.computeScanSegments world.ClockTime position rotation state do
+                    World.imGuiSegment3d scanSegment 1.0f Color.Red world
+                world
+            | StalkerState state ->
+                let position = entity.GetPosition world
+                let rotation = entity.GetRotation world
+                for scanSegment in StalkerState.computeScanSegments position rotation state do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             | _ -> world
