@@ -36,7 +36,7 @@ Real-time WYSIWYG editing with hot asset and live code reloading, and the abilit
 ![image](https://github.com/user-attachments/assets/fa88a1a5-e793-44cb-8113-4a6bf8468d4c)
 Photo-realistic yet user-friendly deferred, physically-based rendering.
 
-![image](https://github.com/user-attachments/assets/b9f9a7a5-e159-45e4-b220-984f24137b62)
+![image](https://github.com/user-attachments/assets/d8406232-2bb9-4b60-b7a0-4a49cfa29236)
 Rendering made efficient with instancing-by-default.
 
 ![image](https://github.com/user-attachments/assets/0789e71d-fc49-496c-b9fc-2c9855a9e8e7)
@@ -53,9 +53,6 @@ Spine 2D skeletal animation available now!
 
 ![image](https://github.com/bryanedds/Nu/assets/1625560/69cd30f1-06fe-450e-a83f-8a7a9fd504d0)
 Algebraic terrain rendering thanks to contributions from **[@deanjl](https://github.com/deanjl)**.
-
-![image](https://github.com/bryanedds/Nu/assets/1625560/1d3ebe11-da94-46ad-bae1-22fc5f7c9b3e)
-Our little 3D dog-fooding demo, Terra Firma.
 
 ![image](https://github.com/bryanedds/Nu/assets/1625560/e8571dd1-bdd1-4663-b2ae-87abeef179d9)
 Recursive Prefab-like functionality via Entity Structure Propagation.
