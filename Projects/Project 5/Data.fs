@@ -21,12 +21,12 @@ type [<SymbolicExpansion>] HunterState =
         match this.HunterAwareTimeOpt with
         | Some start ->
             let awareTime = time - start
-            if awareTime >= 16.0f then None else Some awareTime
+            if awareTime >= Constants.Gameplay.HuntDuration then None else Some awareTime
         | None -> None
 
     member this.HunterAwareProgressOpt (time : single) =
         match this.HunterAwareDurationOpt time with
-        | Some awareTime -> Some (awareTime / 16.0f)
+        | Some awareTime -> Some (awareTime / Constants.Gameplay.HuntDuration)
         | None -> None
 
     member this.HunterSightDistance (time : single) =
@@ -137,8 +137,8 @@ and CharacterType =
 
     member this.WalkSpeed =
         match this with
-        | Hunter -> 1.0f
-        | Stalker -> 1.25f
+        | Hunter -> 1.25f
+        | Stalker -> 1.33f
         | Player -> 1.75f
 
     member this.TurnSpeed =

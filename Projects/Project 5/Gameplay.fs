@@ -93,7 +93,7 @@ type GameplayDispatcher () =
                     | StalkerUnspawned unspawnTime as state ->
                         let unspawnDuration = world.ClockTime - unspawnTime
                         let state =
-                            if unspawnDuration >= 180.0f && spawnPoints.Length > 0 then
+                            if unspawnDuration >= Constants.Gameplay.StalkDelay && spawnPoints.Length > 0 then
                                 let spawnPoint = Gen.randomItem spawnPoints
                                 StalkerSpawned (spawnPoint, world.ClockTime)
                             else state
@@ -101,7 +101,7 @@ type GameplayDispatcher () =
                     | StalkerSpawned (spawnPoint, spawnTime) as state ->
                         let spawnDuration = world.ClockTime - spawnTime
                         let state =
-                            if spawnDuration >= Constants.Gameplay.StalkTime
+                            if spawnDuration >= Constants.Gameplay.StalkDuration
                             then StalkerUnspawning (spawnPoint, spawnTime)
                             else state
                         screen.SetStalkerSpawnState state world
@@ -153,7 +153,7 @@ type GameplayDispatcher () =
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
                         then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
                         else world
-                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.ClockTime - Constants.Gameplay.StalkTime - 10.0f)) world
+                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.ClockTime - Constants.Gameplay.StalkDuration - 10.0f)) world
 
                 | StalkerUnspawned _ -> world
 
