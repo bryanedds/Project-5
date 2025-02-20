@@ -113,7 +113,7 @@ type CharacterDispatcher () =
             seq {
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in HunterState.computeScanSegments world.ClockTime position rotation state do
+                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
                     let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
                     if  intersected.Length > 1 &&
                         intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
@@ -517,13 +517,13 @@ type CharacterDispatcher () =
             | HunterState state ->
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in HunterState.computeScanSegments world.ClockTime position rotation state do
+                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             | StalkerState state ->
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in StalkerState.computeScanSegments position rotation state do
+                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             | _ -> world

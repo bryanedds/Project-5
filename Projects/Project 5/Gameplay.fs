@@ -142,7 +142,7 @@ type GameplayDispatcher () =
                         seq {
                             let position = stalker.GetPosition world
                             let rotation = stalker.GetRotation world
-                            for scanSegment in StalkerState.computeScanSegments position rotation stalkerState do
+                            for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
                                 let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
                                 if  intersected.Length > 1 &&
                                     intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then

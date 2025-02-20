@@ -29,21 +29,6 @@ type [<SymbolicExpansion>] HunterState =
         | Some awareTime -> Some (awareTime / Constants.Gameplay.HuntDuration)
         | None -> None
 
-    member this.HunterSightDistance (time : single) =
-        match this.HunterAwareDurationOpt time with
-        | Some _ -> 7.0f
-        | None -> 9.0f
-
-    static member computeScanSegments (time : single) position rotation (state : HunterState) =
-        let sightDistance = state.HunterSightDistance time
-        let sightPosition = position + v3Up * 1.25f
-        let sightRotation = rotation
-        seq {
-            for i in 0 .. dec 15 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
-                let scanRotation = sightRotation * angle
-                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
-
     static member initial =
         { HunterWayPoints = [||]
           HunterWayPointPlayback = Loop
@@ -57,16 +42,6 @@ type [<SymbolicExpansion>] StalkerState =
     | Unspawning of UnspawnPoint : Vector3
 
     static member initial = Spawned
-
-    static member computeScanSegments position rotation (_ : StalkerState) =
-        let sightDistance = 7.0f
-        let sightPosition = position + v3Up * 1.25f
-        let sightRotation = rotation
-        seq {
-            for i in 0 .. dec 15 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
-                let scanRotation = sightRotation * angle
-                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
 type StalkerSpawnState =
     | StalkerUnspawned of UnspawnTime : single
@@ -192,3 +167,15 @@ type ActionState =
     | AttackState of AttackState
     | InjuryState of InjuryState
     | WoundState of WoundState
+
+[<RequireQualifiedAccess>]
+module Algorithm =
+
+    let computeScanSegments (sightDistance : single) position rotation =
+        let sightPosition = position + v3Up * 1.25f
+        let sightRotation = rotation
+        seq {
+            for i in 0 .. dec 15 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
+                let scanRotation = sightRotation * angle
+                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
