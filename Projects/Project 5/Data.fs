@@ -39,8 +39,8 @@ type [<SymbolicExpansion>] HunterState =
         let sightPosition = position + v3Up * 1.25f
         let sightRotation = rotation
         seq {
-            for i in 0 .. dec 13 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
+            for i in 0 .. dec 15 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
                 let scanRotation = sightRotation * angle
                 Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
@@ -63,8 +63,8 @@ type [<SymbolicExpansion>] StalkerState =
         let sightPosition = position + v3Up * 1.25f
         let sightRotation = rotation
         seq {
-            for i in 0 .. dec 13 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 30.0f |> Math.DegreesToRadians)
+            for i in 0 .. dec 15 do
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
                 let scanRotation = sightRotation * angle
                 Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
