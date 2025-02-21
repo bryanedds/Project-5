@@ -50,7 +50,7 @@ Narrative Slides - Car crash on a long country road. Car is in a ditch, you don'
 
 Stage 1 - 2A - Enter dilapidated house. Darkness, no electricity.  You hear a sound, like a child's voice. "Hello? Is anyone here? Are you alone?" You hear nothing more. Find a door downstairs, locked. Find a key - enter.
 
-Stage 2 - 6A - You hear a little girl's voice... "They want to play with you...". You hear a loud bang. "Hello? Where are you? Are you okay?" You hear a gurgling growl. If the player tries to leave, notice door is locked behind them. No way to kill stalkers; need to rummage through POIs in order to find key to next area.
+Stage 2 - 6A - You hear a little girl's voice... "He wants to play with you...". You hear a loud bang. "Hello? Where are you? Are you okay?" You hear a gurgling growl. If the player tries to leave, notice door is locked behind them. No way to kill hunter; need to rummage through POIs in order to find key to next area.
 
 Stage 3 - 5A - "We're going to eat you...!" The little girl's voice again. Stalker appears! Possible to hide for it to go away. When Stalker goes away, girl whispers "Coward..."
 
