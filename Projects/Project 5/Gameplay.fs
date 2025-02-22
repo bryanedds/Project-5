@@ -105,14 +105,14 @@ type GameplayDispatcher () =
                             then StalkerUnspawning (spawnPoint, spawnTime)
                             else state
                         screen.SetStalkerSpawnState state world
-                    | StalkerUnspawning _ ->
+                    | StalkerUnspawning (_, _) ->
                         world
                 else
                     match screen.GetStalkerSpawnState world with
                     | StalkerSpawned (spawnPoint, spawnTime) ->
                         let state = StalkerUnspawning (spawnPoint, spawnTime)
                         screen.SetStalkerSpawnState state world
-                    | StalkerUnspawned _ | StalkerUnspawning _ ->
+                    | StalkerUnspawned _ | StalkerUnspawning (_, _) ->
                         world
 
             // declare stalker
@@ -136,20 +136,11 @@ type GameplayDispatcher () =
                             [Entity.CharacterState @= StalkerState stalkerState]
                             world
                     let stalker = world.DeclaredEntity
-                    
-                    // process player sighting
-                    let playerSightings =
-                        seq {
-                            let position = stalker.GetPosition world
-                            let rotation = stalker.GetRotation world
-                            for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
-                                let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
-                                if  intersected.Length > 1 &&
-                                    intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
-                                    true }
 
                     // process unspawn or resetting to late spawn state
-                    if Seq.isEmpty playerSightings then
+                    let position = stalker.GetPosition world
+                    let rotation = stalker.GetRotation world
+                    if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world then
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
                         then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
                         else world

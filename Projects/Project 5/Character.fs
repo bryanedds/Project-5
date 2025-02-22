@@ -64,15 +64,9 @@ type CharacterDispatcher () =
                 let rotation = entity.GetRotation world
                 let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                 let playerPositionFlat = targetPosition.WithY 0.0f
-                if position.Y - targetPosition.Y >= 0.25f then // above player
-                    if  Vector3.Distance (playerPositionFlat, positionFlat) < 0.75f &&
-                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
-                        entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                    else world
-                elif targetPosition.Y - position.Y < 1.3f then // at or a bit below player
+                if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world then
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
-                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.15f then
+                        rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
                         let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
                         entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
                     else world
@@ -109,17 +103,10 @@ type CharacterDispatcher () =
     static let processHunterState (state : HunterState) (entity : Entity) (world : World) =
 
         // process player sighting
-        let playerSightings =
-            seq {
-                let position = entity.GetPosition world
-                let rotation = entity.GetRotation world
-                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
-                    let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
-                    if  intersected.Length > 1 &&
-                        intersected.[1].BodyShapeIntersected.BodyId.BodySource = Simulants.GameplayPlayer then
-                        true }
+        let position = entity.GetPosition world
+        let rotation = entity.GetRotation world
         let state =
-            if Seq.notEmpty playerSightings && (state.HunterAwareDurationOpt world.ClockTime).IsNone
+            if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world
             then { state with HunterAwareTimeOpt = Some world.ClockTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
@@ -517,7 +504,7 @@ type CharacterDispatcher () =
             | HunterState _ | StalkerState _ ->
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
+                for scanSegment in Algorithm.computeScanSegments position rotation Constants.Gameplay.EnemySightDistance do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             | _ -> world

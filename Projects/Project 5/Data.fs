@@ -167,15 +167,3 @@ type ActionState =
     | AttackState of AttackState
     | InjuryState of InjuryState
     | WoundState of WoundState
-
-[<RequireQualifiedAccess>]
-module Algorithm =
-
-    let computeScanSegments (sightDistance : single) position rotation =
-        let sightPosition = position + v3Up * 1.25f
-        let sightRotation = rotation
-        seq {
-            for i in 0 .. dec 15 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
-                let scanRotation = sightRotation * angle
-                Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }

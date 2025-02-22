@@ -7047,8 +7047,8 @@
            [HunterWayPointPlayback Bounce]
            [HunterWayPointBouncing False]
            [HunterWayPointIndexOpt [Some 0]]
-           [HunterWayPointCountDownOpt None]
-           [HunterAwareOfPlayerOpt None]]]]
+           [HunterWayPointTimeOpt None]
+           [HunterAwareTimeOpt None]]]]
         [Enabled False]
         [EnabledLocal False]
         [LinearVelocity [0.015993271 0 0.0032404605]]
@@ -7058,4 +7058,26 @@
         [PositionLocal [-0.5 0 1]]
         [Rotation [4.3711385E-08 1.9106853E-15 4.3711385E-08 1]]
         [RotationLocal [4.3711385E-08 1.9106853E-15 4.3711385E-08 1]]]
-       []]]]]]]]
+       []]]]]]
+  [AnimatedModelDispatcher
+   [[AnimatedModel [Gameplay HawtieShoatie]]
+    [Animations
+     [[[StartTime 0] [LifeTimeOpt None] [Name Armature|Armature|4014329742848_TempMotion] [Playback Loop] [Rate 1] [Weight 1] [BoneFilterOpt None]]]]
+    [MaterialProperties
+     [[AlbedoOpt
+       [Some [1 1 1 0.6431373]]]
+      [RoughnessOpt None]
+      [MetallicOpt None]
+      [AmbientOcclusionOpt None]
+      [EmissionOpt None]
+      [HeightOpt None]
+      [IgnoreLightMapsOpt None]
+      [OpaqueDistanceOpt None]]]
+    [Name TestModel]
+    [Offset [4.172325E-07 0.8748163 -0.01317589]]
+    [Position [0.25 0 -2.75]]
+    [RenderStyle [Forward 0 0]]
+    [Size [1.64518 1.752576 0.3649045]]
+    [SubsortOffsets
+     [[0 -1] [1 -1] [2 -1] [3 -1] [6 -2] [7 -2] [14 1]]]]
+   []]]]
