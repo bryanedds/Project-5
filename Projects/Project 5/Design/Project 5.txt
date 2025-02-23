@@ -20,6 +20,8 @@ hostile furniture - after hiding in a piece of furniture or closet, once you ste
 
 you can kill hunters, but you have to find a one-use item to hit them with from behind first. item can't be used if hunter is aware of you (item icon has an X marked over it).
 
+if enemy sees player in process of hiding, it will go to the thing the player is hiding in and interact with it, thus exposing player.
+
 Stage Ideas -
 
 1) Normal lighting, no enemies.

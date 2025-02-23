@@ -255,7 +255,7 @@ type GameplayDispatcher () =
             let shadowWidth = sun.GetLightCutoff world * 2.0f
             let shadowResolution = Viewport.getShadowTextureBufferResolution 0 world.GeometryViewport
             let shadowTexelSize = shadowWidth / single shadowResolution.X // assuming square, of course
-            let position = Simulants.GameplayPlayer.GetPosition world
+            let position = Simulants.GameplayPlayer.GetPositionInterpolated world
             let positionShadow = position.Transform shadowView + v3Up * 12.0f // position of player + offset in shadow space
             let positionSnapped =
                 v3
@@ -268,8 +268,8 @@ type GameplayDispatcher () =
             // update eye to look at player
             let world =
                 if world.Advancing then
-                    let position = player.GetPosition world
-                    let rotation = player.GetRotation world
+                    let position = player.GetPositionInterpolated world
+                    let rotation = player.GetRotationInterpolated world
                     let world = World.setEye3dCenter (position + v3Up * 1.6f - rotation.Forward * 1.1f + rotation.Right * 0.25f) world
                     let world = World.setEye3dRotation rotation world
                     world

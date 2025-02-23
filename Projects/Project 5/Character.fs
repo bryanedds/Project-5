@@ -246,7 +246,8 @@ type CharacterDispatcher () =
         processPlayerInput entity world
 
     static member Facets =
-        [typeof<RigidBodyFacet>]
+        [typeof<RigidBodyFacet>
+         typeof<TraversalInterpoledFacet>]
 
     static member Properties =
         let characterType = Hunter
@@ -336,8 +337,8 @@ type CharacterDispatcher () =
         // declare animated model
         let world =
             World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
-                [Entity.Position @= entity.GetPosition world
-                 Entity.Rotation @= entity.GetRotation world
+                [Entity.Position @= entity.GetPositionInterpolated world
+                 Entity.Rotation @= entity.GetRotationInterpolated world
                  Entity.Size .= entity.GetSize world
                  Entity.Offset .= entity.GetOffset world
                  Entity.MountOpt .= None
@@ -350,9 +351,9 @@ type CharacterDispatcher () =
         let world =
             match entity.GetActionState world with
             | NormalState ->
-                let rotation = entity.GetRotation world
-                let linearVelocity = entity.GetLinearVelocity world
-                let angularVelocity = entity.GetAngularVelocity world
+                let rotation = entity.GetRotationInterpolated world
+                let linearVelocity = entity.GetLinearVelocityInterpolated world
+                let angularVelocity = entity.GetAngularVelocityInterpolated world
                 let forwardness = linearVelocity.Dot rotation.Forward
                 let backness = linearVelocity.Dot -rotation.Forward
                 let rightness = linearVelocity.Dot rotation.Right
