@@ -21,4 +21,4 @@ type MyGamePlugin () =
     override this.InitialPackages =
         [Assets.Gui.PackageName
          Assets.Gameplay.PackageName
-         Assets.AbandonedMansion.PackageName]
+         Assets.Residence.PackageName]
