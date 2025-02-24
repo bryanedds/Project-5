@@ -28,6 +28,7 @@ module Assets =
         let StalkedSong = asset<Song> PackageName "Stalked"
         let HeartFull = asset<Image> PackageName "HeartFull"
         let HeartEmpty = asset<Image> PackageName "HeartEmpty"
+        let InvestigationIconImage = asset<Image> PackageName "InvestigationIcon"
         let SophieModel = asset<AnimatedModel> PackageName "Sophie"
         let CruciformModel = asset<AnimatedModel> PackageName "Cruciform"
         let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"

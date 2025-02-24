@@ -43,6 +43,7 @@
 		<Compile Include="Events.fs" />
 		<Compile Include="WayPoint.fs" />
 		<Compile Include="SpawnPoint.fs" />
+		<Compile Include="InvestigatableFacet.fs" />
 		<Compile Include="Character.fs" />
 		<Compile Include="Gameplay.fs" />
 		<Compile Include="MyGame.fs" />

@@ -62,6 +62,16 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Single.MaxValue
 
+type InvestigationPhase =
+    | InvestigationNotStarted
+    | InvestigationStarted
+    | InvestigationFinished
+
+type InvestigationState =
+    | Investigating of StartTime : single
+    | InvestigationSuccess of int
+    | InvestigationFailure of int
+
 type HideType =
     | HideStanding // like a locker or tall cupboard
     | HideKneeling // like in a floor cabinet
@@ -75,6 +85,14 @@ type HidePhase =
 type HideState =
     { HideTime : GameTime
       HidePhase : HidePhase }
+
+type InteractionType =
+    | Investigate
+    | Hide
+
+type InteractionState =
+    | InvestigationState of InvestigationState
+    | HideState of HideState
 
 type [<SymbolicExpansion>] PlayerState =
     { HideStateOpt : HideState option }
