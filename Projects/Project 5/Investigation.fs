@@ -16,11 +16,10 @@ type InvestigationDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
 
     static member Properties =
-        [define Entity.Presence Exterior
-         define Entity.InvestigationPhase InvestigationNotStarted]
+        [define Entity.InvestigationPhase InvestigationNotStarted]
 
-    override this.AlwaysOmnipresent =
-        false // no danger here
+    override this.PresenceOverride =
+        ValueSome Exterior
 
     override this.Process (entity, world) =
         match entity.GetInvestigationPhase world with
