@@ -9,4 +9,8 @@ type WayPointDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
 
     static member Properties =
-        [define Entity.Size (v3Dup 0.5f)]
+        [define Entity.Size (v3Dup 0.5f)
+         define Entity.Presence Exterior]
+
+    override this.AlwaysOmnipresent =
+        false // no danger here

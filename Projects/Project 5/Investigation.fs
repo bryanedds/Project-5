@@ -16,7 +16,11 @@ type InvestigationDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
 
     static member Properties =
-        [define Entity.InvestigationPhase InvestigationNotStarted]
+        [define Entity.Presence Exterior
+         define Entity.InvestigationPhase InvestigationNotStarted]
+
+    override this.AlwaysOmnipresent =
+        false // no danger here
 
     override this.Process (entity, world) =
         match entity.GetInvestigationPhase world with
@@ -30,9 +34,7 @@ type InvestigationDispatcher () =
                     else (3.0f - playerDistance) * 0.5f
                 else 0.0f
             let alpha = (2.0f - world.GameTime.Seconds % 2.0f) * distanceScalar
-            let materialProperties =
-                { MaterialProperties.defaultProperties with
-                    AlbedoOpt = ValueSome (Color.White.WithA alpha) }
+            let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
             let material =
                 { Material.defaultMaterial with
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage // TODO: concluded if successful investigation outcome already
