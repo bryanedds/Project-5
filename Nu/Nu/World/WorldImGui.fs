@@ -66,8 +66,9 @@ module WorldImGui =
             let view = Viewport.getView3d world.Eye3dCenter world.Eye3dRotation
             let projection = Viewport.getProjection3d world.Eye3dFieldOfView world.RasterViewport
             let viewProjection = view * projection
+            let frustumView = world.Eye3dFrustumView
             for position in positions do
-                if world.Eye3dFrustumView.Contains position = ContainmentType.Contains then
+                if frustumView.Contains position = ContainmentType.Contains then
                     let color = computeColor position
                     let positionWindow = ImGui.Position3dToWindow (windowPosition, windowSize, viewProjection, position)
                     if filled
@@ -90,14 +91,13 @@ module WorldImGui =
             let view = Viewport.getView3d world.Eye3dCenter world.Eye3dRotation
             let projection = Viewport.getProjection3d world.Eye3dFieldOfView world.RasterViewport
             let viewProjection = view * projection
+            let frustumView = world.Eye3dFrustumView
             for segment in segments do
-                match Math.TryUnionSegmentAndFrustum (segment.A, segment.B, world.Eye3dFrustumView) with
-                | Some (start, stop) ->
+                for (start, stop) in Math.TryUnionSegmentAndFrustum' (segment.A, segment.B, frustumView) do
                     let color = computeColor segment
                     let startWindow = ImGui.Position3dToWindow (windowPosition, windowSize, viewProjection, start)
                     let stopWindow = ImGui.Position3dToWindow (windowPosition, windowSize, viewProjection, stop)
                     drawList.AddLine (startWindow, stopWindow, color.Abgr, thickness)
-                | None -> ()
 
         /// Render segments via ImGui in the current eye 3d space.
         static member imGuiSegments3d segments thickness color world =
