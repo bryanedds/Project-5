@@ -3394,7 +3394,9 @@ module TraversalInterpolatedFacetExtensions =
                 let angularVelocities = FQueue.conj angularVelocity angularVelocityHistory
                 Seq.sum angularVelocities / single angularVelocities.Length
             else angularVelocity
-
+            
+/// Tracks interpolated values typically used for traversal.
+/// TODO: P1: make this GameTime-based rather than frame-based!
 type TraversalInterpoledFacet () =
     inherit Facet (false, false, false)
 
