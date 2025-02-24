@@ -302,6 +302,10 @@ type GameplayDispatcher () =
             // show way points
             let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<WayPointDispatcher> world)
             for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 10.0f false Color.Yellow world
+
+            // show investigations
+            let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<InvestigationDispatcher> world)
+            for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 5.0f false Color.Green world
             world
 
         | _ -> world
