@@ -499,7 +499,7 @@ type CharacterDispatcher () =
         // process death
         let world =
             match entity.GetActionState world with
-            | WoundState wound when wound.WoundTime >= world.GameTime - 1.0f && not wound.WoundEventPublished ->
+            | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
                 let world = World.publish entity entity.DeathEvent entity world
                 let wound = { wound with WoundEventPublished = true}
                 entity.SetActionState (WoundState wound) world
