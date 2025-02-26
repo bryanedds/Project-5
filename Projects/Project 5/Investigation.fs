@@ -75,5 +75,10 @@ type InvestigationDispatcher () =
                  Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
                 world
 
+    override this.RayCast (ray, entity, world) =
+        let intersectionOpt = ray.Intersects (entity.GetBounds world)
+        if intersectionOpt.HasValue then [|intersectionOpt.Value|]
+        else [||]
+
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 0.25f) v3Zero

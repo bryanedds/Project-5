@@ -195,38 +195,42 @@ type CharacterDispatcher () =
             else world
 
         // movement
-        let bodyId = entity.GetBodyId world
-        let grounded = World.getBodyGrounded bodyId world
-        let characterType = entity.GetCharacterType world
-        if entity.GetActionState world = NormalState || not grounded then
+        let world =
+            match entity.GetActionState world with
+            | NormalState ->
+                let rotation = entity.GetRotation world
+                let characterType = entity.GetCharacterType world
+                let walkSpeed = characterType.WalkSpeed
+                let forward = rotation.Forward
+                let right = rotation.Right
+                let walkDirection =
+                    (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
+                let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * walkSpeed else v3Zero
+                let world = entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+                world
+            | _ -> world
 
-            // compute new position
-            let rotation = entity.GetRotation world
-            let forward = rotation.Forward
-            let right = rotation.Right
-            let walkDirection =
-                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
-            let walkSpeed = characterType.WalkSpeed * if grounded then 1.0f else 0.75f
-            let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * walkSpeed else v3Zero
+        // rotation
+        let world =
+            match entity.GetActionState world with
+            | NormalState | InvestigateState _ ->
+                let rotation = entity.GetRotation world
+                let characterType = entity.GetCharacterType world
+                let turnSpeed = characterType.TurnSpeed
+                let turnVelocity =
+                    (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
+                    (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
+                let rotation = if turnVelocity <> 0.0f then rotation * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.Seconds) else rotation
+                let world = entity.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
+                let world = entity.SetRotation rotation world
+                world
+            | _ -> world
 
-            // compute new rotation
-            let turnSpeed = characterType.TurnSpeed * if grounded then 1.0f else 0.75f
-            let turnVelocity =
-                (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
-                (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
-            let rotation = if turnVelocity <> 0.0f then rotation * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.Seconds) else rotation
-
-            // apply changes
-            let world = entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
-            let world = entity.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
-            let world = entity.SetRotation rotation world
-            world
-
-        // no movement
-        else world
+        // fin
+        world
 
     static let processPlayerState (_ : PlayerState) entity world =
         processPlayerInput entity world
