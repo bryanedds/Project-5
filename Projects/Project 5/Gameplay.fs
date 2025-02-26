@@ -101,14 +101,14 @@ type GameplayDispatcher () =
                 | Some investigation ->
                     match player.GetActionState world with
                     | NormalState ->
-                        let (clicked, world) = World.doButton "Investigate" [Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                        let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
                         if clicked then
                             let world = investigation.SetInvestigationPhase InvestigationStarted world
                             let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
                             world
                         else world
                     | InvestigateState _ ->
-                        let (clicked, world) = World.doButton "Abandon" [Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                        let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
                         if clicked then
                             let world = investigation.SetInvestigationPhase InvestigationNotStarted world
                             let world = player.SetActionState NormalState world
