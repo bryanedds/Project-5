@@ -172,7 +172,7 @@ type GameplayDispatcher () =
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
                         then screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
                         else world
-                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
+                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - 10.0f)) world
 
                 | StalkerUnspawned _ -> world
 
