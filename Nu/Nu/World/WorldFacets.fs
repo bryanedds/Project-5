@@ -136,8 +136,6 @@ type AnimatedSpriteFacet () =
          define Entity.Flip FlipNone]
 
     override this.Update (entity, world) =
-
-        // pause animation when disabled
         if not (entity.GetEnabled world)
         then entity.StartTime.Map ((+) world.GameDelta) world
         else world
@@ -2571,8 +2569,6 @@ type AnimatedBillboardFacet () =
          define Entity.ShadowOffset Constants.Engine.BillboardShadowOffsetDefault]
 
     override this.Update (entity, world) =
-
-        // pause animation when disabled
         if not (entity.GetEnabled world)
         then entity.StartTime.Map ((+) world.GameDelta) world
         else world
@@ -3109,11 +3105,9 @@ type AnimatedModelFacet () =
             World.sense
                 (fun evt world ->
                     let playBox = fst' (World.getPlayBounds3d world)
-                    let notUpdating =
-                        world.Halted ||
-                        entity.GetPresence world <> Omnipresent &&
-                        not (entity.GetAlwaysUpdate world) &&
-                        not (playBox.Intersects (evt.Subscriber.GetBounds world))
+                    let outsidePlayBounds = entity.GetPresence world <> Omnipresent && not (entity.GetAlwaysUpdate world) && not (playBox.Intersects (evt.Subscriber.GetBounds world))
+                    let disabled = not (entity.GetEnabled world)
+                    let notUpdating = world.Halted || outsidePlayBounds || disabled
                     let world = if notUpdating then evt.Subscriber.AnimateBones world else world
                     (Cascade, world))
                 (entity.ChangeEvent (nameof entity.Animations)) entity (nameof AnimatedModelFacet) world
@@ -3124,7 +3118,7 @@ type AnimatedModelFacet () =
         world
 
     override this.Update (entity, world) =
-        if entity.GetEnabled world then
+        //if entity.GetEnabled world then
             let time = world.GameTime
             let animations = entity.GetAnimations world
             let animatedModel = entity.GetAnimatedModel world
@@ -3139,16 +3133,18 @@ type AnimatedModelFacet () =
                     World.enqueueJob 1.0f job world
                     resultOpt
                 else entity.TryComputeBoneTransforms time animations sceneOpt
-            match resultOpt with
-            | Some (boneIds, boneOffsets, boneTransforms) -> entity.SetBoneTransformsFast boneIds boneOffsets boneTransforms world
-            | None -> world
-        else
-            let animations =
-                Array.map (fun (animation : Animation) ->
-                    { animation with StartTime = animation.StartTime + world.GameDelta })
-                    (entity.GetAnimations world)
-            entity.SetAnimations animations world
-
+            let world =
+                match resultOpt with
+                | Some (boneIds, boneOffsets, boneTransforms) -> entity.SetBoneTransformsFast boneIds boneOffsets boneTransforms world
+                | None -> world
+        //else
+            if not (entity.GetEnabled world) then
+                let animations =
+                    Array.map (fun (animation : Animation) ->
+                        { animation with StartTime = animation.StartTime + world.GameDelta })
+                        (entity.GetAnimations world)
+                entity.SetAnimations animations world
+            else world
 
     override this.Render (renderPass, entity, world) =
         let mutable transform = entity.GetTransform world
