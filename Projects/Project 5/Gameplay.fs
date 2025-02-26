@@ -16,8 +16,8 @@ module GameplayExtensions =
         member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
         member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
         member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
-        member this.GetHuntedTimeOpt world : single option = this.Get (nameof Screen.HuntedTimeOpt) world
-        member this.SetHuntedTimeOpt (value : single option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
+        member this.GetHuntedTimeOpt world : GameTime option = this.Get (nameof Screen.HuntedTimeOpt) world
+        member this.SetHuntedTimeOpt (value : GameTime option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
         member this.GetStalkerSpawnAllowed world : bool = this.Get (nameof Screen.StalkerSpawnAllowed) world
         member this.SetStalkerSpawnAllowed (value : bool) world = this.Set (nameof Screen.StalkerSpawnAllowed) value world
@@ -51,7 +51,7 @@ type GameplayDispatcher () =
             let initializing = FQueue.contains Select screenResults
             let world =
                 if initializing
-                then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
+                then screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
                 else world
 
             // begin scene declaration
@@ -86,20 +86,51 @@ type GameplayDispatcher () =
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
 
+            // declare player pause button
+            let world =
+                if world.Advancing then
+                    let (clicked, world) = World.doButton "Pause" [Entity.Text .= "Pause"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                    if clicked then World.setAdvancing false world else world
+                else
+                    let (clicked, world) = World.doButton "Unpause" [Entity.Text .= "Unpause"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                    if clicked then World.setAdvancing true world else world
+
+            // declare player interaction button
+            let world =
+                match Seq.tryHead (player.GetInvestigationCollisions world) with
+                | Some investigation ->
+                    match player.GetActionState world with
+                    | NormalState ->
+                        let (clicked, world) = World.doButton "Investigate" [Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                        if clicked then
+                            let world = investigation.SetInvestigationPhase InvestigationStarted world
+                            let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
+                            world
+                        else world
+                    | InvestigateState _ ->
+                        let (clicked, world) = World.doButton "Abandon" [Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                        if clicked then
+                            let world = investigation.SetInvestigationPhase InvestigationNotStarted world
+                            let world = player.SetActionState NormalState world
+                            world
+                        else world
+                    | _ -> world
+                | None -> world
+
             // process stalker spawn state
             let world =
                 if screen.GetStalkerSpawnAllowed world then
                     match screen.GetStalkerSpawnState world with
                     | StalkerUnspawned unspawnTime as state ->
-                        let unspawnDuration = world.ClockTime - unspawnTime
+                        let unspawnDuration = world.GameTime - unspawnTime
                         let state =
                             if unspawnDuration >= Constants.Gameplay.StalkDelay && spawnPoints.Length > 0 then
                                 let spawnPoint = Gen.randomItem spawnPoints
-                                StalkerSpawned (spawnPoint, world.ClockTime)
+                                StalkerSpawned (spawnPoint, world.GameTime)
                             else state
                         screen.SetStalkerSpawnState state world
                     | StalkerSpawned (spawnPoint, spawnTime) as state ->
-                        let spawnDuration = world.ClockTime - spawnTime
+                        let spawnDuration = world.GameTime - spawnTime
                         let state =
                             if spawnDuration >= Constants.Gameplay.StalkDuration
                             then StalkerUnspawning (spawnPoint, spawnTime)
@@ -122,7 +153,7 @@ type GameplayDispatcher () =
 
                     // declare stalker in spawned state
                     World.doEntity<StalkerDispatcher> "Stalker"
-                        [if spawnTime = world.ClockTime then Entity.Position @= spawnPoint.GetPosition world
+                        [if spawnTime = world.GameTime then Entity.Position @= spawnPoint.GetPosition world
                          Entity.CharacterState @= StalkerState Spawned]
                         world
 
@@ -131,20 +162,17 @@ type GameplayDispatcher () =
                     // declare stalked in unspawning state
                     let unspawnPosition = unspawnPoint.GetPosition world
                     let stalkerState = Unspawning unspawnPosition
-                    let world =
-                        World.doEntity<StalkerDispatcher> "Stalker"
-                            [Entity.CharacterState @= StalkerState stalkerState]
-                            world
+                    let world = World.doEntity<StalkerDispatcher> "Stalker" [Entity.CharacterState @= StalkerState stalkerState] world
                     let stalker = world.DeclaredEntity
 
                     // process unspawn or resetting to late spawn state
                     let position = stalker.GetPosition world
                     let rotation = stalker.GetRotation world
-                    if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world then
+                    if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance (player.GetBodyId world) world then
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
-                        then screen.SetStalkerSpawnState (StalkerUnspawned world.ClockTime) world
+                        then screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
                         else world
-                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.ClockTime - Constants.Gameplay.StalkDuration - 10.0f)) world
+                    else screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
 
                 | StalkerUnspawned _ -> world
 
@@ -154,16 +182,16 @@ type GameplayDispatcher () =
                     characters |>
                     Array.exists (fun character ->
                         match character.GetCharacterState world with
-                        | HunterState state -> (state.HunterAwareDurationOpt world.ClockTime).IsSome
+                        | HunterState state -> (state.HunterAwareDurationOpt world.GameTime).IsSome
                         | _ -> false)
                 match (hunted, screen.GetHuntedTimeOpt world) with
-                | (true, None) -> screen.SetHuntedTimeOpt (Some world.ClockTime) world
+                | (true, None) -> screen.SetHuntedTimeOpt (Some world.GameTime) world
                 | (false, _) -> screen.SetHuntedTimeOpt None world
                 | (_, _) -> world
 
             // process song playback
-            let huntedDurationOpt = match screen.GetHuntedTimeOpt world with Some huntedTime -> Some (world.ClockTime - huntedTime) | None -> None
-            let stalkedDurationOpt = (screen.GetStalkerSpawnState world).SpawnDurationOpt world.ClockTime
+            let huntedDurationOpt = match screen.GetHuntedTimeOpt world with Some huntedTime -> Some (world.GameTime - huntedTime) | None -> None
+            let stalkedDurationOpt = (screen.GetStalkerSpawnState world).SpawnDurationOpt world.GameTime
             match (huntedDurationOpt, stalkedDurationOpt) with
             | (_, Some _) ->
                 match World.getSongOpt world with
@@ -193,8 +221,8 @@ type GameplayDispatcher () =
             let world =
                 screen.Danger.Map (fun danger ->
                     match max huntedDurationOpt stalkedDurationOpt with
-                    | Some dangerDuration -> min 1.0f dangerDuration
-                    | None -> max 0.0f (danger - world.ClockDelta / 7.5f))
+                    | Some dangerDuration -> min 1.0f dangerDuration.Seconds
+                    | None -> max 0.0f (danger - world.GameDelta.Seconds / 7.5f))
                     world
 
             // process lighting
@@ -214,16 +242,21 @@ type GameplayDispatcher () =
             let world =
                 FQueue.fold (fun world (attack : Entity) ->
                     let world = attack.HitPoints.Map (dec >> max 0) world
+                    let actionState = attack.GetActionState world
                     if attack.GetHitPoints world > 0 then
-                        if not (attack.GetActionState world).IsInjuryState then
-                            let world = attack.SetActionState (InjuryState { InjuryTime = world.ClockTime }) world
+                        if not actionState.IsInjuryState then
+                            let world =
+                                match actionState with
+                                | InvestigateState investigateState -> investigateState.Investigation.SetInvestigationPhase InvestigationNotStarted world
+                                | _ -> world
+                            let world = attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
                             let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                             world
                         else world
                     else
-                        if not (attack.GetActionState world).IsWoundState then
-                            let world = attack.SetActionState (WoundState { WoundTime = world.ClockTime; WoundEventPublished = false }) world
+                        if not actionState.IsWoundState then
+                            let world = attack.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
                             let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                             world

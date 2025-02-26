@@ -7,24 +7,24 @@ open MyGame
 
 type WayPoint =
     { WayPoint : Entity Relation
-      WayPointWaitTime : single }
+      WayPointWaitTime : GameTime }
 
 type [<SymbolicExpansion>] HunterState =
     { HunterWayPoints : WayPoint array
       HunterWayPointPlayback : Playback
       HunterWayPointBouncing : bool
       HunterWayPointIndexOpt : int option
-      HunterWayPointTimeOpt : single option
-      HunterAwareTimeOpt : single option }
+      HunterWayPointTimeOpt : GameTime option
+      HunterAwareTimeOpt : GameTime option }
 
-    member this.HunterAwareDurationOpt (time : single) =
+    member this.HunterAwareDurationOpt (time : GameTime) =
         match this.HunterAwareTimeOpt with
         | Some start ->
             let awareTime = time - start
             if awareTime >= Constants.Gameplay.HuntDuration then None else Some awareTime
         | None -> None
 
-    member this.HunterAwareProgressOpt (time : single) =
+    member this.HunterAwareProgressOpt (time : GameTime) =
         match this.HunterAwareDurationOpt time with
         | Some awareTime -> Some (awareTime / Constants.Gameplay.HuntDuration)
         | None -> None
@@ -44,9 +44,9 @@ type [<SymbolicExpansion>] StalkerState =
     static member initial = Spawned
 
 type StalkerSpawnState =
-    | StalkerUnspawned of UnspawnTime : single
-    | StalkerSpawned of SpawnPoint : Entity * SpawnTime : single
-    | StalkerUnspawning of UnspawnPoint : Entity * SpawnTime : single
+    | StalkerUnspawned of UnspawnTime : GameTime
+    | StalkerSpawned of SpawnPoint : Entity * SpawnTime : GameTime
+    | StalkerUnspawning of UnspawnPoint : Entity * SpawnTime : GameTime
 
     member this.SpawnTimeOpt =
         match this with
@@ -67,11 +67,6 @@ type InvestigationPhase =
     | InvestigationStarted
     | InvestigationFinished
 
-type InvestigationState =
-    | Investigating of StartTime : single
-    | InvestigationSuccess of int
-    | InvestigationFailure of int
-
 type HideType =
     | HideStanding // like a locker or tall cupboard
     | HideKneeling // like in a floor cabinet
@@ -86,14 +81,6 @@ type HideState =
     { HideTime : GameTime
       HidePhase : HidePhase }
 
-type InteractionType =
-    | Investigate
-    | Hide
-
-type InteractionState =
-    | InvestigationState of InvestigationState
-    | HideState of HideState
-
 type [<SymbolicExpansion>] PlayerState =
     { HideStateOpt : HideState option }
 
@@ -104,6 +91,9 @@ type CharacterState =
     | HunterState of HunterState
     | StalkerState of StalkerState
     | PlayerState of PlayerState
+
+    member this.IsEnemyState =
+        not this.IsPlayerState
 
     member this.CharacterType =
         match this with
@@ -164,7 +154,7 @@ and CharacterType =
         | Player -> PlayerState PlayerState.initial
 
 type AttackState =
-    { AttackTime : single
+    { AttackTime : GameTime
       AttackSoundPlayed : bool
       AttackedCharacters : Entity Set }
 
@@ -173,15 +163,20 @@ type AttackState =
           AttackSoundPlayed = false
           AttackedCharacters = Set.empty }
 
+type InvestigateState =
+    { Investigation : Entity }
+
 type InjuryState =
-    { InjuryTime : single }
+    { InjuryTime : GameTime }
 
 type WoundState =
-    { WoundTime : single
+    { WoundTime : GameTime
       WoundEventPublished : bool }
 
 type ActionState =
     | NormalState
     | AttackState of AttackState
+    | InvestigateState of InvestigateState
+    | HideState of HideState
     | InjuryState of InjuryState
     | WoundState of WoundState

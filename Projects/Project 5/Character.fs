@@ -20,9 +20,9 @@ module CharacterExtensions =
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
-        member this.GetCharacterCollisions world : Entity Set = this.Get (nameof this.CharacterCollisions) world
-        member this.SetCharacterCollisions (value : Entity Set) world = this.Set (nameof this.CharacterCollisions) value world
-        member this.CharacterCollisions = lens (nameof this.CharacterCollisions) this this.GetCharacterCollisions this.SetCharacterCollisions
+        member this.GetInvestigationCollisions world : Entity Set = this.Get (nameof this.InvestigationCollisions) world
+        member this.SetInvestigationCollisions (value : Entity Set) world = this.Set (nameof this.InvestigationCollisions) value world
+        member this.InvestigationCollisions = lens (nameof this.InvestigationCollisions) this this.GetInvestigationCollisions this.SetInvestigationCollisions
         member this.GetWeaponCollisions world : Entity Set = this.Get (nameof this.WeaponCollisions) world
         member this.SetWeaponCollisions (value : Entity Set) world = this.Set (nameof this.WeaponCollisions) value world
         member this.WeaponCollisions = lens (nameof this.WeaponCollisions) this this.GetWeaponCollisions this.SetWeaponCollisions
@@ -53,7 +53,7 @@ type CharacterDispatcher () =
             world
         | None -> world
 
-    static let processEnemyAggression (targetPosition : Vector3) (entity : Entity) world =
+    static let processEnemyAggression (targetPosition : Vector3) targetBodyId (entity : Entity) world =
 
         // attacking
         let world =
@@ -64,10 +64,10 @@ type CharacterDispatcher () =
                 let rotation = entity.GetRotation world
                 let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                 let playerPositionFlat = targetPosition.WithY 0.0f
-                if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world then
+                if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance targetBodyId world then
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
-                        let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
+                        let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
                         entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
                     else world
                 else world
@@ -100,97 +100,83 @@ type CharacterDispatcher () =
         // fin
         world
 
-    static let processHunterState (state : HunterState) (entity : Entity) (world : World) =
+    static let processHunterWayPointNavigation (state : HunterState) (entity : Entity) world =
+        match state.HunterWayPoints with
+        | [||] -> world
+        | wayPoints ->
+            match state.HunterWayPointIndexOpt with
+            | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
+                let wayPoint = wayPoints.[wayPointIndex]
+                match tryResolve entity wayPoint.WayPoint with
+                | Some wayPointEntity ->
+                    let wayPointPosition = wayPointEntity.GetPosition world
+                    let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
+                    if wayPointDistance < 0.5f then
+                        match state.HunterWayPointTimeOpt with
+                        | None ->
+                            let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
+                            entity.SetCharacterState (HunterState state) world
+                        | Some wayPointTime ->
+                            let waitTime = world.GameTime - wayPointTime
+                            if waitTime >= wayPoint.WayPointWaitTime then
+                                let (wayPointIndexOpt, wayPointBouncing) =
+                                    match state.HunterWayPointPlayback with
+                                    | Once ->
+                                        let wayPointIndex = inc wayPointIndex
+                                        if wayPointIndex < wayPoints.Length
+                                        then (Some wayPointIndex, false)
+                                        else (None, false)
+                                    | Loop ->
+                                        let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                        (Some wayPointIndex, false)
+                                    | Bounce ->
+                                        if not state.HunterWayPointBouncing then
+                                            let wayPointIndex = inc wayPointIndex
+                                            if wayPointIndex = wayPoints.Length
+                                            then (Some (dec wayPointIndex), true)
+                                            else (Some wayPointIndex, false)
+                                        else
+                                            let wayPointIndex = dec wayPointIndex
+                                            if wayPointIndex < 0
+                                            then (Some (inc wayPointIndex), false)
+                                            else (Some wayPointIndex, true)
+                                let state =
+                                    { state with
+                                        HunterWayPointBouncing = wayPointBouncing
+                                        HunterWayPointIndexOpt = wayPointIndexOpt
+                                        HunterWayPointTimeOpt = None }
+                                entity.SetCharacterState (HunterState state) world
+                            else
+                                let world = entity.LinearVelocity.Map ((*) 0.5f) world
+                                let world = entity.AngularVelocity.Map ((*) 0.5f) world
+                                world
+                    else processEnemyNavigation wayPointPosition entity world
+                | None -> world
+            | Some _ | None ->
+                let world = entity.LinearVelocity.Map ((*) 0.5f) world
+                let world = entity.AngularVelocity.Map ((*) 0.5f) world
+                world
+
+    static let processHunterState targetPosition target (state : HunterState) (entity : Entity) (world : World) =
 
         // process player sighting
         let position = entity.GetPosition world
         let rotation = entity.GetRotation world
         let state =
-            if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance Simulants.GameplayPlayer world
-            then { state with HunterAwareTimeOpt = Some world.ClockTime }
+            if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance target world
+            then { state with HunterAwareTimeOpt = Some world.GameTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
 
         // process hunter state
-        match state.HunterAwareDurationOpt world.ClockTime with
-        | Some _ when Simulants.GameplayPlayer.GetExists world ->
+        match state.HunterAwareDurationOpt world.GameTime with
+        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition target entity world
+        | Some _ | None -> processHunterWayPointNavigation state entity world
 
-            // process aggression
-            let playerPosition = Simulants.GameplayPlayer.GetPosition world
-            processEnemyAggression playerPosition entity world
-
-        | Some _ | None ->
-
-            // process navigation
-            match state.HunterWayPoints with
-            | [||] -> world
-            | wayPoints ->
-                match state.HunterWayPointIndexOpt with
-                | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
-                    let wayPoint = wayPoints.[wayPointIndex]
-                    match tryResolve entity wayPoint.WayPoint with
-                    | Some wayPointEntity ->
-                        let wayPointPosition = wayPointEntity.GetPosition world
-                        let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
-                        if wayPointDistance < 0.5f then
-                            match state.HunterWayPointTimeOpt with
-                            | None ->
-                                let state = { state with HunterWayPointTimeOpt = Some world.ClockTime }
-                                entity.SetCharacterState (HunterState state) world
-                            | Some wayPointTime ->
-                                let waitTime = world.ClockTime - wayPointTime
-                                if waitTime >= wayPoint.WayPointWaitTime then
-                                    let (wayPointIndexOpt, wayPointBouncing) =
-                                        match state.HunterWayPointPlayback with
-                                        | Once ->
-                                            let wayPointIndex = inc wayPointIndex
-                                            if wayPointIndex < wayPoints.Length
-                                            then (Some wayPointIndex, false)
-                                            else (None, false)
-                                        | Loop ->
-                                            let wayPointIndex = inc wayPointIndex % wayPoints.Length
-                                            (Some wayPointIndex, false)
-                                        | Bounce ->
-                                            if not state.HunterWayPointBouncing then
-                                                let wayPointIndex = inc wayPointIndex
-                                                if wayPointIndex = wayPoints.Length
-                                                then (Some (dec wayPointIndex), true)
-                                                else (Some wayPointIndex, false)
-                                            else
-                                                let wayPointIndex = dec wayPointIndex
-                                                if wayPointIndex < 0
-                                                then (Some (inc wayPointIndex), false)
-                                                else (Some wayPointIndex, true)
-                                    let state =
-                                        { state with
-                                            HunterWayPointBouncing = wayPointBouncing
-                                            HunterWayPointIndexOpt = wayPointIndexOpt
-                                            HunterWayPointTimeOpt = None }
-                                    entity.SetCharacterState (HunterState state) world
-                                else
-                                    let world = entity.LinearVelocity.Map ((*) 0.5f) world
-                                    let world = entity.AngularVelocity.Map ((*) 0.5f) world
-                                    world
-                        else processEnemyNavigation wayPointPosition entity world
-                    | None -> world
-                | Some _ | None ->
-                    let world = entity.LinearVelocity.Map ((*) 0.5f) world
-                    let world = entity.AngularVelocity.Map ((*) 0.5f) world
-                    world
-
-    static let processStalkerState (state : StalkerState) (entity : Entity) world =
+    static let processStalkerState targetPosition target (state : StalkerState) (entity : Entity) world =
         match state with
-        | Spawned ->
-
-            // process aggression
-            if Simulants.GameplayPlayer.GetExists world
-            then processEnemyAggression (Simulants.GameplayPlayer.GetPosition world) entity world
-            else world
-
-        | Unspawning unspawnPoint ->
-
-            // process navigation
-            processEnemyNavigation unspawnPoint entity world
+        | Spawned -> processEnemyAggression targetPosition target entity world
+        | Unspawning unspawnPoint -> processEnemyNavigation unspawnPoint entity world
 
     static let processPlayerInput (entity : Entity) world =
 
@@ -201,9 +187,9 @@ type CharacterDispatcher () =
             if World.isKeyboardKeyPressed KeyboardKey.RShift world then
                 match entity.GetActionState world with
                 | NormalState ->
-                    let world = entity.SetActionState (AttackState (AttackState.make world.ClockTime)) world
+                    let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
                     entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                | AttackState _ | InjuryState _ | WoundState _ -> world
+                | _ -> world
 
             // do nothing
             else world
@@ -264,11 +250,14 @@ type CharacterDispatcher () =
          define Entity.CharacterType characterType
          define Entity.ActionState NormalState
          define Entity.HitPoints characterType.HitPointsMax
-         define Entity.CharacterCollisions Set.empty
+         define Entity.InvestigationCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
 
     override this.Process (entity, world) =
+
+        // bind locals
+        let playerOpt = Simulants.GameplayPlayer
 
         // process penetrations
         let (penetrations, world) = World.doSubscription "Penetrations" entity.BodyPenetrationEvent world
@@ -276,9 +265,11 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world penetration ->
                 match penetration.BodyShapePenetratee.BodyId.BodySource with
-                | :? Entity as penetratee when penetratee.Is<CharacterDispatcher> world ->
-                    if characterType.IsEnemy && (penetratee.GetCharacterType world).IsEnemy
-                    then entity.CharacterCollisions.Map (Set.add penetratee) world
+                | :? Entity as penetratee ->
+                    if penetratee.Is<InvestigationDispatcher> world then
+                        if characterType.IsPlayer
+                        then entity.InvestigationCollisions.Map (Set.add penetratee) world
+                        else world
                     else world
                 | _ -> world)
                 world penetrations
@@ -288,8 +279,7 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world separation ->
                 match separation.BodyShapeSeparatee.BodyId.BodySource with
-                | :? Entity as separatee when separatee.Is<CharacterDispatcher> world && separatee <> entity ->
-                    entity.CharacterCollisions.Map (Set.remove separatee) world
+                | :? Entity as separatee -> entity.InvestigationCollisions.Map (Set.remove separatee) world
                 | _ -> world)
                 world separationsExplicit
 
@@ -298,22 +288,38 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world (separation : BodySeparationImplicitData) ->
                 match separation.BodyId.BodySource with
-                | :? Entity as separatee -> entity.CharacterCollisions.Map (Set.remove separatee) world
+                | :? Entity as separatee -> entity.InvestigationCollisions.Map (Set.remove separatee) world
                 | _ -> world)
                 world separationsImplicit
 
         // unmount when advancing to enable physics
         let world =
-            if world.Halted
-            then entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
-            else entity.SetMountOptWithAdjustment None world
+            if world.Advancing
+            then entity.SetMountOptWithAdjustment None world
+            else entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
 
         // process character state
         let world =
             if world.Advancing then
+                let enemyTargetingEir =
+                    if playerOpt.GetExists world then
+                        let processEnemies =
+                            match playerOpt.GetActionState world with
+                            | InvestigateState investigation -> investigation.Investigation.GetInvestigationPhase world <> InvestigationFinished
+                            | _ -> true
+                        if processEnemies
+                        then Right (playerOpt.GetPosition world, playerOpt.GetBodyId world)
+                        else Left ()
+                    else Left ()
                 match entity.GetCharacterState world with
-                | HunterState state -> processHunterState state entity world
-                | StalkerState state -> processStalkerState state entity world
+                | HunterState state ->
+                    match enemyTargetingEir with
+                    | Right (targetPosition, targetBodyId) -> processHunterState targetPosition targetBodyId state entity world
+                    | Left () -> world
+                | StalkerState state ->
+                    match enemyTargetingEir with
+                    | Right (targetPosition, targetBodyId) -> processStalkerState targetPosition targetBodyId state entity world
+                    | Left () -> world
                 | PlayerState state -> processPlayerState state entity world
             else world
 
@@ -323,11 +329,15 @@ type CharacterDispatcher () =
                 match entity.GetActionState world with
                 | NormalState -> world
                 | AttackState attack as actionState ->
-                    let localTime = world.ClockTime - attack.AttackTime
+                    let localTime = world.GameTime - attack.AttackTime
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
+                | InvestigateState investigate ->
+                    world
+                | HideState hide ->
+                    world
                 | InjuryState injury as actionState ->
-                    let localTime = world.ClockTime - injury.InjuryTime
+                    let localTime = world.GameTime - injury.InjuryTime
                     let injuryTime = characterType.InjuryTime
                     let actionState = if localTime < injuryTime then actionState else NormalState
                     entity.SetActionState actionState world
@@ -383,7 +393,7 @@ type CharacterDispatcher () =
             | NormalState ->
                 world
             | AttackState attack ->
-                let localTime = world.ClockTime - attack.AttackTime
+                let localTime = world.GameTime - attack.AttackTime
                 let world =
                     if localTime > 0.12f && not attack.AttackSoundPlayed then
                         let attack = { attack with AttackSoundPlayed = true }
@@ -393,6 +403,10 @@ type CharacterDispatcher () =
                     else world
                 let animation = Animation.once attack.AttackTime None "Armature|Attack"
                 animatedModel.SetAnimations [|animation|] world
+            | InvestigateState investigate ->
+                world
+            | HideState hide ->
+                world
             | InjuryState injury ->
                 let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
                 animatedModel.SetAnimations [|animation|] world
@@ -451,7 +465,7 @@ type CharacterDispatcher () =
         let (attacks, world) =
             match entity.GetActionState world with
             | AttackState attack ->
-                let localTime = world.ClockTime - attack.AttackTime
+                let localTime = world.GameTime - attack.AttackTime
                 if localTime >= 0.2f && localTime < 0.8f then
                     let weaponCollisions = entity.GetWeaponCollisions world
                     let attacks = Set.difference weaponCollisions attack.AttackedCharacters
@@ -481,7 +495,7 @@ type CharacterDispatcher () =
         // process death
         let world =
             match entity.GetActionState world with
-            | WoundState wound when wound.WoundTime >= world.ClockTime - 1.0f && not wound.WoundEventPublished ->
+            | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
                 let world = World.publish entity entity.DeathEvent entity world
                 let wound = { wound with WoundEventPublished = true}
                 entity.SetActionState (WoundState wound) world
@@ -501,14 +515,13 @@ type CharacterDispatcher () =
     override this.Edit (op, entity, world) =
         match op with
         | ViewportOverlay _ ->
-            match entity.GetCharacterState world with
-            | HunterState _ | StalkerState _ ->
+            if (entity.GetCharacterState world).IsEnemyState then
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
                 for scanSegment in Algorithm.computeScanSegments position rotation Constants.Gameplay.EnemySightDistance do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
-            | _ -> world
+            else world
         | _ -> world
 
 type HunterDispatcher () =

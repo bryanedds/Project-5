@@ -17,12 +17,12 @@ module Algorithm =
                 let scanRotation = sightRotation * angle
                 Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
-    let getTargetInSight position rotation sightDistance target world =
+    let getTargetInSight position rotation sightDistance targetId world =
         let targetSightings =
             seq {
                 for scanSegment in computeScanSegments position rotation sightDistance do
                     let intersected = World.rayCast3dBodies scanSegment Int32.MaxValue false world
                     if  intersected.Length > 1 &&
-                        intersected.[1].BodyShapeIntersected.BodyId.BodySource = target then
+                        intersected.[1].BodyShapeIntersected.BodyId = targetId then
                         true }
         Seq.notEmpty targetSightings

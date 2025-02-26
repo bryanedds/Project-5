@@ -15,8 +15,12 @@ module InvestigationDispatcherExtensions =
 type InvestigationDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
 
+    static member Facets =
+        [typeof<RigidBodyFacet>]
+
     static member Properties =
-        [define Entity.InvestigationPhase InvestigationNotStarted]
+        [define Entity.Sensor true
+         define Entity.InvestigationPhase InvestigationNotStarted]
 
     override this.PresenceOverride =
         ValueSome Exterior
