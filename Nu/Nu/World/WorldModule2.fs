@@ -1958,7 +1958,7 @@ module WorldModule2 =
                 world
             | None -> world
 
-        static member private processPhysics world =
+        static member private processPhysics (world : World) =
             let world = World.processPhysics3d world
             let world = World.processPhysics2d world
             world

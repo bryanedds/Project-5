@@ -1896,7 +1896,7 @@ and [<ReferenceEquality>] World =
     member this.Halted =
         not this.AmbientState.Advancing
 
-    /// Check the the world's frame rate is being explicitly paced based on clock progression.
+    /// Check that the world's frame rate is being explicitly paced based on clock progression.
     member this.FramePacing =
         this.AmbientState.FramePacing
 

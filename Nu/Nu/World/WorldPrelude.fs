@@ -437,10 +437,10 @@ type Timers =
 [<AutoOpen>]
 module AmbientState =
 
-    let [<Literal>] private ImperativeMask =    0b0001u
-    let [<Literal>] private AccompaniedMask =   0b0010u
-    let [<Literal>] private AdvancingMask =     0b0100u
-    let [<Literal>] private FramePacingMask =   0b1000u
+    let [<Literal>] private ImperativeMask =        0b00001u
+    let [<Literal>] private AccompaniedMask =       0b00010u
+    let [<Literal>] private AdvancingMask =         0b00100u
+    let [<Literal>] private FramePacingMask =       0b01000u
 
     /// The ambient state of the world.
     type [<ReferenceEquality>] 'w AmbientState =
