@@ -222,7 +222,7 @@ module WorldModule2 =
                     // slide-specific behavior currently has to ignore desired screen in order to work. However, we
                     // special case it here to pay attention to desired screen when it is a non-slide screen (IE, not
                     // executing a series of slides). Additionally, to keep this hack's implementation self-contained,
-                    // we use a quick cut to the desired screen in this special case.
+                    // we use a special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
                     match World.getDesiredScreen world with
                     | Desire desiredScreen when desiredScreen <> selectedScreen && (desiredScreen.GetSlideOpt world).IsNone ->
                         let transitionTime = world.GameTime
@@ -240,7 +240,7 @@ module WorldModule2 =
                     match World.getDesiredScreen world with
                     | Desire desiredScreen ->
                         if desiredScreen <> selectedScreen then
-                            if world.Accompanied && world.Halted then // special case to quick cut when halted in the editor
+                            if world.Accompanied && world.Halted then // special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
                                 let transitionTime = world.GameTime
                                 let world = World.selectScreen (IdlingState transitionTime) desiredScreen world
                                 World.updateScreenIdling transitionTime desiredScreen world
@@ -425,14 +425,17 @@ module WorldModule2 =
                     let world =
                         if screenCreation then
                             let world = World.createScreen4 true typeof<'d>.Name (Some name) world |> snd
-                            let world = World.setScreenProtected true screen world |> snd'
                             match groupFilePathOpt with
                             | Some groupFilePath -> World.readGroupFromFile groupFilePath None screen world |> snd
                             | None -> world
                         else world
 
+                    // protect screen
+                    let world = World.setScreenProtected true screen world |> snd'
+
                     // fin
                     (true, world)
+
             let initializing = initializing || Reinitializing
             let world =
                 Seq.fold
@@ -447,7 +450,7 @@ module WorldModule2 =
                 else world
             let world =
                 if screen.GetExists world && select then
-                    if world.Accompanied && world.Halted then // special case to quick cut when halted in the editor
+                    if world.Accompanied && world.Halted then // special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
                         let transitionTime = world.GameTime
                         let world = World.selectScreen (IdlingState transitionTime) screen world
                         World.updateScreenIdling transitionTime screen world
@@ -1503,13 +1506,13 @@ module WorldModule2 =
 
                 // attempt to process groups
                 world.Timers.UpdateGroupsTimer.Restart ()
-                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world then World.tryProcessGroup zeroDelta group world else world) world groups
+                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world && group.GetSelected world then World.tryProcessGroup zeroDelta group world else world) world groups
                 world.Timers.UpdateGroupsTimer.Stop ()
 
                 // attempt to process entities
                 world.Timers.UpdateEntitiesTimer.Restart ()
-                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet3dNormalCached
-                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet2dNormalCached
+                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world && element.Entry.GetSelected world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet3dNormalCached
+                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world && element.Entry.GetSelected world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet2dNormalCached
                 world.Timers.UpdateEntitiesTimer.Stop ()
 
                 // fin
