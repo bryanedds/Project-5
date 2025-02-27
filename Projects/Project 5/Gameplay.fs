@@ -103,17 +103,26 @@ type GameplayDispatcher () =
                     | NormalState ->
                         let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
                         if clicked then
-                            let world = investigation.SetInvestigationPhase InvestigationStarted world
+                            let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
                             let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
                             world
                         else world
-                    | InvestigateState _ ->
-                        let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                        if clicked then
-                            let world = investigation.SetInvestigationPhase InvestigationNotStarted world
-                            let world = player.SetActionState NormalState world
-                            world
-                        else world
+                    | InvestigateState state ->
+                        match state.Investigation.GetInvestigationPhase world with
+                        | InvestigationNotStarted -> failwithumf ()
+                        | InvestigationStarted startTime ->
+                            let localTime = world.GameTime - startTime
+                            if localTime < 8.0f then
+                                let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                if clicked
+                                then investigation.SetInvestigationPhase InvestigationNotStarted world
+                                else world
+                            else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
+                        | InvestigationFinished startTime ->
+                            let localTime = world.GameTime - startTime
+                            if localTime >= 2.0f
+                            then player.SetActionState NormalState world
+                            else world
                     | _ -> world
                 | None -> world
 

@@ -309,7 +309,7 @@ type CharacterDispatcher () =
                     if playerOpt.GetExists world then
                         let processEnemies =
                             match playerOpt.GetActionState world with
-                            | InvestigateState investigation -> investigation.Investigation.GetInvestigationPhase world <> InvestigationFinished
+                            | InvestigateState investigation -> not (investigation.Investigation.GetInvestigationPhase world).IsInvestigationFinished
                             | _ -> true
                         if processEnemies
                         then Right (playerOpt.GetPosition world, playerOpt.GetBodyId world)

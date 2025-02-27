@@ -64,8 +64,8 @@ type StalkerSpawnState =
 
 type InvestigationPhase =
     | InvestigationNotStarted
-    | InvestigationStarted
-    | InvestigationFinished
+    | InvestigationStarted of GameTime
+    | InvestigationFinished of GameTime
 
 type HideType =
     | HideStanding // like a locker or tall cupboard

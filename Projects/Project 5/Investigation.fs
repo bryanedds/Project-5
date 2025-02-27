@@ -36,7 +36,7 @@ type InvestigationDispatcher () =
                     elif playerDistance > 3.0f then 0.0f
                     else (3.0f - playerDistance) * 0.5f
                 else 0.0f
-            let alpha = (2.0f - world.GameTime.Seconds % 2.0f) * distanceScalar
+            let alpha = (world.GameTime.Seconds % 2.0f + 1.0f) * distanceScalar
             let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
             let material =
                 { Material.defaultMaterial with
@@ -48,7 +48,7 @@ type InvestigationDispatcher () =
                  Entity.Material .= material
                  Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
                 world
-        | InvestigationStarted ->
+        | InvestigationStarted _ ->
             let material =
                 { Material.defaultMaterial with
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
@@ -61,7 +61,7 @@ type InvestigationDispatcher () =
                  Entity.CelRun .= 8
                  Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
                 world
-        | InvestigationFinished ->
+        | InvestigationFinished _ ->
             let material =
                 { Material.defaultMaterial with
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationConcludedIconAlbedoImage

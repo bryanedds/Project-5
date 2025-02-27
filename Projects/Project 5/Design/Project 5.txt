@@ -48,6 +48,8 @@ B) Kill Hunter. Investigate its corpse to find key to leave.
 
 Intro Stage - 1A, 2A. Find your keys before leaving the house ("Need to drive and don't want to lock myself out.") Upon finding your keys, you realize you also need to find your wallet, then suddenly a dry lightning flashes and the power goes out. Fortunately there's a small flash light on your keychain. Upon finding your wallet in the dark, leave the house / stage. "God I'm exhausted... I better get some coffee on the way."
 
+tree + vol fog through left window to liven up residence scene + moths outside window?
+
 Narrative Slides - Car crash on a long country road. Car is in a ditch, you don't remember the crash. You must've fallen asleep at the wheel. You search the car for your cell phone - can't find it. Might have been flung out the broken windshield. Look for the cell phone outside the car. Find cell phone - it's broken. The only thing you see is an abandoned, dilapidated plantation-style farm house. It's 4AM. You wait an hour for another car to pass by. None do. Approach the house.
 
 Stage 1 - 2A - Enter dilapidated house. Darkness, no electricity.  You hear a sound, like a child's voice. "Hello? Is anyone here? Are you alone?" You hear nothing more. Find a door downstairs, locked. Find a key - enter.
@@ -73,3 +75,5 @@ deexponentiate roughness (red) with Paint.NET curve editor.
 MISC
 
 having something small in the scene with just a bit of motion (like the small spinning table fan in RE7) can trick the player into thinking something dangerous is near - then realize it was just a harmless prop. that's effective for horror for two reasons - creates sudden tension and also make next encounter with danger more surprising.
+
+lucid / disorienting experience of time in a scenario
