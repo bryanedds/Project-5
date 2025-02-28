@@ -38,7 +38,7 @@ type MyGameDispatcher () =
 
         // declare splash screen
         let (results, world) = World.beginScreen Simulants.Splash.Name (game.GetGameState world = Splash) (Slide (Constants.Dissolve.Default, Constants.Slide.Default, None, Simulants.Title)) [] world
-        let world = if FQueue.contains Deselecting results && not world.ContextInitializing then game.SetGameState Title world else world
+        let world = if FQueue.contains Deselecting results && game.GetGameState world = Splash then game.SetGameState Title world else world
         let world = World.endScreen world
 
         // declare title screen
