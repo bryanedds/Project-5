@@ -994,7 +994,8 @@ module WorldModule2 =
             let outputAssetGraphFilePath = outputDirectory + "/" + Assets.Global.AssetGraphFilePath
             try if File.Exists outputAssetGraphFilePath then File.SetAttributes (outputAssetGraphFilePath, FileAttributes.None)
                 File.Copy (inputAssetGraphFilePath, outputAssetGraphFilePath, true)
-                File.SetAttributes (outputAssetGraphFilePath, FileAttributes.ReadOnly)
+                // NOTE: experimenting with turning this off to avoid file locks on it - issue might be something else tho.
+                //File.SetAttributes (outputAssetGraphFilePath, FileAttributes.ReadOnly)
 
                 // attempt to load asset graph
                 match AssetGraph.tryMakeFromFile outputAssetGraphFilePath with
