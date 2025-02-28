@@ -16,6 +16,8 @@ hunter tracks player by last seen while player not in sight.
 
 hold down interact button for ten seconds to investigate (in a drawer, plays a sound like shuffling contents around during that time, or with a book, flipping pages).
 
+when interacting, camera gets an additional mode where turning it doesn't  turn the character and it can only turn so far.
+
 hostile furniture - after hiding in a piece of furniture or closet, once you step out, the door closes and can't be opened again.
 
 you can kill hunters, but you have to find a one-use item to hit them with from behind first. item can't be used if hunter is aware of you (item icon has an X marked over it).
