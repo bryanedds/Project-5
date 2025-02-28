@@ -222,12 +222,15 @@ module WorldModule2 =
                     // slide-specific behavior currently has to ignore desired screen in order to work. However, we
                     // special case it here to pay attention to desired screen when it is a non-slide screen (IE, not
                     // executing a series of slides). Additionally, to keep this hack's implementation self-contained,
-                    // we use a special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
+                    // we use a special case to quick cut when halted in the editor.
                     match World.getDesiredScreen world with
                     | Desire desiredScreen when desiredScreen <> selectedScreen && (desiredScreen.GetSlideOpt world).IsNone ->
-                        let transitionTime = world.GameTime
-                        let world = World.selectScreen (IdlingState transitionTime) desiredScreen world
-                        World.updateScreenIdling transitionTime desiredScreen world
+                        World.defer (fun world ->
+                            let transitionTime = world.GameTime
+                            let world = World.selectScreen (IdlingState transitionTime) desiredScreen world
+                            World.updateScreenIdling transitionTime desiredScreen world)
+                            desiredScreen
+                            world
                     | DesireNone ->
                         World.selectScreenOpt None world
                     | _ ->
@@ -240,10 +243,13 @@ module WorldModule2 =
                     match World.getDesiredScreen world with
                     | Desire desiredScreen ->
                         if desiredScreen <> selectedScreen then
-                            if world.Accompanied && world.Halted then // special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
-                                let transitionTime = world.GameTime
-                                let world = World.selectScreen (IdlingState transitionTime) desiredScreen world
-                                World.updateScreenIdling transitionTime desiredScreen world
+                            if world.Accompanied && world.Halted && not world.AdvancementCleared then // special case to quick cut when halted in the editor.
+                                World.defer (fun world ->
+                                    let transitionTime = world.GameTime
+                                    let world = World.selectScreen (IdlingState transitionTime) desiredScreen world
+                                    World.updateScreenIdling transitionTime desiredScreen world)
+                                    desiredScreen
+                                    world
                             else
                                 let transitionTime = world.GameTime
                                 let world = World.setScreenTransitionStatePlus (OutgoingState transitionTime) selectedScreen world
@@ -424,7 +430,7 @@ module WorldModule2 =
                     // create screen only when needed
                     let world =
                         if screenCreation then
-                            let world = World.createScreen4 true typeof<'d>.Name (Some name) world |> snd
+                            let world = World.createScreen4 typeof<'d>.Name (Some name) world |> snd
                             match groupFilePathOpt with
                             | Some groupFilePath -> World.readGroupFromFile groupFilePath None screen world |> snd
                             | None -> world
@@ -449,16 +455,19 @@ module WorldModule2 =
                 then World.applyScreenBehavior setScreenSlide behavior screen world
                 else world
             let world =
-                if screen.GetExists world && select then
-                    if world.Accompanied && world.Halted then // special case to quick cut when halted (or incidentally processing with zeroDelta) in the editor.
-                        let transitionTime = world.GameTime
-                        let world = World.selectScreen (IdlingState transitionTime) screen world
-                        World.updateScreenIdling transitionTime screen world
+                if screen.GetExists world && select && not (Option.contains screen (World.getSelectedScreenOpt world)) then
+                    if world.Accompanied && world.Halted && not world.AdvancementCleared then // special case to quick cut when halted in the editor.
+                        World.defer (fun world ->
+                            let transitionTime = world.GameTime
+                            let world = World.selectScreen (IdlingState transitionTime) screen world
+                            World.updateScreenIdling transitionTime screen world)
+                            screen
+                            world
                     else transitionScreen screen world
                 else world
             let world =
                 if screenCreation && screen.GetExists world && WorldModule.UpdatingSimulants && World.getScreenSelected screen world
-                then WorldModule.tryProcessScreen select true screen world
+                then WorldModule.tryProcessScreen true screen world
                 else world
             let (screenResult, userResult) = (World.getSimulantImNui screen.ScreenAddress world).Result :?> ScreenResult FQueue * 'r
             let world = World.mapSimulantImNui (fun simulantImNui -> { simulantImNui with Result = (FQueue.empty<ScreenResult>, zero) }) screen.ScreenAddress world
@@ -1480,7 +1489,7 @@ module WorldModule2 =
         /// Process ImNui for a single frame.
         /// HACK: needed only as a hack for Gaia and other accompanying programs to ensure ImGui simulants are created at a
         /// meaningful time. Do NOT call this in the course of normal operations!
-        static member tryProcessSimulants firstFrame zeroDelta (world : World) =
+        static member tryProcessSimulants zeroDelta (world : World) =
 
             // use a finally block to free cached values
             try
@@ -1501,18 +1510,18 @@ module WorldModule2 =
 
                 // attempt to process screen if any
                 world.Timers.UpdateScreensTimer.Restart ()
-                let world = Option.fold (fun world (screen : Screen) -> if screen.GetExists world then World.tryProcessScreen firstFrame zeroDelta screen world else world) world screenOpt
+                let world = Option.fold (fun world (screen : Screen) -> if screen.GetExists world then World.tryProcessScreen zeroDelta screen world else world) world screenOpt
                 world.Timers.UpdateScreensTimer.Stop ()
 
                 // attempt to process groups
                 world.Timers.UpdateGroupsTimer.Restart ()
-                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world && group.GetSelected world then World.tryProcessGroup zeroDelta group world else world) world groups
+                let world = Seq.fold (fun world (group : Group) -> if group.GetExists world then World.tryProcessGroup zeroDelta group world else world) world groups
                 world.Timers.UpdateGroupsTimer.Stop ()
 
                 // attempt to process entities
                 world.Timers.UpdateEntitiesTimer.Restart ()
-                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world && element.Entry.GetSelected world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet3dNormalCached
-                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world && element.Entry.GetSelected world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet2dNormalCached
+                let world = Seq.fold (fun world (element : Entity Octelement) -> if element.Entry.GetExists world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet3dNormalCached
+                let world = Seq.fold (fun world (element : Entity Quadelement) -> if element.Entry.GetExists world then World.tryProcessEntity zeroDelta element.Entry world else world) world HashSet2dNormalCached
                 world.Timers.UpdateEntitiesTimer.Stop ()
 
                 // fin
@@ -1596,7 +1605,7 @@ module WorldModule2 =
             // fin
             world
 
-        static member private updateSimulants firstFrame (world : World) =
+        static member private updateSimulants (world : World) =
 
             // use a finally block to free cached values
             try
@@ -1622,7 +1631,7 @@ module WorldModule2 =
                 world.Timers.UpdateScreensTimer.Restart ()
                 let world =
                     Seq.fold (fun world (screen : Screen) ->
-                        let world = if screen.GetExists world then World.tryProcessScreen firstFrame false screen world else world
+                        let world = if screen.GetExists world then World.tryProcessScreen false screen world else world
                         let world = if advancing && screen.GetExists world && Option.contains screen selectedScreenOpt then World.updateScreen screen world else world
                         world)
                         world screens
@@ -2018,7 +2027,7 @@ module WorldModule2 =
                                     // update simulants
                                     world.Timers.UpdateTimer.Restart ()
                                     WorldModule.UpdatingSimulants <- true
-                                    let world = World.updateSimulants firstFrame world
+                                    let world = World.updateSimulants world
                                     WorldModule.UpdatingSimulants <- false
                                     world.Timers.UpdateTimer.Stop ()
                                     match World.getLiveness world with
@@ -2806,11 +2815,10 @@ module ScreenDispatcherModule =
     type [<AbstractClass>] ScreenDispatcherImNui () =
         inherit ScreenDispatcher ()
 
-        override this.TryProcess (firstFrame, screen, world) =
+        override this.TryProcess (screen, world) =
             let context = world.ContextImNui
             let world = World.scopeScreen screen [] world
             let (selectResults, world) = World.doSubscription "@SelectResults" screen.SelectEvent world |> mapFst (FQueue.map (constant Select))
-            let selectResults = if firstFrame then FQueue.conj Select selectResults else selectResults // HACK: add in Select result manually when this is first frame as it is otherwise missed.
             let (incomingStartResults, world) = World.doSubscription "@IncomingStartResults" screen.IncomingStartEvent world |> mapFst (FQueue.map (constant IncomingStart))
             let (incomingFinishResults, world) = World.doSubscription "@IncomingFinishResults" screen.IncomingFinishEvent world |> mapFst (FQueue.map (constant IncomingFinish))
             let (outgoingStartResults, world) = World.doSubscription "@OutgoingStartResults" screen.OutgoingStartEvent world |> mapFst (FQueue.map (constant OutgoingStart))

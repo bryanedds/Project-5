@@ -507,8 +507,8 @@ and ScreenDispatcher () =
     default this.Unregister (_, world) = world
 
     /// Attempt to ImNui process a screen.
-    abstract TryProcess : bool * Screen * World -> World
-    default this.TryProcess (_, _, world) = world
+    abstract TryProcess : Screen * World -> World
+    default this.TryProcess (_, world) = world
 
     /// Pre-update a screen.
     abstract PreUpdate : Screen * World -> World
@@ -1896,6 +1896,9 @@ and [<ReferenceEquality>] World =
     /// Check that the world's frame rate is being explicitly paced based on clock progression.
     member this.FramePacing =
         this.AmbientState.FramePacing
+
+    member internal this.AdvancementCleared =
+        this.AmbientState.AdvancementCleared
 
     /// Get the number of updates that have transpired between this and the previous frame.
     member this.UpdateDelta =
