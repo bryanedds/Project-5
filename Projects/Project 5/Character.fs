@@ -375,18 +375,18 @@ type CharacterDispatcher () =
                 let turnRightness = if angularVelocity.Y < 0.0f then -angularVelocity.Y * 0.5f else 0.0f
                 let turnLeftness = if angularVelocity.Y > 0.0f then angularVelocity.Y * 0.5f else 0.0f
                 let animations =
-                    [Animation.make 0.0f None "Armature|Idle" Loop 1.0f 1.0f None]
+                    [Animation.make 0.0f None "Idle" Loop 1.0f 1.0f None]
                 let animations =
-                    if forwardness >= 0.01f then Animation.make 0.0f None "Armature|WalkForward" Loop 1.0f forwardness None :: animations
-                    elif backness >= 0.01f then Animation.make 0.0f None "Armature|WalkBack" Loop 1.0f backness None :: animations
+                    if forwardness >= 0.01f then Animation.make 0.0f None "WalkForward" Loop 1.0f forwardness None :: animations
+                    elif backness >= 0.01f then Animation.make 0.0f None "WalkBack" Loop 1.0f backness None :: animations
                     else animations
                 let animations =
-                    if rightness >= 0.01f then Animation.make 0.0f None "Armature|WalkRight" Loop 1.0f rightness None :: animations
-                    elif leftness >= 0.01f then Animation.make 0.0f None "Armature|WalkLeft" Loop 1.0f leftness None :: animations
+                    if rightness >= 0.01f then Animation.make 0.0f None "WalkRight" Loop 1.0f rightness None :: animations
+                    elif leftness >= 0.01f then Animation.make 0.0f None "WalkLeft" Loop 1.0f leftness None :: animations
                     else animations
                 let animations =
-                    if turnRightness >= 0.01f then Animation.make 0.0f None "Armature|TurnRight" Loop 1.0f turnRightness None :: animations
-                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "Armature|TurnLeft" Loop 1.0f turnLeftness None :: animations
+                    if turnRightness >= 0.01f then Animation.make 0.0f None "TurnRight" Loop 1.0f turnRightness None :: animations
+                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "TurnLeft" Loop 1.0f turnLeftness None :: animations
                     else animations
                 animatedModel.SetAnimations (Array.ofList animations) world
             | _ -> world
@@ -405,17 +405,17 @@ type CharacterDispatcher () =
                         World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
                         world
                     else world
-                let animation = Animation.once attack.AttackTime None "Armature|Attack"
+                let animation = Animation.once attack.AttackTime None "Attack"
                 animatedModel.SetAnimations [|animation|] world
             | InvestigateState investigate ->
                 world
             | HideState hide ->
                 world
             | InjuryState injury ->
-                let animation = Animation.once injury.InjuryTime None "Armature|WalkBack"
+                let animation = Animation.once injury.InjuryTime None "WalkBack"
                 animatedModel.SetAnimations [|animation|] world
             | WoundState wound ->
-                let animation = Animation.loop wound.WoundTime None "Armature|WalkBack"
+                let animation = Animation.loop wound.WoundTime None "WalkBack"
                 animatedModel.SetAnimations [|animation|] world
 
         // declare weapon
