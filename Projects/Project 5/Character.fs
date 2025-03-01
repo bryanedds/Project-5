@@ -90,7 +90,7 @@ type CharacterDispatcher () =
                     then Sphere (targetPosition, 0.1f) // when above player
                     else Sphere (targetPosition, 0.4f) // when at or below player
                 let nearest = sphere.Nearest position
-                let followOutput = World.nav3dFollow (Some 0.5f) None moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+                let followOutput = World.nav3dFollow (Some Constants.Gameplay.AttackProximity) None moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
                 let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
                 let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
                 let world = entity.SetRotation followOutput.NavRotation world
@@ -111,7 +111,7 @@ type CharacterDispatcher () =
                 | Some wayPointEntity ->
                     let wayPointPosition = wayPointEntity.GetPosition world
                     let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
-                    if wayPointDistance < 0.5f then
+                    if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
                         match state.HunterWayPointTimeOpt with
                         | None ->
                             let state = { state with HunterWayPointTimeOpt = Some world.GameTime }

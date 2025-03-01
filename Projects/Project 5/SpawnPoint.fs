@@ -8,8 +8,8 @@ open MyGame
 type SpawnPointDispatcher () =
     inherit Entity3dDispatcherImNui (false, false, false)
 
-    static member Properties =
-        [define Entity.Size (v3Dup 0.5f)]
-
     override this.PresenceOverride =
         ValueSome Exterior
+
+    override this.GetAttributesInferred (_, _) =
+        AttributesInferred.important (v3Dup 0.25f) v3Zero
