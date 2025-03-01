@@ -78,4 +78,6 @@ MISC
 
 having something small in the scene with just a bit of motion (like the small spinning table fan in RE7) can trick the player into thinking something dangerous is near - then realize it was just a harmless prop. that's effective for horror for two reasons - creates sudden tension and also make next encounter with danger more surprising.
 
+a shallow time element i.e. doesn't really affect gameplay/progression but still part of the experience. time is determined by gameplay progress (including physical checkpoints) and can be associated with events like stalker appearance. also determines windowed room lighting making it at least slightly different each time room is entered. rendering complications can be minimised by keeping time still in such rooms.
+
 lucid / disorienting experience of time in a scenario
