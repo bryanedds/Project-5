@@ -17,4 +17,4 @@ module Constants =
         let [<Uniform>] HuntWayPointProximity = 0.5f
         let [<Uniform>] HuntDuration = GameTime.ofSeconds 16.0f
         let [<Uniform>] StalkDelay = GameTime.ofSeconds 180.0f
-        let [<Uniform>] StalkDuration = GameTime.ofSeconds 90.0f
+        let [<Uniform>] StalkDuration = GameTime.ofSeconds 120.0f
