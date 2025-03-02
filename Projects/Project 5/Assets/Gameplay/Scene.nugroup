@@ -7044,7 +7044,7 @@
            [HunterWayPointPlayback Bounce]
            [HunterWayPointBouncing False]
            [HunterWayPointIndexOpt [Some 0]]
-           [HunterWayPointTimeOpt [Some 195.39754]]
+           [HunterWayPointTimeOpt None]
            [HunterAwareTimeOpt None]]]]
         [Enabled False]
         [EnabledLocal False]
