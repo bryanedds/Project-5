@@ -62,6 +62,12 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Single.MaxValue
 
+type DoorState =
+    | DoorClosed
+    | DoorOpening of StartTime : GameTime
+    | DoorOpened
+    | DoorClosing of StartTime : GameTime
+
 type InvestigationPhase =
     | InvestigationNotStarted
     | InvestigationStarted of GameTime
@@ -76,6 +82,9 @@ type HidePhase =
     | HideEntering
     | HideWaiting
     | HideExiting
+
+type HidingSpot =
+    | CabinetStanding of Cabinet : Entity * CabinetDoor : Entity
 
 type HideState =
     { HideTime : GameTime

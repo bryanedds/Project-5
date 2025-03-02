@@ -20,9 +20,15 @@ module CharacterExtensions =
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
+        member this.GetDoorCollisions world : Entity Set = this.Get (nameof this.DoorCollisions) world
+        member this.SetDoorCollisions (value : Entity Set) world = this.Set (nameof this.DoorCollisions) value world
+        member this.DoorCollisions = lens (nameof this.DoorCollisions) this this.GetDoorCollisions this.SetDoorCollisions
         member this.GetInvestigationCollisions world : Entity Set = this.Get (nameof this.InvestigationCollisions) world
         member this.SetInvestigationCollisions (value : Entity Set) world = this.Set (nameof this.InvestigationCollisions) value world
         member this.InvestigationCollisions = lens (nameof this.InvestigationCollisions) this this.GetInvestigationCollisions this.SetInvestigationCollisions
+        member this.GetHidingSpotCollisions world : Entity Set = this.Get (nameof this.HidingSpotCollisions) world
+        member this.SetHidingSpotCollisions (value : Entity Set) world = this.Set (nameof this.HidingSpotCollisions) value world
+        member this.HidingSpotCollisions = lens (nameof this.HidingSpotCollisions) this this.GetHidingSpotCollisions this.SetHidingSpotCollisions
         member this.GetWeaponCollisions world : Entity Set = this.Get (nameof this.WeaponCollisions) world
         member this.SetWeaponCollisions (value : Entity Set) world = this.Set (nameof this.WeaponCollisions) value world
         member this.WeaponCollisions = lens (nameof this.WeaponCollisions) this this.GetWeaponCollisions this.SetWeaponCollisions
@@ -246,7 +252,7 @@ type CharacterDispatcher () =
          define Entity.Offset (v3 0.0f 1.0f 0.0f)
          define Entity.Static false
          define Entity.BodyType KinematicCharacter
-         define Entity.BodyShape (CapsuleShape { Height = 1.0f; Radius = 0.35f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.85f 0.0f)); PropertiesOpt = None })
+         define Entity.BodyShape (CapsuleShape { Height = 1.0f; Radius = 0.4f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.9f 0.0f)); PropertiesOpt = None })
          define Entity.Substance (Mass 50.0f)
          define Entity.Observable true
          define Entity.CharacterProperties characterType.CharacterProperties
@@ -254,7 +260,9 @@ type CharacterDispatcher () =
          define Entity.CharacterType characterType
          define Entity.ActionState NormalState
          define Entity.HitPoints characterType.HitPointsMax
+         define Entity.DoorCollisions Set.empty
          define Entity.InvestigationCollisions Set.empty
+         define Entity.HidingSpotCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
 
@@ -270,10 +278,14 @@ type CharacterDispatcher () =
             FQueue.fold (fun world penetration ->
                 match penetration.BodyShapePenetratee.BodyId.BodySource with
                 | :? Entity as penetratee ->
-                    if penetratee.Is<InvestigationDispatcher> world then
+                    if penetratee.Is<DoorDispatcher> world then
+                        entity.DoorCollisions.Map (Set.add penetratee) world
+                    elif penetratee.Is<InvestigationDispatcher> world then
                         if characterType.IsPlayer
                         then entity.InvestigationCollisions.Map (Set.add penetratee) world
                         else world
+                    elif penetratee.Is<HidingSpotDispatcher> world then
+                        entity.HidingSpotCollisions.Map (Set.add penetratee) world
                     else world
                 | _ -> world)
                 world penetrations
@@ -283,7 +295,11 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world separation ->
                 match separation.BodyShapeSeparatee.BodyId.BodySource with
-                | :? Entity as separatee -> entity.InvestigationCollisions.Map (Set.remove separatee) world
+                | :? Entity as separatee ->
+                    let world = entity.DoorCollisions.Map (Set.remove separatee) world
+                    let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                    let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
+                    world
                 | _ -> world)
                 world separationsExplicit
 
@@ -292,7 +308,11 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world (separation : BodySeparationImplicitData) ->
                 match separation.BodyId.BodySource with
-                | :? Entity as separatee -> entity.InvestigationCollisions.Map (Set.remove separatee) world
+                | :? Entity as separatee ->
+                    let world = entity.DoorCollisions.Map (Set.remove separatee) world
+                    let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                    let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
+                    world
                 | _ -> world)
                 world separationsImplicit
 
@@ -558,5 +578,6 @@ type PlayerDispatcher () =
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
+         define Entity.BodyShape (CapsuleShape { Height = 1.1f; Radius = 0.25f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.75f 0.0f)); PropertiesOpt = None })
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
