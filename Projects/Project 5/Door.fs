@@ -16,7 +16,7 @@ module DoorDispatcherExtensions =
         member this.RotationInitial = lens (nameof this.RotationInitial) this this.GetRotationInitial this.SetRotationInitial
 
 type DoorDispatcher () =
-    inherit Entity3dDispatcherImNui (false, false, false)
+    inherit Entity3dDispatcherImNui (true, false, false)
 
     static member Facets =
         [typeof<RigidBodyFacet>]

@@ -68,9 +68,10 @@ type CharacterDispatcher () =
                 let position = entity.GetPosition world
                 let positionFlat = position.WithY 0.0f
                 let rotation = entity.GetRotation world
-                let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
-                let playerPositionFlat = targetPosition.WithY 0.0f
-                if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance targetBodyId world then
+                let bodyId = entity.GetBodyId world
+                if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyId world then
+                    let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
+                    let playerPositionFlat = targetPosition.WithY 0.0f
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
                         rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
                         let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
@@ -163,20 +164,21 @@ type CharacterDispatcher () =
                 let world = entity.AngularVelocity.Map ((*) 0.5f) world
                 world
 
-    static let processHunterState targetPosition target (state : HunterState) (entity : Entity) (world : World) =
+    static let processHunterState targetPosition targetBodyId (state : HunterState) (entity : Entity) (world : World) =
 
         // process player sighting
         let position = entity.GetPosition world
         let rotation = entity.GetRotation world
+        let bodyId = entity.GetBodyId world
         let state =
-            if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance target world
+            if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyId world
             then { state with HunterAwareTimeOpt = Some world.GameTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
 
         // process hunter state
         match state.HunterAwareDurationOpt world.GameTime with
-        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition target entity world
+        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition targetBodyId entity world
         | Some _ | None -> processHunterWayPointNavigation state entity world
 
     static let processStalkerState targetPosition target (state : StalkerState) (entity : Entity) world =
@@ -542,7 +544,7 @@ type CharacterDispatcher () =
             if (entity.GetCharacterState world).IsEnemyState then
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in Algorithm.computeScanSegments position rotation Constants.Gameplay.EnemySightDistance do
+                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
                     World.imGuiSegment3d scanSegment 1.0f Color.Red world
                 world
             else world

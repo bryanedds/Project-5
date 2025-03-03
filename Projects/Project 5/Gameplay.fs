@@ -200,7 +200,8 @@ type GameplayDispatcher () =
                     // process unspawn or resetting to late spawn state
                     let position = stalker.GetPosition world
                     let rotation = stalker.GetRotation world
-                    if Algorithm.getTargetInSight position rotation Constants.Gameplay.EnemySightDistance (player.GetBodyId world) world then
+                    let bodyId = stalker.GetBodyId world
+                    if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId (player.GetBodyId world) world then
                         screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
                     else
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f

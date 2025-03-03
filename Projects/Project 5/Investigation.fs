@@ -13,7 +13,7 @@ module InvestigationDispatcherExtensions =
         member this.InvestigationPhase = lens (nameof this.InvestigationPhase) this this.GetInvestigationPhase this.SetInvestigationPhase
 
 type InvestigationDispatcher () =
-    inherit Entity3dDispatcherImNui (false, false, false)
+    inherit Entity3dDispatcherImNui (true, false, false)
 
     static member Facets =
         [typeof<RigidBodyFacet>]
