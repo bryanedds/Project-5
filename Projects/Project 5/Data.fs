@@ -162,7 +162,7 @@ and CharacterType =
         | Player -> CapsuleShape { Height = 1.1f; Radius = 0.25f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
 
     member this.ExpandedHideSensorBodyShape =
-        SphereShape { Radius = 2.0f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
+        SphereShape { Radius = 1.0f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
 
     member this.CharacterProperties =
         match this with
