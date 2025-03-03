@@ -9,6 +9,11 @@ type WayPoint =
     { WayPoint : Entity Relation
       WayPointWaitTime : GameTime }
 
+type Awareness =
+    | Unaware
+    | AwareTraversing of GameTime
+    | AwareHiding of GameTime
+
 type [<SymbolicExpansion>] HunterState =
     { HunterWayPoints : WayPoint array
       HunterWayPointPlayback : Playback
