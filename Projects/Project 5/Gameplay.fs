@@ -201,7 +201,9 @@ type GameplayDispatcher () =
                     let position = stalker.GetPosition world
                     let rotation = stalker.GetRotation world
                     let bodyId = stalker.GetBodyId world
-                    if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId (player.GetBodyId world) world then
+                    let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
+                    let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
+                    if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                         screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
                     else
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f

@@ -59,7 +59,7 @@ type CharacterDispatcher () =
             world
         | None -> world
 
-    static let processEnemyAggression (targetPosition : Vector3) targetBodyId (entity : Entity) world =
+    static let processEnemyAggression (targetPosition : Vector3) targetBodyIds (entity : Entity) world =
 
         // attacking
         let world =
@@ -69,7 +69,7 @@ type CharacterDispatcher () =
                 let positionFlat = position.WithY 0.0f
                 let rotation = entity.GetRotation world
                 let bodyId = entity.GetBodyId world
-                if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyId world then
+                if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
                     let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                     let playerPositionFlat = targetPosition.WithY 0.0f
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
@@ -164,21 +164,21 @@ type CharacterDispatcher () =
                 let world = entity.AngularVelocity.Map ((*) 0.5f) world
                 world
 
-    static let processHunterState targetPosition targetBodyId (state : HunterState) (entity : Entity) (world : World) =
+    static let processHunterState targetPosition targetBodyIds (state : HunterState) (entity : Entity) (world : World) =
 
         // process player sighting
         let position = entity.GetPosition world
         let rotation = entity.GetRotation world
         let bodyId = entity.GetBodyId world
         let state =
-            if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyId world
+            if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world
             then { state with HunterAwareTimeOpt = Some world.GameTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
 
         // process hunter state
         match state.HunterAwareDurationOpt world.GameTime with
-        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition targetBodyId entity world
+        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition targetBodyIds entity world
         | Some _ | None -> processHunterWayPointNavigation state entity world
 
     static let processStalkerState targetPosition target (state : StalkerState) (entity : Entity) world =
@@ -254,7 +254,7 @@ type CharacterDispatcher () =
          define Entity.Offset (v3 0.0f 1.0f 0.0f)
          define Entity.Static false
          define Entity.BodyType KinematicCharacter
-         define Entity.BodyShape (CapsuleShape { Height = 1.0f; Radius = 0.4f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.9f 0.0f)); PropertiesOpt = None })
+         define Entity.BodyShape characterType.BodyShape
          define Entity.Substance (Mass 50.0f)
          define Entity.Observable true
          define Entity.CharacterProperties characterType.CharacterProperties
@@ -324,6 +324,26 @@ type CharacterDispatcher () =
             then entity.SetMountOptWithAdjustment None world
             else entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
 
+        // process expanded hide sensor on state
+        let world =
+            let expandedHideSensorBodyEnabled =
+                match entity.GetCharacterState world with
+                | PlayerState state ->
+                    match state.HideStateOpt with
+                    | Some hideState -> hideState.HidePhase.IsHideEntering
+                    | None -> false
+                | _ -> false
+            let (_, _, world) =
+                World.doRigidModel Constants.Gameplay.CharacterExpandedHideSensorName
+                    [Entity.PositionLocal @= entity.GetPosition world
+                     Entity.VisibleLocal .= false
+                     Entity.BodyEnabled @= expandedHideSensorBodyEnabled
+                     Entity.BodyShape .= characterType.ExpandedHideSensorBodyShape
+                     Entity.Sensor .= true
+                     Entity.MountOpt .= None]
+                    world
+            world
+
         // process character state
         let world =
             if world.Advancing then
@@ -333,18 +353,20 @@ type CharacterDispatcher () =
                             match playerOpt.GetActionState world with
                             | InvestigateState investigation -> not (investigation.Investigation.GetInvestigationPhase world).IsInvestigationFinished
                             | _ -> true
-                        if processEnemies
-                        then Right (playerOpt.GetPosition world, playerOpt.GetBodyId world)
+                        if processEnemies then
+                            let playerEhs = playerOpt / Constants.Gameplay.CharacterExpandedHideSensorName
+                            let playerBodyIds = Set.ofList [playerOpt.GetBodyId world; playerEhs.GetBodyId world]
+                            Right (playerOpt.GetPosition world, playerBodyIds)
                         else Left ()
                     else Left ()
                 match entity.GetCharacterState world with
                 | HunterState state ->
                     match enemyTargetingEir with
-                    | Right (targetPosition, targetBodyId) -> processHunterState targetPosition targetBodyId state entity world
+                    | Right (targetPosition, targetBodyIds) -> processHunterState targetPosition targetBodyIds state entity world
                     | Left () -> world
                 | StalkerState state ->
                     match enemyTargetingEir with
-                    | Right (targetPosition, targetBodyId) -> processStalkerState targetPosition targetBodyId state entity world
+                    | Right (targetPosition, targetBodyIds) -> processStalkerState targetPosition targetBodyIds state entity world
                     | Left () -> world
                 | PlayerState state -> processPlayerState state entity world
             else world
@@ -558,6 +580,7 @@ type HunterDispatcher () =
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
+         define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
 
@@ -569,6 +592,7 @@ type StalkerDispatcher () =
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
+         define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
 
@@ -580,6 +604,6 @@ type PlayerDispatcher () =
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
-         define Entity.BodyShape (CapsuleShape { Height = 1.1f; Radius = 0.25f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.75f 0.0f)); PropertiesOpt = None })
+         define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
