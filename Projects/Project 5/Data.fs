@@ -30,23 +30,31 @@ type [<SymbolicExpansion>] HunterState =
           HunterWayPointTimeOpt = None
           HunterAwareness = UnawareOfTarget }
 
-type [<SymbolicExpansion>] StalkerState =
-    | Unspawned
-    | Spawned of SpawnPosition : Vector3
-    | Unspawning of UnspawnPosition : Vector3
+type StalkingState =
+    { SpawnPosition : Vector3
+      Awareness : Awareness }
 
-    static member initial = Unspawned
+type LeavingState =
+    { UnspawnPosition : Vector3
+      Awareness : Awareness }
+
+type [<SymbolicExpansion>] StalkerState =
+    | IdlingState
+    | StalkingState of StalkingState
+    | LeavingState of LeavingState
+
+    static member initial = IdlingState
 
 type StalkerSpawnState =
     | StalkerUnspawned of UnspawnTime : GameTime
-    | StalkerSpawned of SpawnPoint : Entity * SpawnTime : GameTime
-    | StalkerUnspawning of UnspawnPoint : Entity * SpawnTime : GameTime
+    | StalkerStalking of CaughtTargetHiding : bool * SpawnPoint : Entity * SpawnTime : GameTime
+    | StalkerLeaving of UnspawnPoint : Entity * SpawnTime : GameTime
 
     member this.SpawnTimeOpt =
         match this with
         | StalkerUnspawned _ -> None
-        | StalkerSpawned (_, spawnTime) -> Some spawnTime
-        | StalkerUnspawning (_, spawnTime) -> Some spawnTime
+        | StalkerStalking (_, _, spawnTime) -> Some spawnTime
+        | StalkerLeaving (_, spawnTime) -> Some spawnTime
 
     member this.SpawnDurationOpt time =
         match this.SpawnTimeOpt with

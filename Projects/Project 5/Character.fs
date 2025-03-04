@@ -166,7 +166,7 @@ type CharacterDispatcher () =
 
     static let processHunterState targetPosition targetBodyIds targetActionState (state : HunterState) (entity : Entity) (world : World) =
 
-        // process player sighting
+        // process target sighting
         let position = entity.GetPosition world
         let rotation = entity.GetRotation world
         let bodyId = entity.GetBodyId world
@@ -199,20 +199,14 @@ type CharacterDispatcher () =
                 entity.SetCharacterState (HunterState state) world
             else processEnemyAggression targetPosition targetBodyIds entity world
 
-    static let processStalkerState targetPosition targetBodyIds (state : StalkerState) (entity : Entity) world =
+    static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
         match state with
-        | Unspawned -> world
-        | Spawned spawnPoint ->
-            let player = Simulants.GameplayPlayer
-            match player.GetActionState world with
-            | HideState hide ->
-                match hide.HidePhase with
-                | HideWaiting ->
-                    let state = Unspawning spawnPoint
-                    entity.SetCharacterState (StalkerState state) world
-                | HideEntering | HideEmerging -> processEnemyAggression targetPosition targetBodyIds entity world
-            | _ -> processEnemyAggression targetPosition targetBodyIds entity world
-        | Unspawning unspawnPoint -> processEnemyNavigation unspawnPoint entity world
+        | IdlingState -> world
+        | StalkingState stalking ->
+            if not stalking.Awareness.IsUnawareOfTarget
+            then processEnemyAggression targetPosition targetBodyIds entity world
+            else world
+        | LeavingState leaving -> processEnemyNavigation leaving.UnspawnPosition entity world
 
     static let processPlayerInput (entity : Entity) world =
 
@@ -391,7 +385,7 @@ type CharacterDispatcher () =
                     | Left () -> world
                 | StalkerState state ->
                     match enemyTargetingEir with
-                    | Right (targetPosition, targetBodyIds, targetActionState) -> processStalkerState targetPosition targetBodyIds state entity world
+                    | Right (targetPosition, targetBodyIds, targetActionState) -> processStalkerState targetPosition targetBodyIds targetActionState state entity world
                     | Left () -> world
                 | PlayerState state -> processPlayerState state entity world
             else world
