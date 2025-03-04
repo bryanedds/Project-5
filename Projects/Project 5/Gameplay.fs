@@ -219,7 +219,7 @@ type GameplayDispatcher () =
                             world
                     let stalker = world.DeclaredEntity
 
-                    // process resetting to late spawn state
+                    // process potentially resetting to late spawn state
                     let position = stalker.GetPosition world
                     let rotation = stalker.GetRotation world
                     let bodyId = stalker.GetBodyId world
@@ -227,7 +227,8 @@ type GameplayDispatcher () =
                     let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
                     if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                         let caughtTargetHiding = match player.GetActionState world with HideState hide -> hide.HidePhase.IsHideEntering | _ -> false
-                        screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, spawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
+                        let resetTime = max spawnTime (world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f))
+                        screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, spawnPoint, resetTime)) world
                     else world
 
                 | StalkerLeaving (unspawnPoint, _) ->
@@ -246,7 +247,8 @@ type GameplayDispatcher () =
                     let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
                     if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                         let caughtTargetHiding = match player.GetActionState world with HideState hide -> hide.HidePhase.IsHideEntering | _ -> false
-                        screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
+                        let resetTime = world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)
+                        screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, unspawnPoint, resetTime)) world
                     else
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f
                         then screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
