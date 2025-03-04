@@ -201,6 +201,7 @@ type CharacterDispatcher () =
 
     static let processStalkerState targetPosition targetBodyIds (state : StalkerState) (entity : Entity) world =
         match state with
+        | Unspawned -> world
         | Spawned spawnPoint ->
             let player = Simulants.GameplayPlayer
             match player.GetActionState world with
@@ -404,8 +405,7 @@ type CharacterDispatcher () =
                     let localTime = world.GameTime - attack.AttackTime
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
-                | InvestigateState investigate ->
-                    world
+                | InvestigateState _ -> world
                 | HideState hide ->
                     match hide.HidePhase with
                     | HideEntering ->
