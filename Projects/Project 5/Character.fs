@@ -361,13 +361,10 @@ type CharacterDispatcher () =
                     | None -> false
                 | _ -> false
             let (_, _, world) =
-                World.doRigidModel Constants.Gameplay.CharacterExpandedHideSensorName
+                World.doSensorModel Constants.Gameplay.CharacterExpandedHideSensorName
                     [Entity.PositionLocal @= entity.GetPosition world
-                     Entity.VisibleLocal .= false
                      Entity.BodyEnabled @= expandedHideSensorBodyEnabled
                      Entity.BodyShape .= characterType.ExpandedHideSensorBodyShape
-                     Entity.Sensor .= true
-                     Entity.NavShape .= EmptyNavShape
                      Entity.MountOpt .= None]
                     world
             world
