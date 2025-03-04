@@ -19,11 +19,12 @@ type HidingSpotDispatcher () =
         [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.Sensor true
+        [define Entity.BodyShape (BoxShape { Size = v3Dup 0.5f; TransformOpt = None; PropertiesOpt = None })
+         define Entity.Sensor true
          define Entity.HidingSpotOpt None]
 
     override this.PresenceOverride =
         ValueSome Exterior
 
     override this.GetAttributesInferred (_, _) =
-        AttributesInferred.important (v3Dup 0.25f) v3Zero
+        AttributesInferred.important (v3Dup 0.5f) v3Zero

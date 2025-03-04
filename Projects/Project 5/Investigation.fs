@@ -19,7 +19,8 @@ type InvestigationDispatcher () =
         [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.Sensor true
+        [define Entity.BodyShape (BoxShape { Size = v3Dup 0.5f; TransformOpt = None; PropertiesOpt = None })
+         define Entity.Sensor true
          define Entity.InvestigationPhase InvestigationNotStarted]
 
     override this.PresenceOverride =
@@ -81,4 +82,4 @@ type InvestigationDispatcher () =
         else [||]
 
     override this.GetAttributesInferred (_, _) =
-        AttributesInferred.important (v3Dup 0.25f) v3Zero
+        AttributesInferred.important (v3Dup 0.5f) v3Zero

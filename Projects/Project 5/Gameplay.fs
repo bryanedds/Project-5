@@ -118,7 +118,7 @@ type GameplayDispatcher () =
                             if clicked then
                                 let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEmerging }) world
                                 match doorCollisionOpt with
-                                | Some door -> door.SetDoorState (DoorClosing world.GameTime) world
+                                | Some door -> door.SetDoorState (DoorOpening world.GameTime) world
                                 | None -> world
                             else world
                         | _ -> world
@@ -135,9 +135,11 @@ type GameplayDispatcher () =
                                 then door.SetDoorState (DoorOpening world.GameTime) world
                                 else world
                             | DoorOpened | DoorOpening _ ->
-                                let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
-                                if clicked
-                                then door.SetDoorState (DoorClosing world.GameTime) world
+                                if door.GetClosable world then
+                                    let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
+                                    if clicked
+                                    then door.SetDoorState (DoorClosing world.GameTime) world
+                                    else world
                                 else world
                         | _ -> world
                     | None ->
