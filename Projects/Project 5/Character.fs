@@ -110,17 +110,19 @@ type CharacterDispatcher () =
     static let processEnemyUncovering (targetPosition : Vector3) targetBodyIds (entity : Entity) world =
 
         // opening door
-        let world =
+        let (uncovered, world) =
             match entity.GetActionState world with
             | NormalState ->
                 let doorCollisions = entity.GetDoorCollisions world
                 match Seq.tryHead doorCollisions with
                 | Some door ->
                     match door.GetDoorState world with
-                    | DoorClosed -> door.SetDoorState (DoorOpening world.GameTime) world
-                    | _ -> world
-                | None -> world
-            | _ -> world
+                    | DoorClosed ->
+                        let world = door.SetDoorState (DoorOpening world.GameTime) world
+                        (true, world)
+                    | _ -> (false, world)
+                | None -> (false, world)
+            | _ -> (false, world)
 
         // navigation
         let world =
@@ -147,7 +149,7 @@ type CharacterDispatcher () =
             | None -> world
 
         // fin
-        world
+        (uncovered, world)
 
     static let processHunterWayPointNavigation (state : HunterState) (entity : Entity) world =
         match state.HunterWayPoints with
@@ -239,7 +241,12 @@ type CharacterDispatcher () =
             if awareProgress = 1.0f then
                 let state = { state with HunterAwareness = UnawareOfTarget }
                 entity.SetCharacterState (HunterState state) world
-            else processEnemyUncovering targetPosition targetBodyIds entity world
+            else
+                let (uncovered, world) = processEnemyUncovering targetPosition targetBodyIds entity world
+                if uncovered then
+                    let state = { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
+                    entity.SetCharacterState (HunterState state) world
+                else world
 
     static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
         match state with

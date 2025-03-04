@@ -129,18 +129,19 @@ type GameplayDispatcher () =
                         match player.GetActionState world with
                         | NormalState ->
                             match door.GetDoorState world with
-                            | DoorClosed | DoorClosing _ ->
+                            | DoorClosed ->
                                 let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
                                 if clicked
                                 then door.SetDoorState (DoorOpening world.GameTime) world
                                 else world
-                            | DoorOpened | DoorOpening _ ->
+                            | DoorOpened ->
                                 if door.GetClosable world then
                                     let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
                                     if clicked
                                     then door.SetDoorState (DoorClosing world.GameTime) world
                                     else world
                                 else world
+                            | DoorClosing _ | DoorOpening _ -> world
                         | _ -> world
                     | None ->
                         match investigationCollisionOpt with
