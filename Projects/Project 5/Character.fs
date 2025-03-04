@@ -283,7 +283,6 @@ type CharacterDispatcher () =
          define Entity.BodyType KinematicCharacter
          define Entity.BodyShape characterType.BodyShape
          define Entity.Substance (Mass 50.0f)
-         define Entity.Observable true
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
