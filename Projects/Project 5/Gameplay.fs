@@ -100,53 +100,74 @@ type GameplayDispatcher () =
             let investigationCollisionOpt = player.GetInvestigationCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
             let world =
-                match doorCollisionOpt with
-                | Some door ->
+                match hidingSpotCollisionOpt with
+                | Some hidingSpot ->
                     match player.GetActionState world with
                     | NormalState ->
-                        match door.GetDoorState world with
-                        | DoorClosed | DoorClosing _ ->
-                            let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                            if clicked
-                            then door.SetDoorState (DoorOpening world.GameTime) world
+                        let (clicked, world) = World.doButton "Hide" [Entity.Text .= "Hide"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                        if clicked then
+                            let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEntering }) world
+                            match doorCollisionOpt with
+                            | Some door -> door.SetDoorState (DoorClosing world.GameTime) world
+                            | None -> world
+                        else world
+                    | HideState hide ->
+                        match hide.HidePhase with
+                        | HideWaiting ->
+                            let (clicked, world) = World.doButton "Emerge" [Entity.Text .= "Emerge"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                            if clicked then
+                                let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEmerging }) world
+                                match doorCollisionOpt with
+                                | Some door -> door.SetDoorState (DoorClosing world.GameTime) world
+                                | None -> world
                             else world
-                        | DoorOpened | DoorOpening _ ->
-                            let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
-                            if clicked
-                            then door.SetDoorState (DoorClosing world.GameTime) world
-                            else world
+                        | _ -> world
                     | _ -> world
                 | None ->
-                    match investigationCollisionOpt with
-                    | Some investigation ->
+                    match doorCollisionOpt with
+                    | Some door ->
                         match player.GetActionState world with
                         | NormalState ->
-                            let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                            if clicked then
-                                let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
-                                let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
-                                world
-                            else world
-                        | InvestigateState state ->
-                            match state.Investigation.GetInvestigationPhase world with
-                            | InvestigationNotStarted -> failwithumf ()
-                            | InvestigationStarted startTime ->
-                                let localTime = world.GameTime - startTime
-                                if localTime < 8.0f then
-                                    let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                                    if clicked
-                                    then investigation.SetInvestigationPhase InvestigationNotStarted world
-                                    else world
-                                else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
-                            | InvestigationFinished startTime ->
-                                let localTime = world.GameTime - startTime
-                                if localTime >= 2.0f
-                                then player.SetActionState NormalState world
+                            match door.GetDoorState world with
+                            | DoorClosed | DoorClosing _ ->
+                                let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                if clicked
+                                then door.SetDoorState (DoorOpening world.GameTime) world
+                                else world
+                            | DoorOpened | DoorOpening _ ->
+                                let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
+                                if clicked
+                                then door.SetDoorState (DoorClosing world.GameTime) world
                                 else world
                         | _ -> world
                     | None ->
-                        match hidingSpotCollisionOpt with
-                        | Some hidingSpot -> world
+                        match investigationCollisionOpt with
+                        | Some investigation ->
+                            match player.GetActionState world with
+                            | NormalState ->
+                                let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                if clicked then
+                                    let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
+                                    let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
+                                    world
+                                else world
+                            | InvestigateState state ->
+                                match state.Investigation.GetInvestigationPhase world with
+                                | InvestigationNotStarted -> failwithumf ()
+                                | InvestigationStarted startTime ->
+                                    let localTime = world.GameTime - startTime
+                                    if localTime < 8.0f then
+                                        let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                        if clicked
+                                        then investigation.SetInvestigationPhase InvestigationNotStarted world
+                                        else world
+                                    else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
+                                | InvestigationFinished startTime ->
+                                    let localTime = world.GameTime - startTime
+                                    if localTime >= 2.0f
+                                    then player.SetActionState NormalState world
+                                    else world
+                            | _ -> world
                         | None -> world
 
             // process stalker spawn state
@@ -337,9 +358,11 @@ type GameplayDispatcher () =
             // update eye to look at player
             let world =
                 if world.Advancing then
+                    let actionState = player.GetActionState world
+                    let eyeDistanceScalar = ActionState.computeEyeDistanceScalar world.GameTime actionState
                     let position = player.GetPositionInterpolated world
                     let rotation = player.GetRotationInterpolated world
-                    let world = World.setEye3dCenter (position + v3Up * 1.6f - rotation.Forward * 1.1f + rotation.Right * 0.25f) world
+                    let world = World.setEye3dCenter (position + v3Up * 1.6f - rotation.Forward * 1.1f * eyeDistanceScalar + rotation.Right * 0.25f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world
                 else world

@@ -13,10 +13,14 @@ module HidingSpotDispatcherExtensions =
         member this.HidingSpotOpt = lens (nameof this.HidingSpotOpt) this this.GetHidingSpotOpt this.SetHidingSpotOpt
 
 type HidingSpotDispatcher () =
-    inherit Entity3dDispatcherImNui (false, false, false)
+    inherit Entity3dDispatcherImNui (true, false, false)
+
+    static member Facets =
+        [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.HidingSpotOpt None]
+        [define Entity.Sensor true
+         define Entity.HidingSpotOpt None]
 
     override this.PresenceOverride =
         ValueSome Exterior

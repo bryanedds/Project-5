@@ -224,7 +224,7 @@ type CharacterDispatcher () =
         // rotation
         let world =
             match entity.GetActionState world with
-            | NormalState | InvestigateState _ ->
+            | NormalState | InvestigateState _ | HideState _ ->
                 let rotation = entity.GetRotation world
                 let characterType = entity.GetCharacterType world
                 let turnSpeed = characterType.TurnSpeed
@@ -383,7 +383,19 @@ type CharacterDispatcher () =
                 | InvestigateState investigate ->
                     world
                 | HideState hide ->
-                    world
+                    match hide.HidePhase with
+                    | HideEntering ->
+                        let localTime = world.GameTime - hide.HideTime
+                        if localTime >= 1.5f
+                        then entity.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideWaiting }) world
+                        else world
+                    | HideWaiting ->
+                        world
+                    | HideEmerging ->
+                        let localTime = world.GameTime - hide.HideTime
+                        if localTime >= 1.5f
+                        then entity.SetActionState NormalState world
+                        else world
                 | InjuryState injury as actionState ->
                     let localTime = world.GameTime - injury.InjuryTime
                     let injuryTime = characterType.InjuryTime
@@ -394,6 +406,8 @@ type CharacterDispatcher () =
 
         // declare animated model
         let world =
+            let actionState = entity.GetActionState world
+            let visibilityScalar = ActionState.computeEyeDistanceScalar world.GameTime actionState
             World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
                 [Entity.Position @= entity.GetPositionInterpolated world
                  Entity.Rotation @= entity.GetRotationInterpolated world
@@ -401,7 +415,10 @@ type CharacterDispatcher () =
                  Entity.Offset .= entity.GetOffset world
                  Entity.MountOpt .= None
                  Entity.Pickable .= false
-                 Entity.AnimatedModel @= characterType.AnimatedModel]
+                 Entity.AnimatedModel @= characterType.AnimatedModel
+                 Entity.MaterialProperties @= { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar) }
+                 Entity.VisibleLocal @= (visibilityScalar > 0.0f)
+                 Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)]
                 world
         let animatedModel = world.DeclaredEntity
 

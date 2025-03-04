@@ -86,7 +86,7 @@ type HideType =
 type HidePhase =
     | HideEntering
     | HideWaiting
-    | HideExiting
+    | HideEmerging
 
 type HidingSpot =
     | CabinetStanding of Cabinet : Entity * CabinetDoor : Entity
@@ -207,3 +207,15 @@ type ActionState =
     | HideState of HideState
     | InjuryState of InjuryState
     | WoundState of WoundState
+
+    static member computeEyeDistanceScalar time state =
+        match state with
+        | HideState hide ->
+            match hide.HidePhase with
+            | HideEntering -> 1.0f - GameTime.progress hide.HideTime time 1.5f
+            | HideEmerging -> GameTime.progress hide.HideTime time 1.5f
+            | HideWaiting -> 0.0f
+        | _ -> 1.0f
+
+    static member computeVisibilityScalar time state =
+        ActionState.computeEyeDistanceScalar time state // same as eye distance scalar
