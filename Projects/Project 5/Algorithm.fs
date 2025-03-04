@@ -17,7 +17,7 @@ module Algorithm =
                 let scanRotation = sightRotation * angle
                 Segment3 (sightPosition, sightPosition + scanRotation.Forward * sightDistance) }
 
-    let getTargetsInSight sightDistance position rotation bodyId targetIds world =
+    let getTargetInSight sightDistance position rotation bodyId targetIds world =
         let targetSightings =
             seq {
                 for scanSegment in computeScanSegments sightDistance position rotation do

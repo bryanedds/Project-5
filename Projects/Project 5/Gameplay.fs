@@ -207,9 +207,11 @@ type GameplayDispatcher () =
                 | StalkerSpawned (spawnPoint, spawnTime) ->
 
                     // declare stalker in spawned state
+                    let spawnPosition = spawnPoint.GetPosition world
                     World.doEntity<StalkerDispatcher> "Stalker"
-                        [if spawnTime = world.GameTime then Entity.Position @= spawnPoint.GetPosition world
-                         Entity.CharacterState @= StalkerState Spawned]
+                        [if spawnTime = world.GameTime then
+                            Entity.Position @= spawnPosition
+                            Entity.CharacterState @= StalkerState (Spawned spawnPosition)]
                         world
 
                 | StalkerUnspawning (unspawnPoint, _) ->
@@ -226,7 +228,7 @@ type GameplayDispatcher () =
                     let bodyId = stalker.GetBodyId world
                     let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
                     let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
-                    if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
+                    if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                         screen.SetStalkerSpawnState (StalkerSpawned (unspawnPoint, world.GameTime - Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)) world
                     else
                         if (stalker.GetPosition world).Distance unspawnPosition < 0.5f

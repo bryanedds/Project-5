@@ -69,7 +69,7 @@ type CharacterDispatcher () =
                 let positionFlat = position.WithY 0.0f
                 let rotation = entity.GetRotation world
                 let bodyId = entity.GetBodyId world
-                if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
+                if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
                     let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                     let playerPositionFlat = targetPosition.WithY 0.0f
                     if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
@@ -171,19 +171,37 @@ type CharacterDispatcher () =
         let rotation = entity.GetRotation world
         let bodyId = entity.GetBodyId world
         let state =
-            if Algorithm.getTargetsInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world
+            if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world
             then { state with HunterAwareTimeOpt = Some world.GameTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
 
         // process hunter state
         match state.HunterAwareDurationOpt world.GameTime with
-        | Some _ when Simulants.GameplayPlayer.GetExists world -> processEnemyAggression targetPosition targetBodyIds entity world
+        | Some _ when Simulants.GameplayPlayer.GetExists world ->
+            let player = Simulants.GameplayPlayer
+            match player.GetActionState world with
+            | HideState hide ->
+                match hide.HidePhase with
+                | HideWaiting ->
+                    let state = { state with HunterAwareTimeOpt = None }
+                    entity.SetCharacterState (HunterState state) world
+                | HideEntering | HideEmerging -> processEnemyAggression targetPosition targetBodyIds entity world
+            | _ -> processEnemyAggression targetPosition targetBodyIds entity world
         | Some _ | None -> processHunterWayPointNavigation state entity world
 
-    static let processStalkerState targetPosition target (state : StalkerState) (entity : Entity) world =
+    static let processStalkerState targetPosition targetBodyIds (state : StalkerState) (entity : Entity) world =
         match state with
-        | Spawned -> processEnemyAggression targetPosition target entity world
+        | Spawned spawnPoint ->
+            let player = Simulants.GameplayPlayer
+            match player.GetActionState world with
+            | HideState hide ->
+                match hide.HidePhase with
+                | HideWaiting ->
+                    let state = Unspawning spawnPoint
+                    entity.SetCharacterState (StalkerState state) world
+                | HideEntering | HideEmerging -> processEnemyAggression targetPosition targetBodyIds entity world
+            | _ -> processEnemyAggression targetPosition targetBodyIds entity world
         | Unspawning unspawnPoint -> processEnemyNavigation unspawnPoint entity world
 
     static let processPlayerInput (entity : Entity) world =

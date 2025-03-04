@@ -43,10 +43,11 @@ type [<SymbolicExpansion>] HunterState =
           HunterAwareTimeOpt = None }
 
 type [<SymbolicExpansion>] StalkerState =
-    | Spawned
-    | Unspawning of UnspawnPoint : Vector3
+    | Unspawned
+    | Spawned of SpawnPosition : Vector3
+    | Unspawning of UnspawnPosition : Vector3
 
-    static member initial = Spawned
+    static member initial = Unspawned
 
 type StalkerSpawnState =
     | StalkerUnspawned of UnspawnTime : GameTime
