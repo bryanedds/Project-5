@@ -107,7 +107,7 @@ type CharacterDispatcher () =
         // fin
         world
 
-    static let processEnemyUncovering (targetPosition : Vector3) targetBodyIds (entity : Entity) world =
+    static let processEnemyUncovering (targetPosition : Vector3) (entity : Entity) world =
 
         // opening door
         let (uncovered, world) =
@@ -222,6 +222,7 @@ type CharacterDispatcher () =
                     | HideEntering -> { state with HunterAwareness = AwareOfTargetHiding world.GameTime }
                     | HideWaiting -> state
                     | HideEmerging -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
+                    | HideUncovered -> state
                 | _ -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
             else state
         let world = entity.SetCharacterState (HunterState state) world
@@ -229,24 +230,25 @@ type CharacterDispatcher () =
         // process hunter state
         match state.HunterAwareness with
         | UnawareOfTarget ->
-            processHunterWayPointNavigation state entity world
+            (false, processHunterWayPointNavigation state entity world)
         | AwareOfTargetTraversing startTime ->
             let awareProgress = GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration
             if awareProgress = 1.0f then
                 let state = { state with HunterAwareness = UnawareOfTarget }
-                entity.SetCharacterState (HunterState state) world
-            else processEnemyAggression targetPosition targetBodyIds entity world
+                (false, entity.SetCharacterState (HunterState state) world)
+            else (false, processEnemyAggression targetPosition targetBodyIds entity world)
         | AwareOfTargetHiding startTime ->
             let awareProgress = GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration
             if awareProgress = 1.0f then
                 let state = { state with HunterAwareness = UnawareOfTarget }
-                entity.SetCharacterState (HunterState state) world
+                (false, entity.SetCharacterState (HunterState state) world)
             else
-                let (uncovered, world) = processEnemyUncovering targetPosition targetBodyIds entity world
+                let (uncovered, world) = processEnemyUncovering targetPosition entity world
                 if uncovered then
                     let state = { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-                    entity.SetCharacterState (HunterState state) world
-                else world
+                    let world = entity.SetCharacterState (HunterState state) world
+                    (true, world)
+                else (false, world)
 
     static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
         match state with
@@ -427,7 +429,11 @@ type CharacterDispatcher () =
                 match entity.GetCharacterState world with
                 | HunterState state ->
                     match enemyTargetingEir with
-                    | Right (targetPosition, targetBodyIds, targetActionState) -> processHunterState targetPosition targetBodyIds targetActionState state entity world
+                    | Right (targetPosition, targetBodyIds, targetActionState) ->
+                        let (uncoveredPlayer, world) = processHunterState targetPosition targetBodyIds targetActionState state entity world
+                        if uncoveredPlayer && playerOpt.GetExists world
+                        then playerOpt.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
+                        else world
                     | Left () -> world
                 | StalkerState state ->
                     match enemyTargetingEir with
@@ -460,6 +466,8 @@ type CharacterDispatcher () =
                         if localTime >= 1.5f
                         then entity.SetActionState NormalState world
                         else world
+                    | HideUncovered ->
+                        world
                 | InjuryState injury as actionState ->
                     let localTime = world.GameTime - injury.InjuryTime
                     let injuryTime = characterType.InjuryTime

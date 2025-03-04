@@ -322,7 +322,10 @@ type GameplayDispatcher () =
             // process attacks
             let world =
                 FQueue.fold (fun world (attack : Entity) ->
-                    let world = attack.HitPoints.Map (dec >> max 0) world
+                    let world =
+                        match attack.GetActionState world with
+                        | HideState hide when hide.HidePhase.IsHideUncovered -> attack.SetHitPoints 0 world
+                        | _ -> attack.HitPoints.Map (dec >> max 0) world
                     let actionState = attack.GetActionState world
                     if attack.GetHitPoints world > 0 then
                         if not actionState.IsInjuryState then

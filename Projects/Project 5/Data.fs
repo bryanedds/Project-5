@@ -84,6 +84,7 @@ type HidePhase =
     | HideEntering
     | HideWaiting
     | HideEmerging
+    | HideUncovered
 
 type HidingSpot =
     | CabinetStanding of Cabinet : Entity * CabinetDoor : Entity
@@ -206,6 +207,7 @@ type ActionState =
             | HideEntering -> 1.0f - GameTime.progress hide.HideTime time 1.5f
             | HideEmerging -> GameTime.progress hide.HideTime time 1.5f
             | HideWaiting -> 0.0f
+            | HideUncovered -> 0.0f
         | _ -> 1.0f
 
     static member computeVisibilityScalar time state =
