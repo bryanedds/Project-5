@@ -150,12 +150,12 @@ and CharacterType =
 
     member this.BodyShapeTransform =
         match this with
-        | Hunter | Stalker -> Affine.makeTranslation (v3 0.0f 0.9f 0.0f)
+        | Hunter | Stalker -> Affine.makeTranslation (v3 0.0f 1.1f 0.0f)
         | Player -> Affine.makeTranslation (v3 0.0f 0.75f 0.0f)
 
     member this.BodyShape =
         match this with
-        | Hunter | Stalker -> CapsuleShape { Height = 1.0f; Radius = 0.4f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
+        | Hunter | Stalker -> CapsuleShape { Height = 1.0f; Radius = 0.6f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
         | Player -> CapsuleShape { Height = 1.1f; Radius = 0.25f; TransformOpt = Some this.BodyShapeTransform; PropertiesOpt = None }
 
     member this.ExpandedHideSensorBodyShape =

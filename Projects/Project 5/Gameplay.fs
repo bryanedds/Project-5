@@ -85,6 +85,7 @@ type GameplayDispatcher () =
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
+            let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
 
             // declare player pause button
             let world =
@@ -386,10 +387,24 @@ type GameplayDispatcher () =
             let world =
                 if world.Advancing then
                     let actionState = player.GetActionState world
-                    let eyeDistanceScalar = ActionState.computeEyeDistanceScalar world.GameTime actionState
+                    let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.GameTime actionState
                     let position = player.GetPositionInterpolated world
                     let rotation = player.GetRotationInterpolated world
-                    let world = World.setEye3dCenter (position + v3Up * 1.6f - rotation.Forward * 1.1f * eyeDistanceScalar + rotation.Right * 0.25f * eyeDistanceScalar) world
+                    let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
+                    let segment = Segment3 (positionEyeLevel, positionEyeLevel + rotation.Back * eyeDistanceScalarA)
+                    let eyeDistanceScalarBOpt =
+                        World.rayCast3dBodies segment Int32.MaxValue false world |>
+                        Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world)) |>
+                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> player) |>
+                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> playerEhs) |>
+                        Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None) |>
+                        Seq.map fst |>
+                        Seq.tryHead
+                    let eyeDistanceScalar =
+                        match eyeDistanceScalarBOpt with
+                        | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
+                        | None -> eyeDistanceScalarA
+                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.1f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world
                 else world
