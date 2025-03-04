@@ -10,9 +10,9 @@ type WayPoint =
       WayPointWaitTime : GameTime }
 
 type Awareness =
-    | Unaware
-    | AwareTraversing of GameTime
-    | AwareHiding of GameTime
+    | UnawareOfTarget
+    | AwareOfTargetTraversing of GameTime
+    | AwareOfTargetHiding of GameTime
 
 type [<SymbolicExpansion>] HunterState =
     { HunterWayPoints : WayPoint array
@@ -20,19 +20,7 @@ type [<SymbolicExpansion>] HunterState =
       HunterWayPointBouncing : bool
       HunterWayPointIndexOpt : int option
       HunterWayPointTimeOpt : GameTime option
-      HunterAwareTimeOpt : GameTime option }
-
-    member this.HunterAwareDurationOpt (time : GameTime) =
-        match this.HunterAwareTimeOpt with
-        | Some start ->
-            let awareTime = time - start
-            if awareTime >= Constants.Gameplay.HuntDuration then None else Some awareTime
-        | None -> None
-
-    member this.HunterAwareProgressOpt (time : GameTime) =
-        match this.HunterAwareDurationOpt time with
-        | Some awareTime -> Some (awareTime / Constants.Gameplay.HuntDuration)
-        | None -> None
+      HunterAwareness : Awareness }
 
     static member initial =
         { HunterWayPoints = [||]
@@ -40,7 +28,7 @@ type [<SymbolicExpansion>] HunterState =
           HunterWayPointBouncing = false
           HunterWayPointIndexOpt = None
           HunterWayPointTimeOpt = None
-          HunterAwareTimeOpt = None }
+          HunterAwareness = UnawareOfTarget }
 
 type [<SymbolicExpansion>] StalkerState =
     | Unspawned

@@ -243,7 +243,7 @@ type GameplayDispatcher () =
                     characters |>
                     Array.exists (fun character ->
                         match character.GetCharacterState world with
-                        | HunterState state -> (state.HunterAwareDurationOpt world.GameTime).IsSome
+                        | HunterState state -> not state.HunterAwareness.IsUnawareOfTarget
                         | _ -> false)
                 match (hunted, screen.GetHuntedTimeOpt world) with
                 | (true, None) -> screen.SetHuntedTimeOpt (Some world.GameTime) world
