@@ -418,7 +418,8 @@ type CharacterDispatcher () =
                  Entity.AnimatedModel @= characterType.AnimatedModel
                  Entity.MaterialProperties @= { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar) }
                  Entity.VisibleLocal @= (visibilityScalar > 0.0f)
-                 Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)]
+                 Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
+                 Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 0 else Set.empty]
                 world
         let animatedModel = world.DeclaredEntity
 
