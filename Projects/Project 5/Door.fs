@@ -43,13 +43,21 @@ type DoorDispatcher () =
         match entity.Parent with
         | :? Entity as parent -> 
             let rotationInitial = entity.GetRotationInitial world
-            let progress =
-                match entity.GetDoorState world with
-                | DoorClosed -> 0.0f
-                | DoorClosing startTime -> 1.0f - GameTime.progress startTime world.GameTime 1.25f
-                | DoorOpened -> 1.0f
-                | DoorOpening startTime -> GameTime.progress startTime world.GameTime 1.25f
-            parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Up, -progress * 2.0f) * rotationInitial) world
+            match entity.GetDoorState world with
+            | DoorClosed ->
+                parent.SetRotationLocal rotationInitial world
+            | DoorOpening startTime ->
+                let progress = GameTime.progress startTime world.GameTime 1.25f
+                let openness = progress * 2.0f
+                let world = parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                if progress = 1.0f then entity.SetDoorState DoorOpened world else world
+            | DoorOpened ->
+                parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, 2.0f) * rotationInitial) world
+            | DoorClosing startTime ->
+                let progress = GameTime.progress startTime world.GameTime 1.25f
+                let openness = (1.0f - progress) * 2.0f
+                let world = parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                if progress = 1.0f then entity.SetDoorState DoorClosed world else world
         | _ -> world
 
     override this.GetAttributesInferred (_, _) =

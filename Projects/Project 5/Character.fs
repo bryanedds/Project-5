@@ -107,6 +107,48 @@ type CharacterDispatcher () =
         // fin
         world
 
+    static let processEnemyUncovering (targetPosition : Vector3) targetBodyIds (entity : Entity) world =
+
+        // opening door
+        let world =
+            match entity.GetActionState world with
+            | NormalState ->
+                let doorCollisions = entity.GetDoorCollisions world
+                match Seq.tryHead doorCollisions with
+                | Some door ->
+                    match door.GetDoorState world with
+                    | DoorClosed -> door.SetDoorState (DoorOpening world.GameTime) world
+                    | _ -> world
+                | None -> world
+            | _ -> world
+
+        // navigation
+        let world =
+            let navSpeedsOpt =
+                match entity.GetActionState world with
+                | NormalState ->
+                    let characterType = entity.GetCharacterType world
+                    Some (characterType.WalkSpeed, characterType.TurnSpeed)
+                | _ -> None
+            match navSpeedsOpt with
+            | Some (moveSpeed, turnSpeed) ->
+                let position = entity.GetPosition world
+                let rotation = entity.GetRotation world
+                let sphere =
+                    if position.Y - targetPosition.Y >= 0.25f
+                    then Sphere (targetPosition, 0.1f) // when above player
+                    else Sphere (targetPosition, 0.4f) // when at or below player
+                let nearest = sphere.Nearest position
+                let followOutput = World.nav3dFollow (Some Constants.Gameplay.AttackProximity) None moveSpeed turnSpeed position rotation nearest Simulants.Gameplay world    
+                let world = entity.SetLinearVelocity (followOutput.NavLinearVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+                let world = entity.SetAngularVelocity followOutput.NavAngularVelocity world
+                let world = entity.SetRotation followOutput.NavRotation world
+                world
+            | None -> world
+
+        // fin
+        world
+
     static let processHunterWayPointNavigation (state : HunterState) (entity : Entity) world =
         match state.HunterWayPoints with
         | [||] -> world
@@ -197,7 +239,7 @@ type CharacterDispatcher () =
             if awareProgress = 1.0f then
                 let state = { state with HunterAwareness = UnawareOfTarget }
                 entity.SetCharacterState (HunterState state) world
-            else processEnemyAggression targetPosition targetBodyIds entity world
+            else processEnemyUncovering targetPosition targetBodyIds entity world
 
     static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
         match state with
@@ -262,7 +304,7 @@ type CharacterDispatcher () =
         // fin
         world
 
-    static let processPlayerState (_ : PlayerState) entity world =
+    static let processPlayerState entity world =
         processPlayerInput entity world
 
     static member Facets =
@@ -348,11 +390,8 @@ type CharacterDispatcher () =
         // process expanded hide sensor on state
         let world =
             let expandedHideSensorBodyEnabled =
-                match entity.GetCharacterState world with
-                | PlayerState state ->
-                    match state.HideStateOpt with
-                    | Some hideState -> hideState.HidePhase.IsHideEntering
-                    | None -> false
+                match entity.GetActionState world with
+                | HideState hide -> hide.HidePhase.IsHideEntering
                 | _ -> false
             let (_, _, world) =
                 World.doSensorModel Constants.Gameplay.CharacterExpandedHideSensorName
@@ -387,7 +426,7 @@ type CharacterDispatcher () =
                     match enemyTargetingEir with
                     | Right (targetPosition, targetBodyIds, targetActionState) -> processStalkerState targetPosition targetBodyIds targetActionState state entity world
                     | Left () -> world
-                | PlayerState state -> processPlayerState state entity world
+                | PlayerState -> processPlayerState entity world
             else world
 
         // process action state

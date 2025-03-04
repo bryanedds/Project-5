@@ -92,16 +92,10 @@ type HideState =
     { HideTime : GameTime
       HidePhase : HidePhase }
 
-type [<SymbolicExpansion>] PlayerState =
-    { HideStateOpt : HideState option }
-
-    static member initial =
-        { HideStateOpt = None  }
-
 type CharacterState =
     | HunterState of HunterState
     | StalkerState of StalkerState
-    | PlayerState of PlayerState
+    | PlayerState
 
     member this.IsEnemyState =
         not this.IsPlayerState
@@ -110,7 +104,7 @@ type CharacterState =
         match this with
         | HunterState _ -> Hunter
         | StalkerState _ -> Stalker
-        | PlayerState _ -> Player
+        | PlayerState -> Player
 
 and CharacterType =
     | Hunter
@@ -175,7 +169,7 @@ and CharacterType =
         match this with
         | Hunter -> HunterState HunterState.initial
         | Stalker -> StalkerState StalkerState.initial
-        | Player -> PlayerState PlayerState.initial
+        | Player -> PlayerState
 
 type AttackState =
     { AttackTime : GameTime
