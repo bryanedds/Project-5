@@ -387,23 +387,9 @@ type GameplayDispatcher () =
             let world =
                 if world.Advancing then
                     let actionState = player.GetActionState world
-                    let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.GameTime actionState
                     let position = player.GetPositionInterpolated world
                     let rotation = player.GetRotationInterpolated world
-                    let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
-                    let segment = Segment3 (positionEyeLevel, positionEyeLevel + rotation.Back * eyeDistanceScalarA)
-                    let eyeDistanceScalarBOpt =
-                        World.rayCast3dBodies segment Int32.MaxValue false world |>
-                        Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world)) |>
-                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> player) |>
-                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> playerEhs) |>
-                        Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None) |>
-                        Seq.map fst |>
-                        Seq.tryHead
-                    let eyeDistanceScalar =
-                        match eyeDistanceScalarBOpt with
-                        | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
-                        | None -> eyeDistanceScalarA
+                    let eyeDistanceScalar = ActionState.computeVisibilityScalar position rotation actionState player world
                     let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.1f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world

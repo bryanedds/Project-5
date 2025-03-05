@@ -200,7 +200,7 @@ type ActionState =
     | InjuryState of InjuryState
     | WoundState of WoundState
 
-    static member computeEyeDistanceScalar time state =
+    static member computeEyeDistanceScalar2 time state =
         match state with
         | HideState hide ->
             match hide.HidePhase with
@@ -210,5 +210,27 @@ type ActionState =
             | HideUncovered -> 0.0f
         | _ -> 1.0f
 
-    static member computeVisibilityScalar time state =
-        ActionState.computeEyeDistanceScalar time state // same as eye distance scalar
+    static member computeVisibilityScalar2 time state =
+        ActionState.computeEyeDistanceScalar2 time state
+
+    static member computeEyeDistanceScalar position (rotation : Quaternion) actionState (entity : Entity) (world : World) =
+        let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar2 world.GameTime actionState
+        let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
+        let segment = Segment3 (positionEyeLevel, positionEyeLevel + rotation.Back)
+        let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName
+        let eyeDistanceScalarBOpt =
+            World.rayCast3dBodies segment Int32.MaxValue false world |>
+            Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world)) |>
+            Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entity) |>
+            Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entityEhs) |>
+            Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None) |>
+            Seq.map fst |>
+            Seq.tryHead
+        let eyeDistanceScalarMin =
+            match eyeDistanceScalarBOpt with
+            | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
+            | None -> eyeDistanceScalarA
+        max 0.0f (eyeDistanceScalarMin - 0.1f)
+
+    static member computeVisibilityScalar position rotation actionState entity world =
+        ActionState.computeEyeDistanceScalar position rotation actionState entity world * (1.0f / 0.9f)
