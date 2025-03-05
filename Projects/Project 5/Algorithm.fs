@@ -30,3 +30,27 @@ module Algorithm =
                     | Some scanned when Set.contains scanned.BodyShapeIntersected.BodyId targetIds -> true
                     | Some _ | None -> () }
         Seq.notEmpty targetSightings
+
+    let computeEyeDistanceScalar position (rotation : Quaternion) actionState (entity : Entity) (world : World) =
+        let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.GameTime actionState
+        let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
+        let segment = Segment3 (positionEyeLevel, positionEyeLevel + rotation.Back)
+        let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName
+        let eyeDistanceScalarBOpt =
+            if entity = Simulants.GameplayPlayer then
+                World.rayCast3dBodies segment Int32.MaxValue false world |>
+                Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world)) |>
+                Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entity) |>
+                Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entityEhs) |>
+                Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None) |>
+                Seq.map fst |>
+                Seq.tryHead
+            else None
+        let eyeDistanceScalarMin =
+            match eyeDistanceScalarBOpt with
+            | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
+            | None -> eyeDistanceScalarA
+        max 0.0f (eyeDistanceScalarMin - 0.1f)
+
+    let computeVisibilityScalar position rotation actionState entity world =
+        computeEyeDistanceScalar position rotation actionState entity world * (1.0f / 0.9f)

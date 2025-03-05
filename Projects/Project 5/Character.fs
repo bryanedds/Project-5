@@ -481,7 +481,7 @@ type CharacterDispatcher () =
             let actionState = entity.GetActionState world
             let position = entity.GetPositionInterpolated world
             let rotation = entity.GetRotationInterpolated world
-            let visibilityScalar = ActionState.computeVisibilityScalar position rotation actionState entity world
+            let visibilityScalar = Algorithm.computeVisibilityScalar position rotation actionState entity world
             World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
                 [Entity.Position @= position
                  Entity.Rotation @= rotation

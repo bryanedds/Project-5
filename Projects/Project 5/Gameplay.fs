@@ -389,7 +389,7 @@ type GameplayDispatcher () =
                     let actionState = player.GetActionState world
                     let position = player.GetPositionInterpolated world
                     let rotation = player.GetRotationInterpolated world
-                    let eyeDistanceScalar = ActionState.computeVisibilityScalar position rotation actionState player world
+                    let eyeDistanceScalar = Algorithm.computeVisibilityScalar position rotation actionState player world
                     let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.1f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world
