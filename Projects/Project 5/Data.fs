@@ -5,6 +5,21 @@ open Prime
 open Nu
 open MyGame
 
+type ItemType =
+    | BronzeKey
+
+type [<SymbolicExpansion>] Inventory =
+    { Items : Map<ItemType, int>
+      Currency : int }
+
+    static member empty =
+        { Items = Map.empty
+          Currency = 0 }
+
+    static member initial =
+        { Items = Map.empty
+          Currency = 10 }
+
 type WayPoint =
     { WayPoint : Entity Relation
       WayPointWaitTime : GameTime }

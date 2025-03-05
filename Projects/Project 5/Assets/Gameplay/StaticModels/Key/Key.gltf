@@ -1,0 +1,188 @@
+{
+	"asset":
+	{
+		"version": "2.0",
+		"generator": "Unreal Engine 5.4.4"
+	},
+	"scene": 0,
+	"accessors": [
+		{
+			"bufferView": 0,
+			"count": 594,
+			"type": "SCALAR",
+			"componentType": 5121
+		},
+		{
+			"bufferView": 1,
+			"count": 195,
+			"type": "VEC3",
+			"componentType": 5126,
+			"min": [ -0.0413065888, -0.00399999553, -0.0132212769 ],
+			"max": [ 0.0413065888, 0.00399999786, 0.0132212732 ]
+		},
+		{
+			"bufferView": 2,
+			"count": 195,
+			"type": "VEC3",
+			"componentType": 5126
+		},
+		{
+			"bufferView": 3,
+			"count": 195,
+			"type": "VEC4",
+			"componentType": 5126
+		},
+		{
+			"bufferView": 4,
+			"count": 195,
+			"type": "VEC2",
+			"componentType": 5126
+		},
+		{
+			"bufferView": 5,
+			"count": 195,
+			"type": "VEC2",
+			"componentType": 5126
+		}
+	],
+	"buffers": [
+		{
+			"uri": "Key.bin",
+			"byteLength": 11516
+		}
+	],
+	"bufferViews": [
+		{
+			"buffer": 0,
+			"byteLength": 594,
+			"target": 34963
+		},
+		{
+			"buffer": 0,
+			"byteLength": 2340,
+			"byteOffset": 596,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 2340,
+			"byteOffset": 2936,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 3120,
+			"byteOffset": 5276,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 1560,
+			"byteOffset": 8396,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 1560,
+			"byteOffset": 9956,
+			"target": 34962
+		}
+	],
+	"images": [
+		{
+			"uri": "KeyBaseColor.jpg"
+		},
+		{
+			"uri": "KeyMetallicRoughness.jpg"
+		},
+		{
+			"uri": "KeyOcclusion.jpg"
+		},
+		{
+			"uri": "KeyNormal.jpg"
+		}
+	],
+	"materials": [
+		{
+			"name": "MI_JewelryCasket",
+			"pbrMetallicRoughness":
+			{
+				"baseColorTexture":
+				{
+					"index": 0
+				},
+				"metallicRoughnessTexture":
+				{
+					"index": 1
+				}
+			},
+			"normalTexture":
+			{
+				"index": 2
+			},
+			"occlusionTexture":
+			{
+				"index": 3
+			}
+		}
+	],
+	"meshes": [
+		{
+			"name": "SM_Key",
+			"primitives": [
+				{
+					"attributes":
+					{
+						"POSITION": 1,
+						"NORMAL": 2,
+						"TANGENT": 3,
+						"TEXCOORD_0": 4,
+						"TEXCOORD_1": 5
+					},
+					"indices": 0,
+					"material": 0
+				}
+			]
+		}
+	],
+	"nodes": [
+		{
+			"name": "SM_Key",
+			"mesh": 0
+		}
+	],
+	"samplers": [
+		{
+			"minFilter": 9987,
+			"magFilter": 9729
+		}
+	],
+	"scenes": [
+		{
+			"name": "ThirdPersonMap",
+			"nodes": [ 0 ]
+		}
+	],
+	"textures": [
+		{
+			"name": "KeyBaseColor",
+			"sampler": 0,
+			"source": 0
+		},
+		{
+			"name": "KeyMetallicRoughness",
+			"sampler": 0,
+			"source": 1
+		},
+		{
+			"name": "KeyNormal",
+			"sampler": 0,
+			"source": 3
+		},
+		{
+			"name": "KeyOcclusion",
+			"sampler": 0,
+			"source": 2
+		}
+	]
+}

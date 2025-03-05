@@ -16,6 +16,9 @@ module GameplayExtensions =
         member this.GetGameplayState world : GameplayState = this.Get (nameof Screen.GameplayState) world
         member this.SetGameplayState (value : GameplayState) world = this.Set (nameof Screen.GameplayState) value world
         member this.GameplayState = lens (nameof Screen.GameplayState) this this.GetGameplayState this.SetGameplayState
+        member this.GetInventory world : Inventory = this.Get (nameof Screen.Inventory) world
+        member this.SetInventory (value : Inventory) world = this.Set (nameof Screen.Inventory) value world
+        member this.Inventory = lens (nameof Screen.Inventory) this this.GetInventory this.SetInventory
         member this.GetHuntedTimeOpt world : GameTime option = this.Get (nameof Screen.HuntedTimeOpt) world
         member this.SetHuntedTimeOpt (value : GameTime option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
@@ -36,6 +39,7 @@ type GameplayDispatcher () =
     // here we define default property values
     static member Properties =
         [define Screen.GameplayState Quit
+         define Screen.Inventory Inventory.empty
          define Screen.HuntedTimeOpt None
          define Screen.StalkerSpawnAllowed true
          define Screen.StalkerSpawnState StalkerSpawnState.initial
@@ -157,7 +161,8 @@ type GameplayDispatcher () =
                                 else world
                             | InvestigateState state ->
                                 match state.Investigation.GetInvestigationPhase world with
-                                | InvestigationNotStarted -> failwithumf ()
+                                | InvestigationNotStarted ->
+                                    player.SetActionState NormalState world
                                 | InvestigationStarted startTime ->
                                     let localTime = world.GameTime - startTime
                                     if localTime < 8.0f then
