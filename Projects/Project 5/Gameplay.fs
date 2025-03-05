@@ -59,7 +59,7 @@ type GameplayDispatcher () =
                 else world
 
             // begin scene declaration
-            let world = World.beginGroupFromFile "Scene" "Assets/Gameplay/Scene.nugroup" [] world
+            let world = World.beginGroupFromFile "Scene" "Assets/SwampHouse/SwampHouse.nugroup" [] world
 
             // collect spawn points
             let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
@@ -89,7 +89,6 @@ type GameplayDispatcher () =
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
-            let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
 
             // declare player pause button
             let world =

@@ -32,4 +32,11 @@
    [Assets Assets/Residence [cbm fbx gltf glb dae obj mtl glsl raw] [] [Render3d]]
    [Assets Assets/Residence [wav ogg mp3] [] [Audio]]
    [Assets Assets/Residence [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Residence [nuentity nugroup tsx tmx atlas bin] [] []]]]]
+   [Assets Assets/Residence [nuentity nugroup tsx tmx atlas bin] [] []]]]
+ [SwampHouse
+  [[Assets Assets/SwampHouse [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
+   [Assets Assets/SwampHouse [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]
+   [Assets Assets/SwampHouse [cbm fbx gltf glb dae obj mtl glsl raw] [] [Render3d]]
+   [Assets Assets/SwampHouse [wav ogg mp3] [] [Audio]]
+   [Assets Assets/SwampHouse [nueffect nuscript csv] [] [Symbol]]
+   [Assets Assets/SwampHouse [nuentity nugroup tsx tmx atlas bin] [] []]]]]

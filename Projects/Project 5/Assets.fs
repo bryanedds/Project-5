@@ -37,14 +37,20 @@ module Assets =
         let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
 
+    // these are assets from the AbandonedMansion package.
+    [<RequireQualifiedAccess>]
+    module AbandonedMansion =
+
+        let PackageName = "AbandonedMansion"
+
     // these are assets from the Residence package.
     [<RequireQualifiedAccess>]
     module Residence =
 
         let PackageName = "Residence"
 
-    // these are assets from the AbandonedMansion package.
+    // these are assets from the SwampHouse package.
     [<RequireQualifiedAccess>]
-    module AbandonedMansion =
+    module SwampHouse =
 
-        let PackageName = "AbandonedMansion"
+        let PackageName = "SwampHouse"
