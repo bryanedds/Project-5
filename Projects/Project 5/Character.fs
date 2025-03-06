@@ -493,7 +493,8 @@ type CharacterDispatcher () =
                  Entity.MaterialProperties @= { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar) }
                  Entity.VisibleLocal @= (visibilityScalar > 0.0f)
                  Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
-                 Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 0 else Set.empty]
+                 Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
+                 Entity.SubsortOffsets @= characterType.SubsortOffsets]
                 world
         let animatedModel = world.DeclaredEntity
 
@@ -510,19 +511,20 @@ type CharacterDispatcher () =
                 let leftness = linearVelocity.Dot -rotation.Right
                 let turnRightness = if angularVelocity.Y < 0.0f then -angularVelocity.Y * 0.5f else 0.0f
                 let turnLeftness = if angularVelocity.Y > 0.0f then angularVelocity.Y * 0.5f else 0.0f
+                let rate = characterType.AnimationRate
                 let animations =
-                    [Animation.make 0.0f None "Idle" Loop 1.0f 1.0f None]
+                    [Animation.make 0.0f None "Idle" Loop rate 1.0f None]
                 let animations =
-                    if forwardness >= 0.01f then Animation.make 0.0f None "WalkForward" Loop 1.0f forwardness None :: animations
-                    elif backness >= 0.01f then Animation.make 0.0f None "WalkBack" Loop 1.0f backness None :: animations
+                    if forwardness >= 0.01f then Animation.make 0.0f None "WalkForward" Loop rate forwardness None :: animations
+                    elif backness >= 0.01f then Animation.make 0.0f None "WalkBack" Loop rate backness None :: animations
                     else animations
                 let animations =
-                    if rightness >= 0.01f then Animation.make 0.0f None "WalkRight" Loop 1.0f rightness None :: animations
-                    elif leftness >= 0.01f then Animation.make 0.0f None "WalkLeft" Loop 1.0f leftness None :: animations
+                    if rightness >= 0.01f then Animation.make 0.0f None "WalkRight" Loop rate rightness None :: animations
+                    elif leftness >= 0.01f then Animation.make 0.0f None "WalkLeft" Loop rate leftness None :: animations
                     else animations
                 let animations =
-                    if turnRightness >= 0.01f then Animation.make 0.0f None "TurnRight" Loop 1.0f turnRightness None :: animations
-                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "TurnLeft" Loop 1.0f turnLeftness None :: animations
+                    if turnRightness >= 0.01f then Animation.make 0.0f None "TurnRight" Loop rate turnRightness None :: animations
+                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "TurnLeft" Loop rate turnLeftness None :: animations
                     else animations
                 animatedModel.SetAnimations (Array.ofList animations) world
             | _ -> world

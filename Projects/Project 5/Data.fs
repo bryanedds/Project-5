@@ -161,7 +161,17 @@ and CharacterType =
         match this with
         | Hunter -> Assets.Gameplay.CruciformModel
         | Stalker -> Assets.Gameplay.RhyoliteModel
-        | Player -> Assets.Gameplay.SophieModel
+        | Player -> Assets.Gameplay.AvaModel
+
+    member this.AnimationRate =
+        match this with
+        | Hunter | Stalker -> 1.0f
+        | Player -> 2.0f
+
+    member this.SubsortOffsets =
+        match this with
+        | Hunter | Stalker -> Map.empty
+        | Player -> Map.ofList [(0, -1.0f); (1, -1.0f); (2, -1.0f); (3, -1.0f); (6, 1.0f); (7, 1.0f)]
 
     member this.BodyShapeTransform =
         match this with
