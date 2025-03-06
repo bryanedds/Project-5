@@ -59,7 +59,7 @@ type GameplayDispatcher () =
                 else world
 
             // begin scene declaration
-            let world = World.beginGroupFromFile "Scene" "Assets/SwampHouse/SwampHouse.nugroup" [] world
+            let world = World.beginGroupFromFile "Scene" "Assets/AbandonedMansion/AbandonedMansion.nugroup" [] world
 
             // collect spawn points
             let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
@@ -84,7 +84,7 @@ type GameplayDispatcher () =
             // declare player
             let world =
                 World.doEntity<PlayerDispatcher> "Player"
-                    [if initializing then Entity.Position @= v3 1.0f 0.0f -1.0f
+                    [if initializing then Entity.Position @= v3 6.6f 11.6f 4.3f
                      Entity.Size .= v3 1.5f 2.0f 1.5f
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
