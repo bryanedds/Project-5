@@ -236,4 +236,9 @@ type ActionState =
         | _ -> 1.0f
 
     static member computeVisibilityScalar time state =
-        ActionState.computeEyeDistanceScalar time state
+        let eyeDistanceScalar = ActionState.computeEyeDistanceScalar time state
+        let eyeDistanceScalar =
+            if eyeDistanceScalar > Constants.Gameplay.PlayerVisibilityDistanceMin
+            then (eyeDistanceScalar - Constants.Gameplay.PlayerVisibilityDistanceMin) * (1.0f / Constants.Gameplay.PlayerVisibilityDistanceMin) + 0.0001f
+            else 0.0f
+        saturate eyeDistanceScalar
