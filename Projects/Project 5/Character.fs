@@ -535,7 +535,7 @@ type CharacterDispatcher () =
             | NormalState ->
                 match animatedModel.GetAnimations world with
                 | [|_|] -> world
-                | _ when characterType.IsPlayer && world.GameTime.Seconds % 0.775f <= (1.0f / 60.0f) -> // NOTE: bullshit way to do this; needs traverse start state.
+                | _ when characterType.IsPlayer && world.GameTime.Seconds % 0.7333f <= (1.0f / 60.0f) -> // NOTE: bullshit way to do this; needs traverse start state.
                     World.playSound 0.25f Assets.Gameplay.StepSound world
                     world
                 | _ -> world
