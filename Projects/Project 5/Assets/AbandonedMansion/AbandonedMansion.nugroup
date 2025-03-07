@@ -14,8 +14,8 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [-3.8096242 15.163985 -5.0070276]]
-      [PositionLocal [-3.8096242 15.163985 -5.0070276]]
+      [Position [8.570477 15.106937 3.4617233]]
+      [PositionLocal [8.570477 15.106937 3.4617233]]
       [Presence Omnipresent]
       [Rotation [0.35355338 -0.6123724 0.35355338 0.6123724]]
       [RotationLocal [0.35355338 -0.6123724 0.35355338 0.6123724]]
@@ -7956,7 +7956,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 393 True None None]]]
           [MountOpt [Some ^]]
@@ -7980,7 +7981,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 394 True None None]]]
           [MountOpt [Some ^]]
@@ -8006,7 +8008,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 395 True None None]]]
           [MountOpt [Some ^]]
@@ -8028,7 +8031,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 396 True None None]]]
           [MountOpt [Some ^]]
@@ -8245,7 +8249,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 406 True None None]]]
           [MountOpt [Some ^]]
@@ -8271,7 +8276,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 407 True None None]]]
           [MountOpt [Some ^]]
@@ -8297,7 +8303,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 408 True None None]]]
           [MountOpt [Some ^]]
@@ -8321,7 +8328,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 409 True None None]]]
           [MountOpt [Some ^]]
@@ -8345,7 +8353,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 410 True None None]]]
           [MountOpt [Some ^]]
@@ -8371,7 +8380,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 411 True None None]]]
           [MountOpt [Some ^]]
@@ -8467,7 +8477,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 415 True None None]]]
           [MountOpt [Some ^]]
@@ -8491,7 +8502,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 416 True None None]]]
           [MountOpt [Some ^]]
@@ -8665,7 +8677,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 423 True None None]]]
           [MountOpt [Some ^]]
@@ -8735,7 +8748,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 426 True None None]]]
           [MountOpt [Some ^]]
@@ -8759,7 +8773,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 427 True None None]]]
           [MountOpt [Some ^]]
@@ -8783,7 +8798,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 428 True None None]]]
           [MountOpt [Some ^]]
@@ -8807,7 +8823,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 429 True None None]]]
           [MountOpt [Some ^]]
@@ -8833,7 +8850,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 430 True None None]]]
           [MountOpt [Some ^]]
@@ -9051,7 +9069,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 439 True None None]]]
           [MountOpt [Some ^]]
@@ -9149,7 +9168,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 443 True None None]]]
           [MountOpt [Some ^]]
@@ -9199,7 +9219,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 445 True None None]]]
           [MountOpt [Some ^]]
@@ -9223,7 +9244,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 446 True None None]]]
           [MountOpt [Some ^]]
@@ -9349,7 +9371,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 451 True None None]]]
           [MountOpt [Some ^]]
@@ -9753,7 +9776,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 468 True None None]]]
           [MountOpt [Some ^]]
@@ -9777,7 +9801,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 469 True None None]]]
           [MountOpt [Some ^]]
@@ -9801,7 +9826,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 470 True None None]]]
           [MountOpt [Some ^]]
@@ -10071,7 +10097,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 481 True None None]]]
           [MountOpt [Some ^]]
@@ -10095,7 +10122,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 482 True None None]]]
           [MountOpt [Some ^]]
@@ -10180,7 +10208,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 486 True None None]]]
           [MountOpt [Some ^]]
@@ -10598,7 +10627,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 503 True None None]]]
           [MountOpt [Some ^]]
@@ -10648,7 +10678,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 505 True None None]]]
           [MountOpt [Some ^]]
@@ -10794,7 +10825,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 511 True None None]]]
           [MountOpt [Some ^]]
@@ -10820,7 +10852,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 512 True None None]]]
           [MountOpt [Some ^]]
@@ -12144,7 +12177,8 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 569 True None None]]]
           [MountOpt [Some ^]]
@@ -12160,7 +12194,8 @@
           [VisibleLocal False]]
          []]
         [RigidModelSurfaceDispatcher
-         [[BodyShape
+         [[BodyEnabled False]
+          [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 570 True None None]]]
           [MountOpt [Some ^]]
@@ -15583,4 +15618,10 @@
     [PropagationSourceOpt [Some Game/Gameplay/Scene/Light3d-0002]]
     [Size [0.25 0.25 0.25]]
     [Static True]]
+   []]
+  [RigidModelDispatcher
+   [[Name RigidModel-0001]
+    [Position [-3.1 11.110003 -7]]
+    [Scale [38.2 1 42.3]]
+    [Visible False]]
    []]]]
