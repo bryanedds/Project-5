@@ -27,21 +27,24 @@ type InvestigationDispatcher () =
         ValueSome Exterior
 
     override this.Process (entity, world) =
+
+        // compute material properties for some cases
+        let distanceScalar =
+            if Simulants.GameplayPlayer.GetExists world then
+                let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
+                let playerDistance = playerPosition.Distance (entity.GetPosition world)
+                if playerDistance < 1.0f then 1.0f
+                elif playerDistance > 2.0f then 0.0f
+                else (2.0f - playerDistance) * 0.5f
+            else 0.0f
+        let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar
+        let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
+
         match entity.GetInvestigationPhase world with
         | InvestigationNotStarted ->
-            let distanceScalar =
-                if Simulants.GameplayPlayer.GetExists world then
-                    let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
-                    let playerDistance = playerPosition.Distance (entity.GetPosition world)
-                    if playerDistance < 1.0f then 1.0f
-                    elif playerDistance > 3.0f then 0.0f
-                    else (3.0f - playerDistance) * 0.5f
-                else 0.0f
-            let alpha = (world.GameTime.Seconds % 2.0f + 1.0f) * distanceScalar
-            let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
             let material =
                 { Material.defaultMaterial with
-                    AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage // TODO: concluded if successful investigation outcome already
+                    AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
                     EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
             World.doStaticBillboard "InvestigationNotStartedIcon"
                 [Entity.ScaleLocal .= v3Dup 0.1f
@@ -69,6 +72,7 @@ type InvestigationDispatcher () =
                     EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
             World.doAnimatedBillboard "InvestigationConcludedIcon"
                 [Entity.ScaleLocal .= v3Dup 0.1f
+                 Entity.MaterialProperties @= materialProperties
                  Entity.Material .= material
                  Entity.AnimationDelay .= 1.0f
                  Entity.CelCount .= 1
