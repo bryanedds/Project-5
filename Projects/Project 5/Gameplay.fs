@@ -276,6 +276,7 @@ type GameplayDispatcher () =
                 | (_, _) -> world
 
             // process song playback
+            let ambientSong = Assets.AbandonedMansion.CountryNightCrickets
             let huntedDurationOpt = match screen.GetHuntedTimeOpt world with Some huntedTime -> Some (world.GameTime - huntedTime) | None -> None
             let stalkedDurationOpt = (screen.GetStalkerSpawnState world).SpawnDurationOpt world.GameTime
             match (huntedDurationOpt, stalkedDurationOpt) with
@@ -298,10 +299,10 @@ type GameplayDispatcher () =
                 | Some songDescriptor ->
                     if (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) && not (World.getSongFadingOut world) then
                         World.fadeOutSong 7.5f world
-                    elif songDescriptor.Song <> Assets.Gameplay.StealthSong && not (World.getSongFadingOut world) then
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
+                    elif songDescriptor.Song <> ambientSong && not (World.getSongFadingOut world) then
+                        World.playSong 0.0f 0.0f 0.0f None 1.0f ambientSong world
                 | None ->
-                    World.playSong 0.0f 0.0f 0.0f None 1.0f Assets.Gameplay.StealthSong world
+                    World.playSong 0.0f 0.0f 0.0f None 1.0f ambientSong world
 
             // process danger
             let world =
