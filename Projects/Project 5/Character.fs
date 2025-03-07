@@ -261,19 +261,19 @@ type CharacterDispatcher () =
 
     static let processPlayerInput (entity : Entity) world =
 
-        // action
-        let world =
-
-            // attacking
-            if World.isKeyboardKeyPressed KeyboardKey.RShift world then
-                match entity.GetActionState world with
-                | NormalState ->
-                    let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
-                    entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-                | _ -> world
-
-            // do nothing
-            else world
+        // action - NOTE: dummied out for this game.
+        //let world =
+        //
+        //    // attacking
+        //    if World.isKeyboardKeyPressed KeyboardKey.RShift world then
+        //        match entity.GetActionState world with
+        //        | NormalState ->
+        //            let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
+        //            entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
+        //        | _ -> world
+        //
+        //    // do nothing
+        //    else world
 
         // movement
         let world =
@@ -533,7 +533,12 @@ type CharacterDispatcher () =
         let world =
             match entity.GetActionState world with
             | NormalState ->
-                world
+                match animatedModel.GetAnimations world with
+                | [|_|] -> world
+                | _ when characterType.IsPlayer && world.GameTime.Seconds % 0.775f <= (1.0f / 60.0f) -> // NOTE: bullshit way to do this; needs traverse start state.
+                    World.playSound 0.25f Assets.Gameplay.StepSound world
+                    world
+                | _ -> world
             | AttackState attack ->
                 let localTime = world.GameTime - attack.AttackTime
                 let world =
