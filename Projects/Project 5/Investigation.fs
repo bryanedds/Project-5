@@ -32,6 +32,12 @@ type InvestigationDispatcher () =
 
     override this.Process (entity, world) =
 
+        // unmount when advancing to allow free movement of parent
+        let world =
+            if world.Advancing
+            then entity.SetMountOptWithAdjustment None world
+            else entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
+
         // compute material properties for some cases
         let distanceScalar =
             if Simulants.GameplayPlayer.GetExists world then
