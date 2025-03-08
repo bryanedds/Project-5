@@ -11,6 +11,9 @@ module InvestigationDispatcherExtensions =
         member this.GetInvestigationPhase world : InvestigationPhase = this.Get (nameof this.InvestigationPhase) world
         member this.SetInvestigationPhase (value : InvestigationPhase) world = this.Set (nameof this.InvestigationPhase) value world
         member this.InvestigationPhase = lens (nameof this.InvestigationPhase) this this.GetInvestigationPhase this.SetInvestigationPhase
+        member this.GetInvestigationResult world : InvestigationResult = this.Get (nameof this.InvestigationResult) world
+        member this.SetInvestigationResult (value : InvestigationResult) world = this.Set (nameof this.InvestigationResult) value world
+        member this.InvestigationResult = lens (nameof this.InvestigationResult) this this.GetInvestigationResult this.SetInvestigationResult
 
 type InvestigationDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
@@ -21,7 +24,8 @@ type InvestigationDispatcher () =
     static member Properties =
         [define Entity.BodyShape (BoxShape { Size = v3Dup 0.5f; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
-         define Entity.InvestigationPhase InvestigationNotStarted]
+         define Entity.InvestigationPhase InvestigationNotStarted
+         define Entity.InvestigationResult FindNothing]
 
     override this.PresenceOverride =
         ValueSome Exterior
@@ -40,6 +44,7 @@ type InvestigationDispatcher () =
         let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
         let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
 
+        //
         match entity.GetInvestigationPhase world with
         | InvestigationNotStarted ->
             let material =

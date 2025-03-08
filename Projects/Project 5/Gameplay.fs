@@ -198,9 +198,18 @@ type GameplayDispatcher () =
                                     else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
                                 | InvestigationFinished startTime ->
                                     let localTime = world.GameTime - startTime
-                                    if localTime >= 2.0f
-                                    then player.SetActionState NormalState world
-                                    else world
+                                    if localTime < 2.0f then
+                                        match investigation.GetInvestigationResult world with
+                                        | FindNothing ->
+                                            World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."] world
+                                        | FindDescription description ->
+                                            World.doText "InvestigationResult" [Entity.Text @= description] world
+                                        | FindItem itemType ->
+                                            let itemNameSpaced = (scstringMemo itemType).Spaced
+                                            World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced] world
+                                    else
+                                        let world = investigation.SetInvestigationResult FindNothing world
+                                        player.SetActionState NormalState world
                             | _ -> world
                         | None -> world
 
@@ -429,13 +438,11 @@ type GameplayDispatcher () =
             // process nav sync
             let world = if initializing then World.synchronizeNav3d screen world else world
 
-            // end scene declaration
-            let world = World.endGroup world
-
-            // declare gui group
-            let world = World.beginGroup "Gui" [] world
+            // declare quit buttonn
             let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
             let world = if clicked then screen.SetGameplayState Quit world else world
+
+            // end scene declaration
             World.endGroup world
 
         // otherwise, no processing

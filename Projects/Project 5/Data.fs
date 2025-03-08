@@ -21,6 +21,11 @@ type [<SymbolicExpansion>] Inventory =
         { Items = Map.singleton BlackKey 1
           Currency = 10 }
 
+type InvestigationResult =
+    | FindNothing
+    | FindDescription of string
+    | FindItem of ItemType
+
 type WayPoint =
     { WayPoint : Entity Relation
       WayPointWaitTime : GameTime }

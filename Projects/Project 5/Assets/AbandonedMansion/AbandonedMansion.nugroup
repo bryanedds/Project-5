@@ -14,8 +14,8 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [-10.476791 15.116126 -14.64765]]
-      [PositionLocal [-10.476791 15.116126 -14.64765]]
+      [Position [8.60894 15.048587 4.2898464]]
+      [PositionLocal [8.60894 15.048587 4.2898464]]
       [Presence Omnipresent]
       [Rotation [0.35355338 -0.6123724 0.35355338 0.6123724]]
       [RotationLocal [0.35355338 -0.6123724 0.35355338 0.6123724]]
@@ -15952,6 +15952,7 @@
      [[BodyShape
        [BoxShape
         [[0.75 0.75 0.75] None None]]]
+      [InvestigationResult [FindItem BronzeKey]]
       [MountOpt [Some ^]]
       [Name Investigation-0002]
       [Position [-12.40004 12.8 -17.530048]]
