@@ -66,7 +66,7 @@ type GameplayDispatcher () =
             let world = World.beginGroupFromFile "Scene" "Assets/AbandonedMansion/AbandonedMansion.nugroup" [] world
 
             // collect spawn points
-            let entitiesSovereign = World.getEntitiesSovereign Simulants.GameplayScene world                
+            let entitiesSovereign = World.getSovereignEntities Simulants.GameplayScene world                
             let spawnPoints =
                 entitiesSovereign |>
                 Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "SpawnPoints")) |>

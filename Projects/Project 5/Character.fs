@@ -665,8 +665,9 @@ type CharacterDispatcher () =
             if (entity.GetCharacterState world).IsEnemyState then
                 let position = entity.GetPosition world
                 let rotation = entity.GetRotation world
-                for scanSegment in Algorithm.computeScanSegments Constants.Gameplay.EnemySightDistance position rotation do
-                    World.imGuiSegment3d scanSegment 1.0f Color.Red world
+                for sightRay in Algorithm.computeSightRays Constants.Gameplay.EnemySightDistance position rotation do
+                    let segment = Segment3 (sightRay.Origin, sightRay.Origin + sightRay.Direction)
+                    World.imGuiSegment3d segment 1.0f Color.Red world
                 world
             else world
         | _ -> world
