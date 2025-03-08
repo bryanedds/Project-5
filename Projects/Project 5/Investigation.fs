@@ -37,7 +37,7 @@ type InvestigationDispatcher () =
                 elif playerDistance > 2.0f then 0.0f
                 else (2.0f - playerDistance) * 0.5f
             else 0.0f
-        let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar
+        let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
         let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
 
         match entity.GetInvestigationPhase world with
@@ -47,10 +47,11 @@ type InvestigationDispatcher () =
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
                     EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
             World.doStaticBillboard "InvestigationNotStartedIcon"
-                [Entity.ScaleLocal .= v3Dup 0.1f
+                [Entity.Rotation @= quatIdentity
+                 Entity.ScaleLocal .= v3Dup 0.1f
                  Entity.MaterialProperties @= materialProperties
                  Entity.Material .= material
-                 Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
+                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
                 world
         | InvestigationStarted _ ->
             let material =
@@ -58,12 +59,13 @@ type InvestigationDispatcher () =
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
                     EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
             World.doAnimatedBillboard "InvestigationStartedIcon"
-                [Entity.ScaleLocal .= v3Dup 0.1f
+                [Entity.Rotation @= quatIdentity
+                 Entity.ScaleLocal .= v3Dup 0.1f
                  Entity.Material .= material
                  Entity.AnimationDelay .= 1.0f
                  Entity.CelCount .= 8
                  Entity.CelRun .= 8
-                 Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
+                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
                 world
         | InvestigationFinished _ ->
             let material =
@@ -71,13 +73,14 @@ type InvestigationDispatcher () =
                     AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationConcludedIconAlbedoImage
                     EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
             World.doAnimatedBillboard "InvestigationConcludedIcon"
-                [Entity.ScaleLocal .= v3Dup 0.1f
+                [Entity.Rotation @= quatIdentity
+                 Entity.ScaleLocal .= v3Dup 0.1f
                  Entity.MaterialProperties @= materialProperties
                  Entity.Material .= material
                  Entity.AnimationDelay .= 1.0f
                  Entity.CelCount .= 1
                  Entity.CelRun .= 1
-                 Entity.RenderStyle .= Forward (0.0f, Single.MinValue)]
+                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
                 world
 
     override this.RayCast (ray, entity, world) =
