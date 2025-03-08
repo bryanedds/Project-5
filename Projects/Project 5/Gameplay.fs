@@ -119,7 +119,7 @@ type GameplayDispatcher () =
                              Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
                              Entity.LayoutMargin .= v2Dup 4.0f] world
                     let world =
-                        Map.foldi (fun i world itemType itemCount ->
+                        Map.fold (fun world itemType itemCount ->
                             let itemName = scstringMemo itemType
                             let (_, world) =
                                 World.doButton itemName
@@ -215,17 +215,18 @@ type GameplayDispatcher () =
                                             World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         | FindDescription description ->
                                             World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                        | FindItem (itemType, advent) ->
+                                        | FindItem (itemType, _) ->
                                             let itemNameSpaced = (scstringMemo itemType).Spaced
-                                            let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
-                                            let world = screen.Advents.Map (Set.add advent) world
                                             World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                     else
                                         let world =
                                             match investigation.GetInvestigationResult world with
                                             | FindNothing -> world
                                             | FindDescription _ -> world
-                                            | FindItem (_, _) -> investigation.SetBodyEnabled false world
+                                            | FindItem (itemType, advent) ->
+                                                let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                                let world = screen.Advents.Map (Set.add advent) world
+                                                world
                                         player.SetActionState NormalState world
                             | _ -> world
                         | None -> world

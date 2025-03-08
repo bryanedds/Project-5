@@ -90,9 +90,17 @@ type InvestigationDispatcher () =
                     world
 
         // try to make parent visibility match body enabled
-        match entity.TryGetMountee world with
-        | Some mountee -> mountee.SetVisible (entity.GetBodyEnabled world) world
-        | None -> world
+        match entity.GetInvestigationResult world with
+        | FindNothing -> world
+        | FindDescription _ -> world
+        | FindItem (_, advent) ->
+            let adventsProperty = Simulants.Gameplay.GetProperty "Advents" world
+            let advents = adventsProperty.PropertyValue :?> Advent Set
+            let visible = not (Set.contains advent advents)
+            let world = entity.SetBodyEnabled visible world
+            match entity.TryGetMountee world with
+            | Some mountee -> mountee.SetVisible visible world
+            | None -> world
 
     override this.RayCast (ray, entity, world) =
         let intersectionOpt = ray.Intersects (entity.GetBounds world)
