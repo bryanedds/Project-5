@@ -108,17 +108,24 @@ type GameplayDispatcher () =
                 match screen.GetInventoryViewOpt world with
                 | Some inventoryView ->
                     let world =
+                        World.beginPanel "Inventory"
+                            [Entity.Position .= v3 0.0f 144.0f 0.0f
+                             Entity.Size .= v3 460.0f 40.0f 0.0f
+                             Entity.Color .= Color.White.WithA 0.25f
+                             Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
+                             Entity.LayoutMargin .= v2Dup 4.0f] world
+                    let world =
                         Map.foldi (fun i world itemType itemCount ->
                             let itemName = scstringMemo itemType
                             let (_, world) =
                                 World.doButton itemName
                                     [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
                                      Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
-                                     Entity.Position @= v3 (-232.0f + single i * 40.0f) 144.0f 0.0f
                                      Entity.Size .= v3 32.0f 32.0f 0.0f]
                                     world
                             world)
                             world (screen.GetInventory world).Items
+                    let world = World.endPanel world
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                     if clicked then screen.SetInventoryViewOpt None world else world
                 | None ->
@@ -201,12 +208,13 @@ type GameplayDispatcher () =
                                     if localTime < 2.0f then
                                         match investigation.GetInvestigationResult world with
                                         | FindNothing ->
-                                            World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."] world
+                                            World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         | FindDescription description ->
-                                            World.doText "InvestigationResult" [Entity.Text @= description] world
+                                            World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         | FindItem itemType ->
                                             let itemNameSpaced = (scstringMemo itemType).Spaced
-                                            World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced] world
+                                            let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                            World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                     else
                                         let world = investigation.SetInvestigationResult FindNothing world
                                         player.SetActionState NormalState world
