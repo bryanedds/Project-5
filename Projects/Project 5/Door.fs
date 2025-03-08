@@ -36,12 +36,12 @@ type DoorDispatcher () =
 
     override this.Register (entity, world) =
         match entity.Parent with
-        | :? Entity as parent -> entity.SetRotationInitial (parent.GetRotationLocal world) world
+        | :? Entity as parent -> entity.SetRotationInitial (parent.GetRotation world) world
         | _ -> Log.warn "Door parent not an entity as intended."; world
 
     override this.Process (entity, world) =
         match entity.Parent with
-        | :? Entity as parent -> 
+        | :? Entity as parent ->
             let rotationInitial = entity.GetRotationInitial world
             match entity.GetDoorState world with
             | DoorClosed ->
@@ -49,14 +49,14 @@ type DoorDispatcher () =
             | DoorOpening startTime ->
                 let progress = GameTime.progress startTime world.GameTime 1.25f
                 let openness = progress * 2.0f
-                let world = parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                let world = parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
                 if progress = 1.0f then entity.SetDoorState DoorOpened world else world
             | DoorOpened ->
-                parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, 2.0f) * rotationInitial) world
+                parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, 2.0f) * rotationInitial) world
             | DoorClosing startTime ->
                 let progress = GameTime.progress startTime world.GameTime 1.25f
                 let openness = (1.0f - progress) * 2.0f
-                let world = parent.SetRotationLocal (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                let world = parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
                 if progress = 1.0f then entity.SetDoorState DoorClosed world else world
         | _ -> world
 
