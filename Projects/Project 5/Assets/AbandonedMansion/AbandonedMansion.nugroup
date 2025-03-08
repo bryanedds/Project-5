@@ -14,8 +14,8 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [8.60894 15.048587 4.2898464]]
-      [PositionLocal [8.60894 15.048587 4.2898464]]
+      [Position [8.430933 15.115273 4.9929733]]
+      [PositionLocal [8.430933 15.115273 4.9929733]]
       [Presence Omnipresent]
       [Rotation [0.35355338 -0.6123724 0.35355338 0.6123724]]
       [RotationLocal [0.35355338 -0.6123724 0.35355338 0.6123724]]
@@ -9245,18 +9245,18 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[AngularVelocity [-0.020282077 0.0017581363 0.009951873]]
+         [[AngularVelocity [-0.09454087 0.0070006098 0.047641262]]
           [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 440 True None None]]]
           [BodyType Dynamic]
-          [LinearVelocity [-0.0009634843 -0.003296676 -0.0015098249]]
+          [LinearVelocity [-0.0037003567 -0.016143875 -0.0053877616]]
           [MountOpt [Some ^]]
           [Name Geometry]
           [Offset [1.8626451E-08 1.359731E-07 0]]
-          [Position [6.1287155 11.612585 -2.8426929]]
+          [Position [6.1194973 11.611777 -2.865421]]
           [PositionLocal [5.4139776 12.800861 -2.3444011]]
-          [Rotation [-0.006871138 -0.48251164 0.010577624 0.87579876]]
+          [Rotation [-0.0069842143 -0.47502112 0.010578552 0.87988305]]
           [RotationLocal [0.58983135 -0.58583504 -0.51307464 -0.21366051]]
           [Scale [0.99999994 0.99999994 0.99999994]]
           [ScaleLocal [0.99999994 0.99999994 0.99999994]]
@@ -15175,8 +15175,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15187,9 +15186,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15208,8 +15207,7 @@
             [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
           [Material
            [[AlbedoImageOpt None]
-            [RoughnessImageOpt
-             [Some [Default LightProbeModelRoughness]]]
+            [RoughnessImageOpt None]
             [MetallicImageOpt
              [Some [Default LightProbeModelMetallic]]]
             [AmbientOcclusionImageOpt None]
@@ -15220,9 +15218,9 @@
             [TwoSidedOpt None]]]
           [MaterialProperties
            [[AlbedoOpt
-             [Some [1 1 1 0.5882353]]]
+             [Some [1 1 1 1]]]
             [RoughnessOpt [Some 1]]
-            [MetallicOpt [Some 1]]
+            [MetallicOpt [Some 0.5]]
             [AmbientOcclusionOpt [Some 1]]
             [EmissionOpt [Some 0.01]]
             [HeightOpt [Some 1]]
@@ -15231,7 +15229,7 @@
           [MountOpt [Some ^]]
           [Name Window]
           [Offset [0.041600823 1.548094 -0.073434316]]
-          [Order 2904158702763]
+          [Order 4175551131405]
           [Position [4.908919 11.601201 -0.99881744]]
           [PositionLocal [4.908919 11.601201 -0.99881744]]
           [RenderStyle [Forward 0 0]]
@@ -15260,8 +15258,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15272,9 +15269,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15302,8 +15299,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15314,9 +15310,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15344,8 +15340,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15356,9 +15351,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15367,8 +15362,8 @@
       [MountOpt [Some ^]]
       [Name Window-0003]
       [Offset [0.041600823 1.548094 -0.073434316]]
-      [Position [0.10006891 10.4 -8.2]]
-      [PositionLocal [0.10006891 10.4 -8.2]]
+      [Position [0.3 10.4 -8.2]]
+      [PositionLocal [0.3 10.4 -8.2]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Windows/Window]]
       [RenderStyle [Forward 0 0]]
       [Rotation [-0 1 0 -4.371139E-08]]
@@ -15386,8 +15381,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15398,9 +15392,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15428,8 +15422,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15440,9 +15433,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15470,8 +15463,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15482,9 +15474,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15512,8 +15504,7 @@
         [[AbandonedMansion Abandoned_Mansion_Scene] 675 True None None]]]
       [Material
        [[AlbedoImageOpt None]
-        [RoughnessImageOpt
-         [Some [Default LightProbeModelRoughness]]]
+        [RoughnessImageOpt None]
         [MetallicImageOpt
          [Some [Default LightProbeModelMetallic]]]
         [AmbientOcclusionImageOpt None]
@@ -15524,9 +15515,9 @@
         [TwoSidedOpt None]]]
       [MaterialProperties
        [[AlbedoOpt
-         [Some [1 1 1 0.5882353]]]
+         [Some [1 1 1 1]]]
         [RoughnessOpt [Some 1]]
-        [MetallicOpt [Some 1]]
+        [MetallicOpt [Some 0.5]]
         [AmbientOcclusionOpt [Some 1]]
         [EmissionOpt [Some 0.01]]
         [HeightOpt [Some 1]]
@@ -15750,8 +15741,8 @@
       [LightCutoff 1.6]
       [MountOpt [Some ^]]
       [Name Light3d-0002]
-      [Position [4.8 12.6 -5.1]]
-      [PositionLocal [4.8 12.6 -5.1]]
+      [Position [4.8 12.5 -5.1]]
+      [PositionLocal [4.8 12.5 -5.1]]
       [PropagatedDescriptorOpt
        [Some
         [Light3dDispatcher
@@ -15775,8 +15766,8 @@
       [LightCutoff 1.6]
       [MountOpt [Some ^]]
       [Name Light3d-0003]
-      [Position [4.9 12.6 -1]]
-      [PositionLocal [4.9 12.6 -1]]
+      [Position [4.8 12.5 -1]]
+      [PositionLocal [4.8 12.5 -1]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0002]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
@@ -15788,8 +15779,8 @@
       [LightCutoff 1.6]
       [MountOpt [Some ^]]
       [Name Light3d-0004]
-      [Position [4.9 12.6 3]]
-      [PositionLocal [4.9 12.6 3]]
+      [Position [4.8 12.5 3]]
+      [PositionLocal [4.8 12.5 3]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0002]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
@@ -15813,8 +15804,8 @@
       [LightCutoff 10]
       [MountOpt [Some ^]]
       [Name Light3d-0019]
-      [Position [0.3 13.2 -9.2]]
-      [PositionLocal [0.3 13.2 -9.2]]
+      [Position [0.3 13.5 -9.2]]
+      [PositionLocal [0.3 13.5 -9.2]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
@@ -15836,8 +15827,8 @@
       [LightCutoff 1.6]
       [MountOpt [Some ^]]
       [Name Light3d-0005]
-      [Position [-16.1 12.6 -13.35]]
-      [PositionLocal [-16.1 12.6 -13.35]]
+      [Position [-16.1 12.5 -13.35]]
+      [PositionLocal [-16.1 12.5 -13.35]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0002]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
@@ -15849,8 +15840,8 @@
       [LightCutoff 8]
       [MountOpt [Some ^]]
       [Name Light3d-0006]
-      [Position [-16.1 12.6 -17.35]]
-      [PositionLocal [-16.1 12.6 -17.35]]
+      [Position [-16.1 12.5 -17.35]]
+      [PositionLocal [-16.1 12.5 -17.35]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0002]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
@@ -15887,8 +15878,8 @@
       [LightCutoff 1.6]
       [MountOpt [Some ^]]
       [Name Light3d-0008]
-      [Position [-4.2 12.5 -0.9]]
-      [PositionLocal [-4.2 12.5 -0.9]]
+      [Position [-4.2 12.5 -0.8]]
+      [PositionLocal [-4.2 12.5 -0.8]]
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0002]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
