@@ -73,21 +73,7 @@ type InvestigationDispatcher () =
                      Entity.CelRun .= 8
                      Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
                     world
-            | InvestigationFinished _ ->
-                let material =
-                    { Material.defaultMaterial with
-                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationConcludedIconAlbedoImage
-                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-                World.doAnimatedBillboard "InvestigationConcludedIcon"
-                    [Entity.Rotation @= quatIdentity
-                     Entity.ScaleLocal .= v3Dup 0.1f
-                     Entity.MaterialProperties @= materialProperties
-                     Entity.Material .= material
-                     Entity.AnimationDelay .= 1.0f
-                     Entity.CelCount .= 1
-                     Entity.CelRun .= 1
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                    world
+            | InvestigationFinished _ -> world
 
         // try to make parent visibility match body enabled
         match entity.GetInvestigationResult world with
