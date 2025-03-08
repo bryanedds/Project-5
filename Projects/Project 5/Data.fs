@@ -6,6 +6,7 @@ open Nu
 open MyGame
 
 type ItemType =
+    | BlackKey // just for testing
     | BronzeKey
 
 type [<SymbolicExpansion>] Inventory =
@@ -17,7 +18,7 @@ type [<SymbolicExpansion>] Inventory =
           Currency = 0 }
 
     static member initial =
-        { Items = Map.empty
+        { Items = Map.singleton BlackKey 1
           Currency = 10 }
 
 type WayPoint =
@@ -196,6 +197,9 @@ and CharacterType =
         | Hunter -> HunterState HunterState.initial
         | Stalker -> StalkerState StalkerState.initial
         | Player -> PlayerState
+
+type InventoryView =
+    { ItemSelectedOpt : ItemType option }
 
 type AttackState =
     { AttackTime : GameTime

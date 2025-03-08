@@ -19,6 +19,9 @@ module GameplayExtensions =
         member this.GetInventory world : Inventory = this.Get (nameof Screen.Inventory) world
         member this.SetInventory (value : Inventory) world = this.Set (nameof Screen.Inventory) value world
         member this.Inventory = lens (nameof Screen.Inventory) this this.GetInventory this.SetInventory
+        member this.GetInventoryViewOpt world : InventoryView option = this.Get (nameof Screen.InventoryViewOpt) world
+        member this.SetInventoryViewOpt (value : InventoryView option) world = this.Set (nameof Screen.InventoryViewOpt) value world
+        member this.InventoryViewOpt = lens (nameof Screen.InventoryViewOpt) this this.GetInventoryViewOpt this.SetInventoryViewOpt
         member this.GetHuntedTimeOpt world : GameTime option = this.Get (nameof Screen.HuntedTimeOpt) world
         member this.SetHuntedTimeOpt (value : GameTime option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
@@ -39,7 +42,8 @@ type GameplayDispatcher () =
     // here we define default property values
     static member Properties =
         [define Screen.GameplayState Quit
-         define Screen.Inventory Inventory.empty
+         define Screen.Inventory Inventory.initial
+         define Screen.InventoryViewOpt None
          define Screen.HuntedTimeOpt None
          define Screen.StalkerSpawnAllowed true
          define Screen.StalkerSpawnState StalkerSpawnState.initial
@@ -98,6 +102,28 @@ type GameplayDispatcher () =
                 else
                     let (clicked, world) = World.doButton "Unpause" [Entity.Text .= "Unpause"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
                     if clicked then World.setAdvancing true world else world
+
+            // declare inventory view button
+            let world =
+                match screen.GetInventoryViewOpt world with
+                | Some inventoryView ->
+                    let world =
+                        Map.foldi (fun i world itemType itemCount ->
+                            let itemName = scstringMemo itemType
+                            let (_, world) =
+                                World.doButton itemName
+                                    [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
+                                     Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
+                                     Entity.Position @= v3 (-232.0f + single i * 40.0f) 144.0f 0.0f
+                                     Entity.Size .= v3 32.0f 32.0f 0.0f]
+                                    world
+                            world)
+                            world (screen.GetInventory world).Items
+                    let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
+                    if clicked then screen.SetInventoryViewOpt None world else world
+                | None ->
+                    let (clicked, world) = World.doButton "Open Inventory" [Entity.Text .= "Open Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
+                    if clicked then screen.SetInventoryViewOpt (Some { ItemSelectedOpt = None }) world else world
 
             // declare player interaction button
             let doorCollisionOpt = player.GetDoorCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead

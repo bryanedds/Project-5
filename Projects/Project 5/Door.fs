@@ -11,12 +11,12 @@ module DoorDispatcherExtensions =
         member this.GetDoorState world : DoorState = this.Get (nameof this.DoorState) world
         member this.SetDoorState (value : DoorState) world = this.Set (nameof this.DoorState) value world
         member this.DoorState = lens (nameof this.DoorState) this this.GetDoorState this.SetDoorState
-        member this.GetClosable world : bool = this.Get (nameof this.Closable) world
-        member this.SetClosable (value : bool) world = this.Set (nameof this.Closable) value world
-        member this.Closable = lens (nameof this.Closable) this this.GetClosable this.SetClosable
         member this.GetRotationInitial world : Quaternion = this.Get (nameof this.RotationInitial) world
         member this.SetRotationInitial (value : Quaternion) world = this.Set (nameof this.RotationInitial) value world
         member this.RotationInitial = lens (nameof this.RotationInitial) this this.GetRotationInitial this.SetRotationInitial
+        member this.GetClosable world : bool = this.Get (nameof this.Closable) world
+        member this.SetClosable (value : bool) world = this.Set (nameof this.Closable) value world
+        member this.Closable = lens (nameof this.Closable) this this.GetClosable this.SetClosable
 
 type DoorDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
@@ -28,8 +28,8 @@ type DoorDispatcher () =
         [define Entity.BodyShape (BoxShape { Size = v3Dup 0.5f; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
          define Entity.DoorState DoorClosed
-         define Entity.Closable true
-         define Entity.RotationInitial quatIdentity]
+         define Entity.RotationInitial quatIdentity
+         define Entity.Closable true]
 
     override this.PresenceOverride =
         ValueSome Exterior
