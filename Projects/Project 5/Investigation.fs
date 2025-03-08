@@ -45,48 +45,54 @@ type InvestigationDispatcher () =
         let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
 
         //
-        match entity.GetInvestigationPhase world with
-        | InvestigationNotStarted ->
-            let material =
-                { Material.defaultMaterial with
-                    AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
-                    EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-            World.doStaticBillboard "InvestigationNotStartedIcon"
-                [Entity.Rotation @= quatIdentity
-                 Entity.ScaleLocal .= v3Dup 0.1f
-                 Entity.MaterialProperties @= materialProperties
-                 Entity.Material .= material
-                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                world
-        | InvestigationStarted _ ->
-            let material =
-                { Material.defaultMaterial with
-                    AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
-                    EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-            World.doAnimatedBillboard "InvestigationStartedIcon"
-                [Entity.Rotation @= quatIdentity
-                 Entity.ScaleLocal .= v3Dup 0.1f
-                 Entity.Material .= material
-                 Entity.AnimationDelay .= 1.0f
-                 Entity.CelCount .= 8
-                 Entity.CelRun .= 8
-                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                world
-        | InvestigationFinished _ ->
-            let material =
-                { Material.defaultMaterial with
-                    AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationConcludedIconAlbedoImage
-                    EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-            World.doAnimatedBillboard "InvestigationConcludedIcon"
-                [Entity.Rotation @= quatIdentity
-                 Entity.ScaleLocal .= v3Dup 0.1f
-                 Entity.MaterialProperties @= materialProperties
-                 Entity.Material .= material
-                 Entity.AnimationDelay .= 1.0f
-                 Entity.CelCount .= 1
-                 Entity.CelRun .= 1
-                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                world
+        let world =
+            match entity.GetInvestigationPhase world with
+            | InvestigationNotStarted ->
+                let material =
+                    { Material.defaultMaterial with
+                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
+                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
+                World.doStaticBillboard "InvestigationNotStartedIcon"
+                    [Entity.Rotation @= quatIdentity
+                     Entity.ScaleLocal .= v3Dup 0.1f
+                     Entity.MaterialProperties @= materialProperties
+                     Entity.Material .= material
+                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
+                    world
+            | InvestigationStarted _ ->
+                let material =
+                    { Material.defaultMaterial with
+                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
+                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
+                World.doAnimatedBillboard "InvestigationStartedIcon"
+                    [Entity.Rotation @= quatIdentity
+                     Entity.ScaleLocal .= v3Dup 0.1f
+                     Entity.Material .= material
+                     Entity.AnimationDelay .= 1.0f
+                     Entity.CelCount .= 8
+                     Entity.CelRun .= 8
+                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
+                    world
+            | InvestigationFinished _ ->
+                let material =
+                    { Material.defaultMaterial with
+                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationConcludedIconAlbedoImage
+                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
+                World.doAnimatedBillboard "InvestigationConcludedIcon"
+                    [Entity.Rotation @= quatIdentity
+                     Entity.ScaleLocal .= v3Dup 0.1f
+                     Entity.MaterialProperties @= materialProperties
+                     Entity.Material .= material
+                     Entity.AnimationDelay .= 1.0f
+                     Entity.CelCount .= 1
+                     Entity.CelRun .= 1
+                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
+                    world
+
+        // try to make parent visibility match body enabled
+        match entity.TryGetMountee world with
+        | Some mountee -> mountee.SetVisible (entity.GetBodyEnabled world) world
+        | None -> world
 
     override this.RayCast (ray, entity, world) =
         let intersectionOpt = ray.Intersects (entity.GetBounds world)

@@ -22,6 +22,9 @@ module GameplayExtensions =
         member this.GetInventoryViewOpt world : InventoryView option = this.Get (nameof Screen.InventoryViewOpt) world
         member this.SetInventoryViewOpt (value : InventoryView option) world = this.Set (nameof Screen.InventoryViewOpt) value world
         member this.InventoryViewOpt = lens (nameof Screen.InventoryViewOpt) this this.GetInventoryViewOpt this.SetInventoryViewOpt
+        member this.GetAdvents world : Advent Set = this.Get (nameof Screen.Advents) world
+        member this.SetAdvents (value : Advent Set) world = this.Set (nameof Screen.Advents) value world
+        member this.Advents = lens (nameof Screen.Advents) this this.GetAdvents this.SetAdvents
         member this.GetHuntedTimeOpt world : GameTime option = this.Get (nameof Screen.HuntedTimeOpt) world
         member this.SetHuntedTimeOpt (value : GameTime option) world = this.Set (nameof Screen.HuntedTimeOpt) value world
         member this.HuntedTimeOpt = lens (nameof Screen.HuntedTimeOpt) this this.GetHuntedTimeOpt this.SetHuntedTimeOpt
@@ -44,6 +47,7 @@ type GameplayDispatcher () =
         [define Screen.GameplayState Quit
          define Screen.Inventory Inventory.initial
          define Screen.InventoryViewOpt None
+         define Screen.Advents Set.empty
          define Screen.HuntedTimeOpt None
          define Screen.StalkerSpawnAllowed true
          define Screen.StalkerSpawnState StalkerSpawnState.initial
@@ -211,12 +215,17 @@ type GameplayDispatcher () =
                                             World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         | FindDescription description ->
                                             World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                        | FindItem itemType ->
+                                        | FindItem (itemType, advent) ->
                                             let itemNameSpaced = (scstringMemo itemType).Spaced
                                             let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                            let world = screen.Advents.Map (Set.add advent) world
                                             World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                     else
-                                        let world = investigation.SetInvestigationResult FindNothing world
+                                        let world =
+                                            match investigation.GetInvestigationResult world with
+                                            | FindNothing -> world
+                                            | FindDescription _ -> world
+                                            | FindItem (_, _) -> investigation.SetBodyEnabled false world
                                         player.SetActionState NormalState world
                             | _ -> world
                         | None -> world
