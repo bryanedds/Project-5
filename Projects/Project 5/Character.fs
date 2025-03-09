@@ -342,9 +342,6 @@ type CharacterDispatcher () =
 
     override this.Process (entity, world) =
 
-        // bind locals
-        let playerOpt = Simulants.GameplayPlayer
-
         // process penetrations
         let (penetrations, world) = World.doSubscription "Penetrations" entity.BodyPenetrationEvent world
         let characterType = entity.GetCharacterType world
@@ -413,26 +410,25 @@ type CharacterDispatcher () =
 
         // process character state
         let world =
-            if world.Advancing then
+            if world.Advancing && Simulants.GameplayPlayer.GetExists world then
+                let player = Simulants.GameplayPlayer
                 let enemyTargetingEir =
-                    if playerOpt.GetExists world then
-                        let processEnemies =
-                            match playerOpt.GetActionState world with
-                            | InvestigateState investigation -> not (investigation.Investigation.GetInvestigationPhase world).IsInvestigationFinished
-                            | _ -> true
-                        if processEnemies then
-                            let playerEhs = playerOpt / Constants.Gameplay.CharacterExpandedHideSensorName
-                            let playerBodyIds = Set.ofList [playerOpt.GetBodyId world; playerEhs.GetBodyId world]
-                            Right (playerOpt.GetPosition world, playerBodyIds, playerOpt.GetActionState world)
-                        else Left ()
+                    let processEnemies =
+                        match player.GetActionState world with
+                        | InvestigateState investigation -> not (investigation.Investigation.GetInvestigationPhase world).IsInvestigationFinished
+                        | _ -> true
+                    if processEnemies then
+                        let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
+                        let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]
+                        Right (player.GetPosition world, playerBodyIds, player.GetActionState world)
                     else Left ()
                 match entity.GetCharacterState world with
                 | HunterState state ->
                     match enemyTargetingEir with
                     | Right (targetPosition, targetBodyIds, targetActionState) ->
                         let (uncoveredPlayer, world) = processHunterState targetPosition targetBodyIds targetActionState state entity world
-                        if uncoveredPlayer && playerOpt.GetExists world
-                        then playerOpt.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
+                        if uncoveredPlayer && player.GetExists world
+                        then player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
                         else world
                     | Left () -> world
                 | StalkerState state ->
