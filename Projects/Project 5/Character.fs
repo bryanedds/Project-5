@@ -342,50 +342,43 @@ type CharacterDispatcher () =
 
     override this.Process (entity, world) =
 
-        // process penetrations
-        let (penetrations, world) = World.doSubscription "Penetrations" entity.BodyPenetrationEvent world
+        // process body events
         let characterType = entity.GetCharacterType world
+        let (results, world) = World.doSubscriptionToBodyEvents "BodyEvents" entity world
         let world =
-            FQueue.fold (fun world penetration ->
-                match penetration.BodyShapePenetratee.BodyId.BodySource with
-                | :? Entity as penetratee ->
-                    if penetratee.Is<DoorDispatcher> world then
-                        entity.DoorCollisions.Map (Set.add penetratee) world
-                    elif penetratee.Is<InvestigationDispatcher> world then
-                        if characterType.IsPlayer
-                        then entity.InvestigationCollisions.Map (Set.add penetratee) world
+            FQueue.fold (fun world result ->
+                match result with
+                | BodyPenetration penetration ->
+                    match penetration.BodyShapePenetratee.BodyId.BodySource with
+                    | :? Entity as penetratee ->
+                        if penetratee.Is<DoorDispatcher> world then
+                            entity.DoorCollisions.Map (Set.add penetratee) world
+                        elif penetratee.Is<InvestigationDispatcher> world then
+                            if characterType.IsPlayer
+                            then entity.InvestigationCollisions.Map (Set.add penetratee) world
+                            else world
+                        elif penetratee.Is<HidingSpotDispatcher> world then
+                            entity.HidingSpotCollisions.Map (Set.add penetratee) world
                         else world
-                    elif penetratee.Is<HidingSpotDispatcher> world then
-                        entity.HidingSpotCollisions.Map (Set.add penetratee) world
-                    else world
-                | _ -> world)
-                world penetrations
-
-        // process separations (explicit)
-        let (separationsExplicit, world) = World.doSubscription "SeparationsExplicit" entity.BodySeparationExplicitEvent world
-        let world =
-            FQueue.fold (fun world separation ->
-                match separation.BodyShapeSeparatee.BodyId.BodySource with
-                | :? Entity as separatee ->
-                    let world = entity.DoorCollisions.Map (Set.remove separatee) world
-                    let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
-                    let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
-                    world
-                | _ -> world)
-                world separationsExplicit
-
-        // process separations (implicit)
-        let (separationsImplicit, world) = World.doSubscription "SeparationsImplicit" entity.BodySeparationImplicitEvent world
-        let world =
-            FQueue.fold (fun world (separation : BodySeparationImplicitData) ->
-                match separation.BodyId.BodySource with
-                | :? Entity as separatee ->
-                    let world = entity.DoorCollisions.Map (Set.remove separatee) world
-                    let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
-                    let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
-                    world
-                | _ -> world)
-                world separationsImplicit
+                    | _ -> world
+                | BodySeparationExplicit separation ->
+                    match separation.BodyShapeSeparatee.BodyId.BodySource with
+                    | :? Entity as separatee ->
+                        let world = entity.DoorCollisions.Map (Set.remove separatee) world
+                        let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                        let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
+                        world
+                    | _ -> world
+                | BodySeparationImplicit separation ->
+                    match separation.BodyId.BodySource with
+                    | :? Entity as separatee ->
+                        let world = entity.DoorCollisions.Map (Set.remove separatee) world
+                        let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                        let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
+                        world
+                    | _ -> world
+                | BodyTransform _ -> world)
+                world results
 
         // unmount when advancing to enable physics
         let world =
