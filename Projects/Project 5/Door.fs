@@ -25,7 +25,8 @@ type DoorDispatcher () =
         [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
+        [
+        define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
          define Entity.DoorState DoorClosed
          define Entity.RotationInitial quatIdentity
@@ -61,4 +62,4 @@ type DoorDispatcher () =
         | _ -> world
 
     override this.GetAttributesInferred (_, _) =
-        AttributesInferred.important (v3Dup 0.5f) v3Zero
+        AttributesInferred.important (v3Dup 1.0f) v3Zero

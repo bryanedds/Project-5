@@ -14,8 +14,8 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [1.6493397 11.353663 -14.374214]]
-      [PositionLocal [1.6493397 11.353663 -14.374214]]
+      [Position [-3.8844109 15.143943 -2.7648392]]
+      [PositionLocal [-3.8844109 15.143943 -2.7648392]]
       [Presence Omnipresent]
       [Rotation [0.35355338 -0.6123724 0.35355338 0.6123724]]
       [RotationLocal [0.35355338 -0.6123724 0.35355338 0.6123724]]
@@ -3694,9 +3694,7 @@
       [Entity3dDispatcher
        [[MountOpt [Some ^]]
         [Name Door_blockout2]
-        [Static True]
-        [Visible False]
-        [VisibleLocal False]]
+        [Static True]]
        [[RigidModelSurfaceDispatcher
          [[BodyShape
            [StaticModelSurfaceShape
@@ -3769,10 +3767,16 @@
           [Size [2.300011 3.8274755 0.5283358]]
           [Static True]
           [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
-          [SurfaceIndex 183]
-          [Visible False]
-          [VisibleLocal False]]
-         []]]]
+          [SurfaceIndex 183]]
+         [[InvestigationDispatcher
+           [[MountOpt [Some ^]]
+            [Name Investigation-0001]
+            [Position [-7.5 12.99998 -3]]
+            [PositionLocal [1.1817089 1.3999805 2.3841858E-06]]
+            [RotationLocal [0 -0.70710737 0 0.7071062]]
+            [Scale [1.1000001 1 0.90909106]]
+            [ScaleLocal [1.0000001 1 0.90909106]]]
+           []]]]]]
       [Entity3dDispatcher
        [[MountOpt [Some ^]]
         [Name Wall_Corner_Small11]
@@ -9256,18 +9260,18 @@
         [Visible False]
         [VisibleLocal False]]
        [[RigidModelSurfaceDispatcher
-         [[AngularVelocity [8.692862E-09 -1.9747098E-10 -6.07629E-09]]
+         [[AngularVelocity [-1.9444477E-09 -7.147713E-11 1.718516E-09]]
           [BodyShape
            [StaticModelSurfaceShape
             [[AbandonedMansion Abandoned_Mansion_Scene] 440 True None None]]]
           [BodyType Dynamic]
-          [LinearVelocity [9.592962E-11 3.4805786E-10 3.9264342E-11]]
+          [LinearVelocity [7.8663666E-11 4.4800683E-10 5.8556396E-11]]
           [MountOpt [Some ^]]
           [Name Geometry]
           [Offset [1.8626451E-08 1.359731E-07 0]]
-          [Position [6.0931334 11.613921 -2.9292731]]
+          [Position [6.097526 11.613914 -2.924225]]
           [PositionLocal [5.4139776 12.800861 -2.3444011]]
-          [Rotation [0.0011626064 -0.4586516 -0.0053249835 0.88859946]]
+          [Rotation [0.001254417 -0.45899945 -0.0055488236 0.8884184]]
           [RotationLocal [0.58983135 -0.58583504 -0.51307464 -0.21366051]]
           [Scale [0.99999994 0.99999994 0.99999994]]
           [ScaleLocal [0.99999994 0.99999994 0.99999994]]
@@ -15748,9 +15752,12 @@
     [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
     [SurfaceIndex 183]]
    [[InvestigationDispatcher
-     [[Name Investigation-0008]
-      [Position [0.20038044 9.4 -15.899997]]
-      [Rotation [-0.06528608 7.8827185E-07 -1.9704416E-09 0.9978476]]]
+     [[MountOpt [Some ^]]
+      [Name Investigation-0008]
+      [Position [0.20000005 9.2 -16.199995]]
+      [PositionLocal [1.2000003 1.4000206 0.009095192]]
+      [Rotation [4.3711385E-08 1.9106853E-15 4.3711385E-08 1]]
+      [Scale [0.99999994 1 1.0999999]]]
      []]]]
   [RigidModelDispatcher
    [[BodyShape EmptyShape]
@@ -15771,8 +15778,8 @@
     [StaticModel [Gameplay Key]]]
    [[InvestigationDispatcher
      [[InvestigationResult [FindItem BronzeKey BronzeKeyAcquired]]
+      [MountOpt [Some ^]]
       [Name Investigation-0002]
-      [Position [-13.4000435 12.7970295 -17.650051]]
-      [Rotation [0 0.21643957 0 0.976296]]
-      [Scale [1.0000007 1 1.0000007]]]
+      [Position [-13.4 12.65 -17.65]]
+      [Rotation [0 0.21643962 0 0.976296]]]
      []]]]]]
