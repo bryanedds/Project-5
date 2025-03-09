@@ -25,7 +25,7 @@ type DoorDispatcher () =
         [typeof<RigidBodyFacet>]
 
     static member Properties =
-        [define Entity.BodyShape (BoxShape { Size = v3Dup 0.5f; TransformOpt = None; PropertiesOpt = None })
+        [define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
          define Entity.DoorState DoorClosed
          define Entity.RotationInitial quatIdentity
