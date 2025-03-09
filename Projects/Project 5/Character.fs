@@ -397,8 +397,7 @@ type CharacterDispatcher () =
                     [Entity.PositionLocal @= entity.GetPosition world
                      Entity.BodyEnabled @= expandedHideSensorBodyEnabled
                      Entity.BodyShape .= characterType.ExpandedHideSensorBodyShape
-                     Entity.MountOpt .= None]
-                    world
+                     Entity.MountOpt .= None] world
             world
 
         // process character state
@@ -483,8 +482,7 @@ type CharacterDispatcher () =
                  Entity.VisibleLocal @= (visibilityScalar > 0.0f)
                  Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
                  Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
-                 Entity.SubsortOffsets @= characterType.SubsortOffsets]
-                world
+                 Entity.SubsortOffsets @= characterType.SubsortOffsets] world
         let animatedModel = world.DeclaredEntity
 
         // process traversal animations
@@ -571,8 +569,7 @@ type CharacterDispatcher () =
                  Entity.BodyType .= Static
                  Entity.BodyShape .= BoxShape { Size = v3 0.3f 1.2f 0.3f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.6f 0.0f)); PropertiesOpt = None }
                  Entity.Sensor .= true
-                 Entity.NavShape .= EmptyNavShape]
-                world
+                 Entity.NavShape .= EmptyNavShape] world
 
         // process weapon collisions
         let world =
@@ -623,8 +620,7 @@ type CharacterDispatcher () =
                         [Entity.Position .= v3 (-284.0f + single i * 32.0f) -144.0f 0.0f
                          Entity.Size .= v3 32.0f 32.0f 0.0f
                          Entity.MountOpt .= None
-                         Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty]
-                        world)
+                         Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty] world)
                     world [0 .. dec characterType.HitPointsMax]
             else world
 

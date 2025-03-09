@@ -57,8 +57,7 @@ type InvestigationDispatcher () =
                      Entity.ScaleLocal .= v3Dup 0.1f
                      Entity.MaterialProperties @= materialProperties
                      Entity.Material .= material
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                    world
+                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)] world
             | InvestigationStarted _ ->
                 let material =
                     { Material.defaultMaterial with
@@ -71,8 +70,7 @@ type InvestigationDispatcher () =
                      Entity.AnimationDelay .= 1.0f
                      Entity.CelCount .= 8
                      Entity.CelRun .= 8
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)]
-                    world
+                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)] world
             | InvestigationFinished _ -> world
 
         // try to make parent visibility match body enabled
