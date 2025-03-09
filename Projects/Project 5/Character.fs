@@ -344,11 +344,11 @@ type CharacterDispatcher () =
 
         // process body events
         let characterType = entity.GetCharacterType world
-        let (results, world) = World.doSubscriptionToBodyEvents "BodyEvents" entity world
+        let (bodyEvents, world) = World.doSubscriptionToBodyEvents "BodyEvents" entity world
         let world =
-            FQueue.fold (fun world result ->
-                match result with
-                | BodyPenetration penetration ->
+            FQueue.fold (fun world bodyEvent ->
+                match bodyEvent with
+                | BodyPenetrationData penetration ->
                     match penetration.BodyShapePenetratee.BodyId.BodySource with
                     | :? Entity as penetratee ->
                         if penetratee.Is<DoorDispatcher> world then
@@ -361,7 +361,7 @@ type CharacterDispatcher () =
                             entity.HidingSpotCollisions.Map (Set.add penetratee) world
                         else world
                     | _ -> world
-                | BodySeparationExplicit separation ->
+                | BodySeparationExplicitData separation ->
                     match separation.BodyShapeSeparatee.BodyId.BodySource with
                     | :? Entity as separatee ->
                         let world = entity.DoorCollisions.Map (Set.remove separatee) world
@@ -369,7 +369,7 @@ type CharacterDispatcher () =
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
                         world
                     | _ -> world
-                | BodySeparationImplicit separation ->
+                | BodySeparationImplicitData separation ->
                     match separation.BodyId.BodySource with
                     | :? Entity as separatee ->
                         let world = entity.DoorCollisions.Map (Set.remove separatee) world
@@ -377,8 +377,8 @@ type CharacterDispatcher () =
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
                         world
                     | _ -> world
-                | BodyTransform _ -> world)
-                world results
+                | BodyTransformData _ -> world)
+                world bodyEvents
 
         // unmount when advancing to enable physics
         let world =
@@ -578,23 +578,23 @@ type CharacterDispatcher () =
         let world =
             FQueue.fold (fun world result ->
                 match result with
-                | BodyPenetration penetration ->
+                | BodyPenetrationData penetration ->
                     match penetration.BodyShapePenetratee.BodyId.BodySource with
                     | :? Entity as penetratee when penetratee.Is<CharacterDispatcher> world && penetratee <> entity ->
                         if characterType.IsPlayer <> (penetratee.GetCharacterType world).IsPlayer
                         then entity.WeaponCollisions.Map (Set.add penetratee) world
                         else world
                     | _ -> world
-                | BodySeparationExplicit separation ->
+                | BodySeparationExplicitData separation ->
                     match separation.BodyShapeSeparatee.BodyId.BodySource with
                     | :? Entity as separatee when separatee.Is<CharacterDispatcher> world && separatee <> entity ->
                         entity.WeaponCollisions.Map (Set.remove separatee) world
                     | _ -> world
-                | BodySeparationImplicit separation ->
+                | BodySeparationImplicitData separation ->
                     match separation.BodyId.BodySource with
                     | :? Entity as separatee -> entity.WeaponCollisions.Map (Set.remove separatee) world
                     | _ -> world
-                | BodyTransform _ -> world)
+                | BodyTransformData _ -> world)
                 world results
 
         // process attacks
