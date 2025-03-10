@@ -27,9 +27,6 @@ type InvestigationDispatcher () =
          define Entity.InvestigationPhase InvestigationNotStarted
          define Entity.InvestigationResult FindNothing]
 
-    override this.PresenceOverride =
-        ValueSome Exterior
-
     override this.Process (entity, world) =
 
         // compute material properties for some cases

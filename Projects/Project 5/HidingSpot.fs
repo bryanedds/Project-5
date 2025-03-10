@@ -23,8 +23,5 @@ type HidingSpotDispatcher () =
          define Entity.Sensor true
          define Entity.HidingSpotOpt None]
 
-    override this.PresenceOverride =
-        ValueSome Exterior
-
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 0.5f) v3Zero

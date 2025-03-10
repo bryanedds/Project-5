@@ -31,9 +31,6 @@ type DoorDispatcher () =
          define Entity.RotationInitial quatIdentity
          define Entity.Closable true]
 
-    override this.PresenceOverride =
-        ValueSome Exterior
-
     override this.Register (entity, world) =
         match entity.Parent with
         | :? Entity as parent -> entity.SetRotationInitial (parent.GetRotation world) world
