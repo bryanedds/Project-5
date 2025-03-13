@@ -29,46 +29,50 @@ type InvestigationDispatcher () =
 
     override this.Process (entity, world) =
 
-        // compute material properties for some cases
-        let distanceScalar =
-            if Simulants.GameplayPlayer.GetExists world then
-                let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
-                let playerDistance = playerPosition.Distance (entity.GetPosition world)
-                if playerDistance < 1.0f then 1.0f
-                elif playerDistance > 2.0f then 0.0f
-                else (2.0f - playerDistance) * 0.5f
-            else 0.0f
-        let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
-        let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
-
-        //
+        // declare multi-layer UI
         let world =
-            match entity.GetInvestigationPhase world with
-            | InvestigationNotStarted ->
-                let material =
-                    { Material.defaultMaterial with
-                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
-                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-                World.doStaticBillboard "InvestigationNotStartedIcon"
-                    [Entity.Rotation @= quatIdentity
-                     Entity.ScaleLocal .= v3Dup 0.1f
-                     Entity.MaterialProperties @= materialProperties
-                     Entity.Material .= material
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)] world
-            | InvestigationStarted _ ->
-                let material =
-                    { Material.defaultMaterial with
-                        AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
-                        EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-                World.doAnimatedBillboard "InvestigationStartedIcon"
-                    [Entity.Rotation @= quatIdentity
-                     Entity.ScaleLocal .= v3Dup 0.1f
-                     Entity.Material .= material
-                     Entity.AnimationDelay .= 1.0f
-                     Entity.CelCount .= 8
-                     Entity.CelRun .= 8
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)] world
-            | InvestigationFinished _ -> world
+            List.fold (fun (world : World) i ->
+                let distanceScalar =
+                    if Simulants.GameplayPlayer.GetExists world then
+                        let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
+                        let playerDistance = playerPosition.Distance (entity.GetPosition world)
+                        if playerDistance < 1.0f then 1.0f
+                        elif playerDistance > 2.0f then 0.0f
+                        else (2.0f - playerDistance) * 0.5f
+                    else 0.0f
+                let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f * if i = 0 then 1.0f else 0.2f
+                let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
+                let depthTest = if i = 0 then LessThanOrEqualTest else AlwaysPassTest
+                match entity.GetInvestigationPhase world with
+                | InvestigationNotStarted ->
+                    let material =
+                        { Material.defaultMaterial with
+                            AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
+                            EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
+                    World.doStaticBillboard ("InvestigationNotStartedIcon+" + string i)
+                        [Entity.Rotation @= quatIdentity
+                         Entity.ScaleLocal .= v3Dup 0.1f
+                         Entity.MaterialProperties @= materialProperties
+                         Entity.Material .= material
+                         Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
+                         Entity.DepthTest .= depthTest] world
+                | InvestigationStarted _ ->
+                    let material =
+                        { Material.defaultMaterial with
+                            AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
+                            EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
+                    World.doAnimatedBillboard ("InvestigationStartedIcon+" + string i)
+                        [Entity.Rotation @= quatIdentity
+                         Entity.ScaleLocal .= v3Dup 0.1f
+                         Entity.MaterialProperties @= materialProperties
+                         Entity.Material .= material
+                         Entity.AnimationDelay .= 1.0f
+                         Entity.CelCount .= 8
+                         Entity.CelRun .= 8
+                         Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
+                         Entity.DepthTest .= depthTest] world
+                | InvestigationFinished _ -> world)
+                world [0 .. dec 2]
 
         // try to make parent visibility match body enabled
         match entity.GetInvestigationResult world with

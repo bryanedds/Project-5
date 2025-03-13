@@ -448,7 +448,7 @@ type GameplayDispatcher () =
                     let position = player.GetPositionInterpolated world
                     let rotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.1f)
                     let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position rotation actionState player world
-                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.5333f * eyeDistanceScalar + rotation.Right * 0.25f * eyeDistanceScalar) world
+                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.5333f * eyeDistanceScalar + rotation.Right * 0.3f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world
                 else world
@@ -456,7 +456,7 @@ type GameplayDispatcher () =
             // process nav sync
             let world = if initializing then World.synchronizeNav3d screen world else world
 
-            // declare quit buttonn
+            // declare quit button
             let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
             let world = if clicked then screen.SetGameplayState Quit world else world
 

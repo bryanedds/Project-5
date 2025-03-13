@@ -84,6 +84,49 @@ deexponentiate roughness (red) with Paint.NET curve editor.
 
 MISC
 
+death ideas -
+
+when a normal enemy kills you, it's not a gore fest. instead what happens is you get the normal attack and blood splat on wall(s), then camera frames your face and witnesses the life drain from your eyes / expression, then fade to black. when being killed by the stalker, the same, but there's an additional fade back in from black with your dead-eyed face framed looking up from the floor. every second, you see the floor behind your head move upward along with a sliding sound; your lifeless body being dragged somewhere. after three slow steps of dragging you, the view fades back to black.
+
+true horror is about loss
+about things you can't get back
+and most of all
+because it was your own fault.
+slide...
+slide...
+slide...
+
+Animus
+
+Animus - the masculine shadow called forth to save her when she is all alone. 
+the love of her father, the spirit of her brother, the feeling of the masculine heart that walks with her even when she walks alone. 
+as long as she feels their transcendent love, she is never truly alone.
+What  did i  get myself into?
+why did i have to be so stupid?...
+hey
+it's not  about what you get  yourself into... 
+it's what you can get yourself out of.
+I did this to myself. There's no way out.
+You and me,
+bryanedds — Today at 11:11 PM
+we're in this  together  now
+none of them can stop  us now.
+you and me,
+if the world should  break in two
+until the very  end of me
+until the very end of you.
+forever and ever i am a part of you
+nothing else is anything.
+bryanedds — Today at 11:27 PM
+Subtextually, this story is about the archetypal bond between the feminine and the masculine. The feminine heart is full when it holds the shape of the platonic masculine. Emptiness is a heart full of childish wants. A small selfish gesture on the part of a young and otherwise devoted girl makes ripples on a very, very large pond. Only the strength she finds in the memory of her deceased brother can manifest within her the courage she needs to save herself. 
+you and me
+we're in this together now
+none of them can stop us now.
+in the most desperate moments, she takes on the personality of her  brother.
+channeling his arrogant, free-spirit persona, she becomes free to confront the true depths of the evil facing her. 
+he will always be there to protect her
+as long as she keeps his noble nature alive in her heart
+
 having something small in the scene with just a bit of motion (like the small spinning table fan in RE7) can trick the player into thinking something dangerous is near - then realize it was just a harmless prop. that's effective for horror for two reasons - creates sudden tension and also make next encounter with danger more surprising.
 
 a shallow time element i.e. doesn't really affect gameplay/progression but still part of the experience. time is determined by gameplay progress (including physical checkpoints) and can be associated with events like stalker appearance. also determines windowed room lighting making it at least slightly different each time room is entered. rendering complications can be minimised by keeping time still in such rooms.
