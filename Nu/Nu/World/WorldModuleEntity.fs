@@ -2785,6 +2785,7 @@ module WorldModuleEntity =
             let state = World.getEntityState entity world
             World.viewSimulantStateProperties state
 
+        /// Notify the engine that an entity's MMCC model has changed in some automatically undetectable way (such as being mutated directly by user code).
         static member notifyEntityModelChange entity world =
             let entityState = World.getEntityState entity world
             let world = entityState.Dispatcher.TrySynchronize (false, entity, world)
