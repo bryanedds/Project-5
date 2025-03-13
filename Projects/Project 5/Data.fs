@@ -185,7 +185,7 @@ and CharacterType =
     member this.BodyShapeTransform =
         match this with
         | Hunter | Stalker -> Affine.makeTranslation (v3 0.0f 1.1f 0.0f)
-        | Player -> Affine.makeTranslation (v3 0.0f 0.75f 0.0f)
+        | Player -> Affine.makeTranslation (v3 0.0f 0.8f 0.0f)
 
     member this.BodyShape =
         match this with
