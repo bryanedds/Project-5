@@ -79,7 +79,7 @@ type InvestigationDispatcher () =
         | FindNothing -> world
         | FindDescription _ -> world
         | FindItem (_, advent) ->
-            let adventsProperty = Simulants.Gameplay.GetProperty "Advents" world
+            let adventsProperty = Simulants.Gameplay.Get "Advents" world
             let advents = adventsProperty.PropertyValue :?> Advent Set
             let visible = not (Set.contains advent advents)
             let world = entity.SetBodyEnabled visible world
