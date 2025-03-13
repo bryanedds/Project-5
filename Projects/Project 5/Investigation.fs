@@ -31,7 +31,7 @@ type InvestigationDispatcher () =
 
         // declare multi-layer UI
         let world =
-            List.fold (fun (world : World) i ->
+            List.fold (fun (world : World) layer ->
                 let distanceScalar =
                     if Simulants.GameplayPlayer.GetExists world then
                         let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
@@ -40,16 +40,16 @@ type InvestigationDispatcher () =
                         elif playerDistance > 2.0f then 0.0f
                         else (2.0f - playerDistance) * 0.5f
                     else 0.0f
-                let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f * if i = 0 then 1.0f else 0.2f
+                let alpha = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f * if layer = 0 then 1.0f else 0.2f
                 let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (Color.White.WithA alpha) }
-                let depthTest = if i = 0 then LessThanOrEqualTest else AlwaysPassTest
+                let depthTest = if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
                 match entity.GetInvestigationPhase world with
                 | InvestigationNotStarted ->
                     let material =
                         { Material.defaultMaterial with
                             AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationPendingIconAlbedoImage
                             EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-                    World.doStaticBillboard ("InvestigationNotStartedIcon+" + string i)
+                    World.doStaticBillboard ("InvestigationNotStartedIcon+" + string layer)
                         [Entity.Rotation @= quatIdentity
                          Entity.ScaleLocal .= v3Dup 0.1f
                          Entity.MaterialProperties @= materialProperties
@@ -61,7 +61,7 @@ type InvestigationDispatcher () =
                         { Material.defaultMaterial with
                             AlbedoImageOpt = ValueSome Assets.Gameplay.InvestigationProcedingIconAlbedoImage
                             EmissionImageOpt = ValueSome Assets.Gameplay.IconEmissionImage }
-                    World.doAnimatedBillboard ("InvestigationStartedIcon+" + string i)
+                    World.doAnimatedBillboard ("InvestigationStartedIcon+" + string layer)
                         [Entity.Rotation @= quatIdentity
                          Entity.ScaleLocal .= v3Dup 0.1f
                          Entity.MaterialProperties @= materialProperties
