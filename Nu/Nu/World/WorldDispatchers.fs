@@ -533,11 +533,20 @@ type SensorModelSurfaceDispatcher () =
         let bodyShape = entity.GetBodyShape world
         let staticModel = entity.GetStaticModel world
         let surfaceIndex = entity.GetSurfaceIndex world
-        if (match bodyShape with StaticModelSurfaceShape staticModelSurfaceShape -> staticModelSurfaceShape.StaticModel <> staticModel || staticModelSurfaceShape.SurfaceIndex <> surfaceIndex | _ -> false) then
-            let staticModelShape = { StaticModel = staticModel; SurfaceIndex = surfaceIndex; Convex = true; TransformOpt = None; PropertiesOpt = None }
-            let world = entity.SetBodyShape (StaticModelSurfaceShape staticModelShape) world
-            (Cascade, world)
-        else (Cascade, world)
+        let world =
+            match bodyShape with
+            | StaticModelSurfaceShape staticModelSurfaceShape ->
+                if staticModelSurfaceShape.StaticModel <> staticModel || staticModelSurfaceShape.SurfaceIndex <> surfaceIndex then
+                    let staticModelShape =
+                        { StaticModel = staticModel
+                          SurfaceIndex = surfaceIndex
+                          Convex = staticModelSurfaceShape.Convex
+                          TransformOpt = staticModelSurfaceShape.TransformOpt
+                          PropertiesOpt = staticModelSurfaceShape.PropertiesOpt }
+                    entity.SetBodyShape (StaticModelSurfaceShape staticModelShape) world
+                else world
+            | _ -> world
+        (Cascade, world)
 
     static member Facets =
         [typeof<RigidBodyFacet>
@@ -747,15 +756,9 @@ type Nav3dConfigDispatcher () =
                     let height = Math.Lerp (0.0f, 1.0f, (middleY - nbrData.NavEdgesMinY) / (nbrData.NavEdgesMaxY - nbrData.NavEdgesMinY))
                     Color (1.0f, 1.0f - height, height, 1.0f)
 
-                // point color compute lambda
-                let computePointColor (point : Vector3) =
-                    let height = Math.Lerp (0.0f, 1.0f, (point.Y - nbrData.NavPointsMinY) / (nbrData.NavPointsMaxY - nbrData.NavPointsMinY))
-                    Color (1.0f, 1.0f - height, height, 1.0f)
-
                 // draw edges and points
                 World.imGuiSegments3dPlus nbrData.NavInteriorEdges 1.0f computeEdgeColor world
                 World.imGuiSegments3dPlus nbrData.NavExteriorEdges 1.0f computeEdgeColor world
-                World.imGuiCircles3dPlus nbrData.NavPoints 2.5f true computePointColor world
                 world
 
             | None -> world

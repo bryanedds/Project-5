@@ -296,9 +296,10 @@ type BoxRoundedShape =
       TransformOpt : Affine option
       PropertiesOpt : BodyShapeProperties option }
 
-/// The shape of a convex physics body defined by body-relative points.
+/// The shape of a physics body defined by body-relative points.
 type PointsShape =
     { Points : Vector3 array
+      Convex : bool
       TransformOpt : Affine option
       PropertiesOpt : BodyShapeProperties option }
 
@@ -694,6 +695,8 @@ type PhysicsEngine =
     abstract HandleMessage : message : PhysicsMessage -> unit
     /// Attempt to integrate the physics system one step.
     abstract TryIntegrate : delta : GameTime -> IntegrationMessage SArray option
+    /// Attempt torender physics with the given settings and renderer objects.
+    abstract TryRender : renderSettings : obj * rendererObj : obj -> unit
     /// Clear the physics simulation, returning false if no physics objects existed to begin with. For internal use only.
     abstract ClearInternal : unit -> unit
     /// Handle physics clean up by freeing all created resources.
@@ -716,6 +719,7 @@ type [<ReferenceEquality>] StubPhysicsEngine =
         member physicsEngine.RayCast (_, _, _) = failwith "No bodies in StubPhysicsEngine"
         member physicsEngine.HandleMessage _ = ()
         member physicsEngine.TryIntegrate _ = None
+        member physicsEngine.TryRender (_, _) = ()
         member physicsEngine.ClearInternal () = ()
         member physicsEngine.CleanUp () = ()
 
