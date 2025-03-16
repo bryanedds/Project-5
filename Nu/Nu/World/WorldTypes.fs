@@ -2026,6 +2026,14 @@ and [<ReferenceEquality>] World =
     member internal this.SubscriptionsImNui =
         this.WorldExtension.SubscriptionsImNui
 
+    /// Get the currently selected screen, if any.
+    member this.SelectedScreenOpt =
+        this.GameState.SelectedScreenOpt
+
+    /// Get the desired selected screen, if any.
+    member this.DesiredScreen =
+        this.GameState.DesiredScreen
+
     /// The viewport of the geometry buffer.
     member this.GeometryViewport =
         this.WorldExtension.GeometryViewport
