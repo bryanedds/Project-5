@@ -432,7 +432,7 @@ type GameplayDispatcher () =
             let shadowResolution = Viewport.getShadowTextureBufferResolution 0 world.GeometryViewport
             let shadowTexelSize = shadowWidth / single shadowResolution.X // assuming square, of course
             let position = Simulants.GameplayPlayer.GetPositionInterpolated world
-            let positionShadow = position.Transform shadowView + v3Up * 4.0f // position of player + offset in shadow space
+            let positionShadow = position.Transform shadowView
             let positionSnapped =
                 v3
                     (floor (positionShadow.X / shadowTexelSize) * shadowTexelSize)
