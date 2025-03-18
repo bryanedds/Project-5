@@ -14,8 +14,8 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [-11.856131 15.055332 -18.639841]]
-      [PositionLocal [-11.856131 15.055332 -18.639841]]
+      [Position [-13.4220295 11.59315 -18.249216]]
+      [PositionLocal [-13.4220295 11.59315 -18.249216]]
       [Presence Omnipresent]
       [Rotation [0.35355338 -0.6123724 0.35355338 0.6123724]]
       [RotationLocal [0.35355338 -0.6123724 0.35355338 0.6123724]]
@@ -15729,8 +15729,10 @@
     [Static True]
     [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
     [SurfaceIndex 183]]
-   [[InvestigationDispatcher
-     [[MountOpt [Some ^]]
+   [[InsertionPointDispatcher
+     [[InsertionKey BronzeKey]
+      [InteractionResult EndGame]
+      [MountOpt [Some ^]]
       [Name Investigation-0008]
       [Position [0.20000005 9.2 -16.1]]
       [PositionLocal [1.2000003 1.4000206 0.09999943]]
@@ -15755,7 +15757,7 @@
     [Size [0.08261318 0.007999994 0.02644255]]
     [StaticModel [Gameplay Key]]]
    [[InvestigationDispatcher
-     [[InvestigationResult [FindItem BronzeKey BronzeKeyAcquired]]
+     [[InteractionResult [FindItem BronzeKey BronzeKeyAcquired]]
       [MountOpt [Some ^]]
       [Name Investigation-0002]
       [Position [-13.400002 12.749998 -17.650011]]

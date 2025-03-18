@@ -300,7 +300,7 @@ type CharacterDispatcher () =
         // rotation
         let world =
             match entity.GetActionState world with
-            | NormalState | InvestigateState _ | HideState _ ->
+            | NormalState | InsertionPointState _  | InvestigateState _ | HideState _ ->
                 let rotation = entity.GetRotation world
                 let characterType = entity.GetCharacterType world
                 let turnSpeed = characterType.TurnSpeed
@@ -447,6 +447,7 @@ type CharacterDispatcher () =
                     let localTime = world.GameTime - attack.AttackTime
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
+                | InsertionPointState _ -> world
                 | InvestigateState _ -> world
                 | HideState hide ->
                     match hide.HidePhase with
@@ -548,6 +549,8 @@ type CharacterDispatcher () =
                     else world
                 let animation = Animation.once attack.AttackTime None "Attack"
                 animatedModel.SetAnimations [|animation|] world
+            | InsertionPointState insertionPoint ->
+                world
             | InvestigateState investigate ->
                 world
             | HideState hide ->

@@ -170,44 +170,47 @@ type GameplayDispatcher () =
                     | Some insertionPoint ->
                         match player.GetActionState world with
                         | NormalState ->
+                            let world =
+                                screen.SetInventoryViewOpt None world
+                            let insertionKey =
+                                insertionPoint.GetInsertionKey world
+                            let world =
+                                World.beginPanel "Inventory"
+                                    [Entity.Position .= v3 0.0f 144.0f 0.0f
+                                     Entity.Size .= v3 460.0f 40.0f 0.0f
+                                     Entity.Color .= Color.White.WithA 0.25f
+                                     Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
+                                     Entity.LayoutMargin .= v2Dup 4.0f] world
+                            let (inserting, world) =
+                                Map.fold (fun (inserting, world) itemType itemCount ->
+                                    let itemName = scstringMemo itemType
+                                    let (clicked, world) =
+                                        World.doButton itemName
+                                            [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
+                                             Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
+                                             Entity.Size .= v3 32.0f 32.0f 0.0f] world
+                                    if clicked && itemType = insertionKey then
+                                        let world = player.SetActionState (InsertionPointState { InsertionPoint = insertionPoint }) world
+                                        (true, world)
+                                    else (inserting, world))
+                                    (false, world)
+                                    (screen.GetInventory world).Items
+                            let world = World.endPanel world
+                            if inserting then
+                                let world = insertionPoint.SetInsertionState (InsertionStarted world.GameTime) world
+                                screen.Inventory.Map (fun inv ->
+                                    match inv.Items.TryGetValue insertionKey with
+                                    | (true, count) ->
+                                        if count > 1
+                                        then { inv with Items = Map.add insertionKey (dec count) inv.Items }
+                                        else { inv with Items = Map.remove insertionKey inv.Items }
+                                    | (false, _) -> Log.error "Unexpected match error."; inv)
+                                    world
+                            else world
+                        | InsertionPointState insertion ->
                             match insertionPoint.GetInsertionState world with
                             | InsertionNotStarted ->
-                                let world =
-                                    screen.SetInventoryViewOpt None world
-                                let insertionKey =
-                                    insertionPoint.GetInsertionKey world
-                                let world =
-                                    World.beginPanel "Inventory"
-                                        [Entity.Position .= v3 0.0f 144.0f 0.0f
-                                         Entity.Size .= v3 460.0f 40.0f 0.0f
-                                         Entity.Color .= Color.White.WithA 0.25f
-                                         Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
-                                         Entity.LayoutMargin .= v2Dup 4.0f] world
-                                let (inserting, world) =
-                                    Map.fold (fun (inserting, world) itemType itemCount ->
-                                        let itemName = scstringMemo itemType
-                                        let (clicked, world) =
-                                            World.doButton itemName
-                                                [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
-                                                 Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
-                                                 Entity.Size .= v3 32.0f 32.0f 0.0f] world
-                                        if clicked && itemType = insertionKey
-                                        then (true, world)
-                                        else (inserting, world))
-                                        (false, world)
-                                        (screen.GetInventory world).Items
-                                let world = World.endPanel world
-                                if inserting then
-                                    let world = insertionPoint.SetInsertionState (InsertionStarted world.GameTime) world
-                                    screen.Inventory.Map (fun inv ->
-                                        match inv.Items.TryGetValue insertionKey with
-                                        | (true, count) ->
-                                            if count > 1
-                                            then { inv with Items = Map.add insertionKey (dec count) inv.Items }
-                                            else { inv with Items = Map.remove insertionKey inv.Items }
-                                        | (false, _) -> Log.error "Unexpected match error."; inv)
-                                        world
-                                else world
+                                player.SetActionState NormalState world
                             | InsertionStarted _ ->
                                 match insertionPoint.GetInteractionResult world with
                                 | FindDescription (description, _) ->
@@ -222,14 +225,18 @@ type GameplayDispatcher () =
                             | InsertionFinished ->
                                 match insertionPoint.GetInteractionResult world with
                                 | FindDescription (_, advent) ->
-                                    screen.Advents.Map (Set.add advent) world
+                                    let world = screen.Advents.Map (Set.add advent) world
+                                    let world = player.SetActionState NormalState world
+                                    world
                                 | FindItem (itemType, advent) ->
                                     let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
                                     let world = screen.Advents.Map (Set.add advent) world
+                                    let world = player.SetActionState NormalState world
                                     world
                                 | EndGame ->
                                     screen.SetGameplayState Quit world
-                                | Nothing -> world
+                                | Nothing ->
+                                    player.SetActionState NormalState world                                    
                         | _ -> world
                     | None ->
                         match doorCollisionOpt with

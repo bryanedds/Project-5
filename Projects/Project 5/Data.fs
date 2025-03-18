@@ -225,6 +225,9 @@ type AttackState =
           AttackSoundPlayed = false
           AttackedCharacters = Set.empty }
 
+type InsertionPointState =
+    { InsertionPoint : Entity }
+
 type InvestigateState =
     { Investigation : Entity }
 
@@ -238,6 +241,7 @@ type WoundState =
 type ActionState =
     | NormalState
     | AttackState of AttackState
+    | InsertionPointState of InsertionPointState
     | InvestigateState of InvestigateState
     | HideState of HideState
     | InjuryState of InjuryState
