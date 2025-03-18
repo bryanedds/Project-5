@@ -249,6 +249,12 @@ module WorldModuleGroup =
                 groupState.Xtension <- Xtension.attachProperty propertyName property groupState.Xtension
                 value
 
+        static member internal tryGetGroupXtensionValue<'a> propertyName group world : 'a voption =
+            // NOTE: we're only using exceptions as flow control in order to avoid code duplication and perf costs.
+            // TODO: P1: see if we can find a way to refactor this situation without incurring any additional overhead on the getGroupXtensionValue call.
+            try World.getGroupXtensionValue<'a> propertyName group world |> ValueSome
+            with _ -> ValueNone
+
         static member internal getGroupProperty propertyName group world =
             match GroupGetters.TryGetValue propertyName with
             | (true, getter) -> getter group world

@@ -673,6 +673,11 @@ module WorldImGui =
                         name animations context
                 ImGui.PopID ()
                 (promoted, edited, animations)
+            | :? CharacterProperties when
+                (match context.SelectedEntityOpt with
+                 | Some entity -> match entity.TryGet<Nu.BodyType> "BodyType" world with ValueSome bodyType -> not bodyType.IsCharacter | ValueNone -> false
+                 | None -> false) ->
+                (false, false, value) // hides character properties unless is character body type
             | _ ->
                 let mutable combo = false
                 let (edited, value) =
@@ -931,19 +936,35 @@ module WorldImGui =
 type RendererPhysics3d () =
     inherit DebugRenderer ()
 
-    let segments = List ()
+    let segments = Dictionary<Color, Segment3 List> ()
 
-    override this.DrawLine (from, to_, _) =
-        let segment = Segment3 (from, to_)
-        if segment.Magnitude < 32.0f then segments.Add segment
+    override this.DrawLine (start, stop, color) =
+        let color = Color (color.ToVector4 ())
+        let segment = Segment3 (start, stop)
+        let magMaxSquared =
+            Constants.Render.Body3dSegmentRenderMagnitudeMax *
+            Constants.Render.Body3dSegmentRenderMagnitudeMax
+        if segment.MagnitudeSquared < magMaxSquared then
+            match segments.TryGetValue color with
+            | (true, segmentList) -> segmentList.Add segment
+            | (false, _) ->
+                let segmentList = List ()
+                segmentList.Add segment
+                segments.Add (color, segmentList)
 
     override this.DrawText3D (_, _, _, _) =
         () // TODO: implement.
 
     /// Actually render all the stored drawing commands.
-    member this.Flush world =
-        World.imGuiSegments3d segments 1.0f Color.Magenta world
-        segments.Clear ()
+    member this.Flush (world : World) =
+        let distanceMaxSquared =
+            Constants.Render.Body3dSegmentRenderDistanceMax *
+            Constants.Render.Body3dSegmentRenderDistanceMax
+        for struct (color, segmentList) in segments.Pairs' do
+            let segmentsNear = segmentList |> Seq.filter (fun segment -> ((segment.A + segment.Vector * 0.5f) - world.Eye3dCenter).MagnitudeSquared < distanceMaxSquared)
+            World.imGuiSegments3d segmentsNear 1.0f color world
+            segmentList.Clear ()
+        this.NextFrame ()
 
 [<AutoOpen>]
 module WorldImGui2 =
@@ -954,5 +975,5 @@ module WorldImGui2 =
         static member imGuiRenderPhysics3d (settings : DrawSettings) world =
             let physicsEngine3d = World.getPhysicsEngine3d world
             let renderer = World.getRendererPhysics3d world :?> RendererPhysics3d
-            physicsEngine3d.TryRender (settings, renderer)
+            physicsEngine3d.TryRender (world.Eye3dCenter,  settings, renderer)
             renderer.Flush world

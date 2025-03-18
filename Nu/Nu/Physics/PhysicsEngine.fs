@@ -422,6 +422,12 @@ type BodyType =
     | Dynamic
     | DynamicCharacter
 
+    // Check that this body type is some sort of character.
+    member this.IsCharacter =
+        match this with
+        | Static | Kinematic | Dynamic -> false
+        | KinematicCharacter | DynamicCharacter -> true
+
 /// The way in which an entity's motion is driven by a corresponding body.
 type PhysicsMotion =
 
@@ -696,7 +702,7 @@ type PhysicsEngine =
     /// Attempt to integrate the physics system one step.
     abstract TryIntegrate : delta : GameTime -> IntegrationMessage SArray option
     /// Attempt torender physics with the given settings and renderer objects.
-    abstract TryRender : renderSettings : obj * rendererObj : obj -> unit
+    abstract TryRender : eyeCenter : Vector3 * renderSettings : obj * rendererObj : obj -> unit
     /// Clear the physics simulation, returning false if no physics objects existed to begin with. For internal use only.
     abstract ClearInternal : unit -> unit
     /// Handle physics clean up by freeing all created resources.
@@ -719,7 +725,7 @@ type [<ReferenceEquality>] StubPhysicsEngine =
         member physicsEngine.RayCast (_, _, _) = failwith "No bodies in StubPhysicsEngine"
         member physicsEngine.HandleMessage _ = ()
         member physicsEngine.TryIntegrate _ = None
-        member physicsEngine.TryRender (_, _) = ()
+        member physicsEngine.TryRender (_, _, _) = ()
         member physicsEngine.ClearInternal () = ()
         member physicsEngine.CleanUp () = ()
 

@@ -286,6 +286,12 @@ module WorldModuleScreen =
                 screenState.Xtension <- Xtension.attachProperty propertyName property screenState.Xtension
                 value
 
+        static member internal tryGetScreenXtensionValue<'a> propertyName screen world : 'a voption =
+            // NOTE: we're only using exceptions as flow control in order to avoid code duplication and perf costs.
+            // TODO: P1: see if we can find a way to refactor this situation without incurring any additional overhead on the getScreenXtensionValue call.
+            try World.getScreenXtensionValue<'a> propertyName screen world |> ValueSome
+            with _ -> ValueNone
+
         static member internal getScreenProperty propertyName screen world =
             match ScreenGetters.TryGetValue propertyName with
             | (true, getter) -> getter screen world
