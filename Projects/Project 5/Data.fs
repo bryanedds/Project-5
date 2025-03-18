@@ -24,10 +24,11 @@ type [<SymbolicExpansion>] Inventory =
 type Advent =
     | BronzeKeyAcquired
 
-type InvestigationResult =
-    | FindNothing
-    | FindDescription of string
+type InteractionResult =
+    | FindDescription of string * Advent
     | FindItem of ItemType * Advent
+    | EndGame
+    | Nothing
 
 type WayPoint =
     { WayPoint : Entity Relation
@@ -87,6 +88,11 @@ type StalkerSpawnState =
 
     static member initial =
         StalkerUnspawned Single.MaxValue
+
+type InsertionState =
+    | InsertionNotStarted
+    | InsertionStarted of StartTime : GameTime
+    | InsertionFinished
 
 type DoorState =
     | DoorClosed

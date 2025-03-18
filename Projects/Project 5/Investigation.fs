@@ -11,9 +11,6 @@ module InvestigationDispatcherExtensions =
         member this.GetInvestigationPhase world : InvestigationPhase = this.Get (nameof this.InvestigationPhase) world
         member this.SetInvestigationPhase (value : InvestigationPhase) world = this.Set (nameof this.InvestigationPhase) value world
         member this.InvestigationPhase = lens (nameof this.InvestigationPhase) this this.GetInvestigationPhase this.SetInvestigationPhase
-        member this.GetInvestigationResult world : InvestigationResult = this.Get (nameof this.InvestigationResult) world
-        member this.SetInvestigationResult (value : InvestigationResult) world = this.Set (nameof this.InvestigationResult) value world
-        member this.InvestigationResult = lens (nameof this.InvestigationResult) this this.GetInvestigationResult this.SetInvestigationResult
 
 type InvestigationDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
@@ -25,7 +22,7 @@ type InvestigationDispatcher () =
         [define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
          define Entity.InvestigationPhase InvestigationNotStarted
-         define Entity.InvestigationResult FindNothing]
+         define Entity.InteractionResult Nothing]
 
     override this.Process (entity, world) =
 
@@ -67,9 +64,8 @@ type InvestigationDispatcher () =
 
         // try to make parent visibility match body enabled
         let world =
-            match entity.GetInvestigationResult world with
-            | FindNothing -> world
-            | FindDescription _ -> world
+            match entity.GetInteractionResult world with
+            | FindDescription (_, advent)
             | FindItem (_, advent) ->
                 let advents = Simulants.Gameplay.Get "Advents" world
                 let visible = not (Set.contains advent advents)
@@ -77,6 +73,8 @@ type InvestigationDispatcher () =
                 match entity.TryGetMountee world with
                 | Some mountee -> mountee.SetVisible visible world
                 | None -> world
+            | EndGame -> world
+            | Nothing -> world
 
         // fin
         world

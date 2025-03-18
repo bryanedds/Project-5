@@ -20,6 +20,9 @@ module CharacterExtensions =
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
+        member this.GetInsertionPointCollisions world : Entity Set = this.Get (nameof this.InsertionPointCollisions) world
+        member this.SetInsertionPointCollisions (value : Entity Set) world = this.Set (nameof this.InsertionPointCollisions) value world
+        member this.InsertionPointCollisions = lens (nameof this.InsertionPointCollisions) this this.GetInsertionPointCollisions this.SetInsertionPointCollisions
         member this.GetDoorCollisions world : Entity Set = this.Get (nameof this.DoorCollisions) world
         member this.SetDoorCollisions (value : Entity Set) world = this.Set (nameof this.DoorCollisions) value world
         member this.DoorCollisions = lens (nameof this.DoorCollisions) this this.GetDoorCollisions this.SetDoorCollisions
@@ -334,6 +337,7 @@ type CharacterDispatcher () =
          define Entity.CharacterType characterType
          define Entity.ActionState NormalState
          define Entity.HitPoints characterType.HitPointsMax
+         define Entity.InsertionPointCollisions Set.empty
          define Entity.DoorCollisions Set.empty
          define Entity.InvestigationCollisions Set.empty
          define Entity.HidingSpotCollisions Set.empty
@@ -351,7 +355,9 @@ type CharacterDispatcher () =
                 | BodyPenetrationData penetration ->
                     match penetration.BodyShapePenetratee.BodyId.BodySource with
                     | :? Entity as penetratee ->
-                        if penetratee.Is<DoorDispatcher> world then
+                        if penetratee.Is<InsertionPointDispatcher> world then
+                            entity.InsertionPointCollisions.Map (Set.add penetratee) world
+                        elif penetratee.Is<DoorDispatcher> world then
                             entity.DoorCollisions.Map (Set.add penetratee) world
                         elif penetratee.Is<InvestigationDispatcher> world then
                             if characterType.IsPlayer
@@ -364,6 +370,7 @@ type CharacterDispatcher () =
                 | BodySeparationExplicitData separation ->
                     match separation.BodyShapeSeparatee.BodyId.BodySource with
                     | :? Entity as separatee ->
+                        let world = entity.InsertionPointCollisions.Map (Set.remove separatee) world
                         let world = entity.DoorCollisions.Map (Set.remove separatee) world
                         let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
@@ -372,6 +379,7 @@ type CharacterDispatcher () =
                 | BodySeparationImplicitData separation ->
                     match separation.BodyId.BodySource with
                     | :? Entity as separatee ->
+                        let world = entity.InsertionPointCollisions.Map (Set.remove separatee) world
                         let world = entity.DoorCollisions.Map (Set.remove separatee) world
                         let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
@@ -469,7 +477,10 @@ type CharacterDispatcher () =
             let actionState = entity.GetActionState world
             let position = entity.GetPositionInterpolated world
             let rotation = entity.GetRotationInterpolated world
-            let visibilityScalar = Algorithm.computeVisibilityScalar position rotation actionState entity world
+            let visibilityScalar =
+                if characterType.IsPlayer
+                then Algorithm.computePlayerVisibilityScalar position rotation actionState entity world
+                else 1.0f
             World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
                 [Entity.Position @= position
                  Entity.Rotation @= rotation

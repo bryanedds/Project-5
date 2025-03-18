@@ -137,9 +137,10 @@ type GameplayDispatcher () =
                     if clicked then screen.SetInventoryViewOpt (Some { ItemSelectedOpt = None }) world else world
 
             // declare player interaction button
+            let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
+            let insertionPointCollisionOpt = player.GetInsertionPointCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
             let doorCollisionOpt = player.GetDoorCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
             let investigationCollisionOpt = player.GetInvestigationCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
-            let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
             let world =
                 match hidingSpotCollisionOpt with
                 | Some hidingSpot ->
@@ -165,71 +166,123 @@ type GameplayDispatcher () =
                         | _ -> world
                     | _ -> world
                 | None ->
-                    match doorCollisionOpt with
-                    | Some door ->
+                    match insertionPointCollisionOpt with
+                    | Some insertionPoint ->
                         match player.GetActionState world with
                         | NormalState ->
-                            match door.GetDoorState world with
-                            | DoorClosed ->
-                                let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                                if clicked
-                                then door.SetDoorState (DoorOpening world.GameTime) world
+                            match insertionPoint.GetInsertionState world with
+                            | InsertionNotStarted ->
+                                let world =
+                                    screen.SetInventoryViewOpt None world
+                                let insertionKey =
+                                    insertionPoint.GetInsertionKey world
+                                let world =
+                                    World.beginPanel "Inventory"
+                                        [Entity.Position .= v3 0.0f 144.0f 0.0f
+                                         Entity.Size .= v3 460.0f 40.0f 0.0f
+                                         Entity.Color .= Color.White.WithA 0.25f
+                                         Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
+                                         Entity.LayoutMargin .= v2Dup 4.0f] world
+                                let (inserting, world) =
+                                    Map.fold (fun (inserting, world) itemType itemCount ->
+                                        let itemName = scstringMemo itemType
+                                        let (clicked, world) =
+                                            World.doButton itemName
+                                                [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
+                                                 Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
+                                                 Entity.Size .= v3 32.0f 32.0f 0.0f] world
+                                        if clicked && itemType = insertionKey
+                                        then (true, world)
+                                        else (inserting, world))
+                                        (false, world)
+                                        (screen.GetInventory world).Items
+                                if inserting then
+                                    let world = insertionPoint.SetInsertionState (InsertionStarted world.GameTime) world
+                                    screen.Inventory.Map (fun inv ->
+                                        match inv.Items.TryGetValue insertionKey with
+                                        | (true, count) ->
+                                            if count > 1
+                                            then { inv with Items = Map.add insertionKey (dec count) inv.Items }
+                                            else { inv with Items = Map.remove insertionKey inv.Items }
+                                        | (false, _) -> Log.error "Unexpected match error."; inv)
+                                        world
                                 else world
-                            | DoorOpened ->
-                                if door.GetClosable world then
-                                    let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
-                                    if clicked
-                                    then door.SetDoorState (DoorClosing world.GameTime) world
-                                    else world
-                                else world
-                            | DoorClosing _ | DoorOpening _ -> world
+                            | InsertionStarted _ ->
+                                // TODO: any insertion animation
+                                world
+                            | InsertionFinished -> world
                         | _ -> world
                     | None ->
-                        match investigationCollisionOpt with
-                        | Some investigation ->
+                        match doorCollisionOpt with
+                        | Some door ->
                             match player.GetActionState world with
                             | NormalState ->
-                                let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
-                                if clicked then
-                                    let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
-                                    let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
-                                    world
-                                else world
-                            | InvestigateState state ->
-                                match state.Investigation.GetInvestigationPhase world with
-                                | InvestigationNotStarted ->
-                                    player.SetActionState NormalState world
-                                | InvestigationStarted startTime ->
-                                    let localTime = world.GameTime - startTime
-                                    if localTime < 8.0f then
-                                        let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                match door.GetDoorState world with
+                                | DoorClosed ->
+                                    let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                    if clicked
+                                    then door.SetDoorState (DoorOpening world.GameTime) world
+                                    else world
+                                | DoorOpened ->
+                                    if door.GetClosable world then
+                                        let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
                                         if clicked
-                                        then investigation.SetInvestigationPhase InvestigationNotStarted world
+                                        then door.SetDoorState (DoorClosing world.GameTime) world
                                         else world
-                                    else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
-                                | InvestigationFinished startTime ->
-                                    let localTime = world.GameTime - startTime
-                                    if localTime < 2.0f then
-                                        match investigation.GetInvestigationResult world with
-                                        | FindNothing ->
-                                            World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                        | FindDescription description ->
-                                            World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                        | FindItem (itemType, _) ->
-                                            let itemNameSpaced = (scstringMemo itemType).Spaced
-                                            World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                    else
-                                        let world =
-                                            match investigation.GetInvestigationResult world with
-                                            | FindNothing -> world
-                                            | FindDescription _ -> world
-                                            | FindItem (itemType, advent) ->
-                                                let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
-                                                let world = screen.Advents.Map (Set.add advent) world
-                                                world
-                                        player.SetActionState NormalState world
+                                    else world
+                                | DoorClosing _ | DoorOpening _ -> world
                             | _ -> world
-                        | None -> world
+                        | None ->
+                            match investigationCollisionOpt with
+                            | Some investigation ->
+                                match player.GetActionState world with
+                                | NormalState ->
+                                    let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                    if clicked then
+                                        let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
+                                        let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
+                                        world
+                                    else world
+                                | InvestigateState state ->
+                                    match state.Investigation.GetInvestigationPhase world with
+                                    | InvestigationNotStarted ->
+                                        player.SetActionState NormalState world
+                                    | InvestigationStarted startTime ->
+                                        let localTime = world.GameTime - startTime
+                                        if localTime < 8.0f then
+                                            let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 -232.0f -144.0f 0.0f] world
+                                            if clicked
+                                            then investigation.SetInvestigationPhase InvestigationNotStarted world
+                                            else world
+                                        else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
+                                    | InvestigationFinished startTime ->
+                                        let localTime = world.GameTime - startTime
+                                        if localTime < 2.0f then
+                                            match investigation.GetInteractionResult world with
+                                            | FindDescription (description, _) ->
+                                                World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                            | FindItem (itemType, _) ->
+                                                let itemNameSpaced = (scstringMemo itemType).Spaced
+                                                World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                            | EndGame ->
+                                                World.doText "InvestigationResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                            | Nothing ->
+                                                World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                        else
+                                            let world =
+                                                match investigation.GetInteractionResult world with
+                                                | FindDescription (_, advent) ->
+                                                    screen.Advents.Map (Set.add advent) world
+                                                | FindItem (itemType, advent) ->
+                                                    let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                                    let world = screen.Advents.Map (Set.add advent) world
+                                                    world
+                                                | EndGame ->
+                                                    screen.SetGameplayState Quit world
+                                                | Nothing -> world
+                                            player.SetActionState NormalState world
+                                | _ -> world
+                            | None -> world
 
             // process stalker spawn state
             let world =

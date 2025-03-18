@@ -52,7 +52,7 @@ module Algorithm =
             | None -> eyeDistanceScalarA
         max 0.0f (eyeDistanceScalarMin - 0.1f)
 
-    let computeVisibilityScalar position rotation actionState entity world =
+    let computePlayerVisibilityScalar position rotation actionState entity world =
         let eyeDistanceScalar = computeEyeDistanceScalar position rotation actionState entity world * (1.0f / 0.9f)
         let eyeDistanceScalar =
             if eyeDistanceScalar > Constants.Gameplay.PlayerVisibilityDistanceMin
