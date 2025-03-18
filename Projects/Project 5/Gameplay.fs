@@ -196,6 +196,7 @@ type GameplayDispatcher () =
                                         else (inserting, world))
                                         (false, world)
                                         (screen.GetInventory world).Items
+                                let world = World.endPanel world
                                 if inserting then
                                     let world = insertionPoint.SetInsertionState (InsertionStarted world.GameTime) world
                                     screen.Inventory.Map (fun inv ->
@@ -208,9 +209,27 @@ type GameplayDispatcher () =
                                         world
                                 else world
                             | InsertionStarted _ ->
-                                // TODO: any insertion animation
-                                world
-                            | InsertionFinished -> world
+                                match insertionPoint.GetInteractionResult world with
+                                | FindDescription (description, _) ->
+                                    World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                | FindItem (itemType, _) ->
+                                    let itemNameSpaced = (scstringMemo itemType).Spaced
+                                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                | EndGame ->
+                                    World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                | Nothing ->
+                                    World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                            | InsertionFinished ->
+                                match insertionPoint.GetInteractionResult world with
+                                | FindDescription (_, advent) ->
+                                    screen.Advents.Map (Set.add advent) world
+                                | FindItem (itemType, advent) ->
+                                    let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                    let world = screen.Advents.Map (Set.add advent) world
+                                    world
+                                | EndGame ->
+                                    screen.SetGameplayState Quit world
+                                | Nothing -> world
                         | _ -> world
                     | None ->
                         match doorCollisionOpt with
@@ -260,14 +279,14 @@ type GameplayDispatcher () =
                                         if localTime < 2.0f then
                                             match investigation.GetInteractionResult world with
                                             | FindDescription (description, _) ->
-                                                World.doText "InvestigationResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                                World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                             | FindItem (itemType, _) ->
                                                 let itemNameSpaced = (scstringMemo itemType).Spaced
-                                                World.doText "InvestigationResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                                World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                             | EndGame ->
-                                                World.doText "InvestigationResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                                World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                             | Nothing ->
-                                                World.doText "InvestigationResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                                World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         else
                                             let world =
                                                 match investigation.GetInteractionResult world with
