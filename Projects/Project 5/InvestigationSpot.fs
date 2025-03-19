@@ -71,21 +71,21 @@ type InvestigationSpotDispatcher () =
                 let visible = not (Set.contains (Narrated narration) advents)
                 let world = entity.SetBodyEnabled visible world
                 match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisible visible world
+                | Some mountee -> mountee.SetVisibleLocal visible world
                 | None -> world
             | Find itemType ->
                 let advents = Simulants.Gameplay.Get "Advents" world
-                let visible = not (Set.contains (Find itemType) advents)
+                let visible = not (Set.contains (Found itemType) advents)
                 let world = entity.SetBodyEnabled visible world
                 match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisible visible world
+                | Some mountee -> mountee.SetVisibleLocal visible world
                 | None -> world
             | FindNonUnique (_, advent) ->
                 let advents = Simulants.Gameplay.Get "Advents" world
                 let visible = not (Set.contains advent advents)
                 let world = entity.SetBodyEnabled visible world
                 match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisible visible world
+                | Some mountee -> mountee.SetVisibleLocal visible world
                 | None -> world
             | EndGame -> world
             | Nothing -> world
