@@ -206,7 +206,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name HallHorizontal]
         [Offset [1.25 0 -1.2499999]]
@@ -217,7 +217,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name HallHorizontal]
             [Offset [1.25 0 -1.2499999]]
@@ -229,7 +229,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -240,7 +240,7 @@
                 [RigidModelDispatcher
                  [[BodyShape
                    [StaticModelShape
-                    [[SwampHouse wall_horizontal] False None None]]]
+                    [[SwampHouse wall_horizontal] Convex None None]]]
                   [MountOpt [Some ^]]
                   [Name WallA]
                   [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -257,7 +257,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -272,7 +272,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -284,7 +284,7 @@
                 [RigidModelDispatcher
                  [[BodyShape
                    [StaticModelShape
-                    [[SwampHouse ceiling] False None None]]]
+                    [[SwampHouse ceiling] Convex None None]]]
                   [MountOpt [Some ^]]
                   [Name Ceiling]
                   [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -305,7 +305,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -316,7 +316,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -333,7 +333,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -348,7 +348,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -360,7 +360,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -378,7 +378,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name HallVertical]
         [Offset [1.25 0 -1.2499999]]
@@ -389,7 +389,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name HallVertical]
             [Offset [1.25 0 -1.2499999]]
@@ -401,7 +401,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -412,7 +412,7 @@
                 [RigidModelDispatcher
                  [[BodyShape
                    [StaticModelShape
-                    [[SwampHouse wall_vertical] False None None]]]
+                    [[SwampHouse wall_vertical] Convex None None]]]
                   [MountOpt [Some ^]]
                   [Name WallA]
                   [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -429,7 +429,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -444,7 +444,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -462,7 +462,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -473,7 +473,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -490,7 +490,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -505,7 +505,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -520,7 +520,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name WallBottom]
         [Offset [1.25 0 -1.2499999]]
@@ -531,7 +531,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name WallBottom]
             [Offset [1.25 0 -1.2499999]]
@@ -543,7 +543,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Wall]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -557,7 +557,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -575,7 +575,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -589,7 +589,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -604,7 +604,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name WallTop]
         [Offset [1.25 0 -1.2499999]]
@@ -615,7 +615,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name WallTop]
             [Offset [1.25 0 -1.2499999]]
@@ -627,7 +627,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Wall]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -642,7 +642,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -660,7 +660,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -675,7 +675,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -690,7 +690,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name WallLeft]
         [Offset [1.25 0 -1.2499999]]
@@ -701,7 +701,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name WallLeft]
             [Offset [1.25 0 -1.2499999]]
@@ -713,7 +713,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Wall]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -727,7 +727,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -745,7 +745,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -759,7 +759,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -774,7 +774,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name WallRight]
         [Offset [1.25 0 -1.2499999]]
@@ -785,7 +785,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name WallRight]
             [Offset [1.25 0 -1.2499999]]
@@ -797,7 +797,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Wall]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -812,7 +812,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -830,7 +830,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -845,7 +845,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -860,7 +860,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name CornerBottomLeft]
         [Offset [1.25 0 -1.2499999]]
@@ -871,7 +871,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name CornerBottomLeft]
             [Offset [1.25 0 -1.2499999]]
@@ -883,7 +883,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [-6.2584877E-07 1.7500004 -1.2499998]]
@@ -897,7 +897,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [1.25 1.7500002 -5.2154064E-07]]
@@ -911,7 +911,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -929,7 +929,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [-6.2584877E-07 1.7500004 -1.2499998]]
@@ -943,7 +943,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500002 -5.2154064E-07]]
@@ -957,7 +957,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -972,7 +972,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name CornerBottomRight]
         [Offset [1.25 0 -1.2499999]]
@@ -983,7 +983,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name CornerBottomRight]
             [Offset [1.25 0 -1.2499999]]
@@ -995,7 +995,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -1010,7 +1010,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -1024,7 +1024,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1042,7 +1042,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -1057,7 +1057,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -1071,7 +1071,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1086,7 +1086,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name CornerTopRight]
         [Offset [1.25 0 -1.2499999]]
@@ -1097,7 +1097,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name CornerTopRight]
             [Offset [1.25 0 -1.2499999]]
@@ -1109,7 +1109,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_vertical] False None None]]]
+                [[SwampHouse wall_vertical] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallA]
               [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -1124,7 +1124,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse wall_horizontal] False None None]]]
+                [[SwampHouse wall_horizontal] Convex None None]]]
               [MountOpt [Some ^]]
               [Name WallB]
               [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -1139,7 +1139,7 @@
             [RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1157,7 +1157,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -1172,7 +1172,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -1187,7 +1187,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1202,7 +1202,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name CornerTopLeft]
         [Offset [1.25 0 -1.2499999]]
@@ -1214,7 +1214,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -1228,7 +1228,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -1243,7 +1243,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1258,7 +1258,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Floor]
         [Offset [1.25 0 -1.2499999]]
@@ -1269,7 +1269,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse floor] False None None]]]
+              [[SwampHouse floor] Convex None None]]]
             [MountOpt [Some ^]]
             [Name Floor]
             [Offset [1.25 0 -1.2499999]]
@@ -1281,7 +1281,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse ceiling] False None None]]]
+                [[SwampHouse ceiling] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Ceiling]
               [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1299,7 +1299,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -1314,7 +1314,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -1335,7 +1335,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse wall_column] False None None]]]
+              [[SwampHouse wall_column] Convex None None]]]
             [MaterialProperties
              [[AlbedoOpt
                [Some [1 1 1 1]]]
@@ -1407,7 +1407,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -1427,7 +1427,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse lamp_wall] False None None]]]
+              [[SwampHouse lamp_wall] Convex None None]]]
             [MaterialProperties
              [[AlbedoOpt None]
               [RoughnessOpt None]
@@ -1487,7 +1487,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -1530,7 +1530,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -1937,7 +1937,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse coffee_table] False None None]]]
+          [[SwampHouse coffee_table] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Table]
         [Offset [-0.0003068447 0.2888431 5.722046E-06]]
@@ -1948,7 +1948,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse coffee_table] False None None]]]
+              [[SwampHouse coffee_table] Convex None None]]]
             [MountOpt [Some ^]]
             [Name Table]
             [Offset [-0.0003068447 0.2888431 5.722046E-06]]
@@ -1962,7 +1962,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse plant2] False None None]]]
+                [[SwampHouse plant2] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Plant2]
               [Offset [-0.018692851 0.42877907 0.023207143]]
@@ -2009,7 +2009,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse plant2] False None None]]]
+            [[SwampHouse plant2] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Plant2]
           [Offset [-0.018692851 0.42877907 0.023207143]]
@@ -2051,7 +2051,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse coffee_table] False None None]]]
+          [[SwampHouse coffee_table] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Table2]
         [Offset [-0.0003068447 0.2888431 5.722046E-06]]
@@ -2065,7 +2065,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse plant] False None None]]]
+            [[SwampHouse plant] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Plant]
           [Offset [0 0.26983577 -0.0026259124]]
@@ -2110,7 +2110,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse coffee_table] False None None]]]
+          [[SwampHouse coffee_table] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Table3]
         [Offset [-0.0003068447 0.2888431 5.722046E-06]]
@@ -2124,7 +2124,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse plant] False None None]]]
+            [[SwampHouse plant] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Plant]
           [Offset [0 0.26983577 -0.0026259124]]
@@ -2177,7 +2177,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0001]
         [Offset [1.25 0 -1.2499999]]
@@ -2190,7 +2190,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2204,7 +2204,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2219,7 +2219,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0002]
         [Offset [1.25 0 -1.2499999]]
@@ -2232,7 +2232,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2246,7 +2246,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2261,7 +2261,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0009]
         [Offset [1.25 0 -1.2499999]]
@@ -2274,7 +2274,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2289,7 +2289,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2304,7 +2304,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0011]
         [Offset [1.25 0 -1.2499999]]
@@ -2317,7 +2317,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2332,7 +2332,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0012]
         [Offset [1.25 0 -1.2499999]]
@@ -2345,7 +2345,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2360,7 +2360,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0015]
         [Offset [1.25 0 -1.2499999]]
@@ -2373,7 +2373,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2388,7 +2388,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0016]
         [Offset [1.25 0 -1.2499999]]
@@ -2399,7 +2399,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2414,7 +2414,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0017]
         [Offset [1.25 0 -1.2499999]]
@@ -2427,7 +2427,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2442,7 +2442,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0018]
         [Offset [1.25 0 -1.2499999]]
@@ -2455,7 +2455,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2470,7 +2470,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0020]
         [Offset [1.25 0 -1.2499999]]
@@ -2483,7 +2483,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2498,7 +2498,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -2522,7 +2522,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -2546,7 +2546,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -2570,7 +2570,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -2594,7 +2594,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0051]
         [Offset [1.25 0 -1.2499999]]
@@ -2607,7 +2607,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2622,7 +2622,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2637,7 +2637,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2652,7 +2652,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0052]
         [Offset [1.25 0 -1.2499999]]
@@ -2665,7 +2665,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2680,7 +2680,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2694,7 +2694,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2709,7 +2709,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0057]
         [Offset [1.25 0 -1.2499999]]
@@ -2722,7 +2722,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2736,7 +2736,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2751,7 +2751,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0058]
         [Offset [1.25 0 -1.2499999]]
@@ -2764,7 +2764,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2778,7 +2778,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2793,7 +2793,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0059]
         [Offset [1.25 0 -1.2499999]]
@@ -2806,7 +2806,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -2820,7 +2820,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2835,7 +2835,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0061]
         [Offset [1.25 0 -1.2499999]]
@@ -2848,7 +2848,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2863,7 +2863,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2878,7 +2878,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0062]
         [Offset [1.25 0 -1.2499999]]
@@ -2891,7 +2891,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2906,7 +2906,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2921,7 +2921,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0063]
         [Offset [1.25 0 -1.2499999]]
@@ -2934,7 +2934,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2949,7 +2949,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -2964,7 +2964,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0064]
         [Offset [1.25 0 -1.2499999]]
@@ -2977,7 +2977,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -2992,7 +2992,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3007,7 +3007,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0075]
         [Offset [1.25 0 -1.2499999]]
@@ -3020,7 +3020,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3034,7 +3034,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3093,7 +3093,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -3135,7 +3135,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -3229,7 +3229,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_door_single] False None None]]]
+          [[SwampHouse wall_door_single] Convex None None]]]
         [MountOpt [Some ^]]
         [Name DoorFrame]
         [Offset [1.4305115E-06 1.7499992 -1.0430813E-07]]
@@ -3240,7 +3240,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse wall_door_single] False None None]]]
+              [[SwampHouse wall_door_single] Convex None None]]]
             [MountOpt [Some ^]]
             [Name DoorFrame]
             [Offset [1.4305115E-06 1.7499992 -1.0430813E-07]]
@@ -3252,7 +3252,7 @@
            [[RigidModelDispatcher
              [[BodyShape
                [StaticModelShape
-                [[SwampHouse door] False None None]]]
+                [[SwampHouse door] Convex None None]]]
               [MountOpt [Some ^]]
               [Name Door]
               [Offset [0.5000388 1.0343795 3.427267E-07]]
@@ -3270,7 +3270,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse door] False None None]]]
+            [[SwampHouse door] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Door]
           [Offset [0.5000388 1.0343795 3.427267E-07]]
@@ -3285,7 +3285,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_door_single] False None None]]]
+          [[SwampHouse wall_door_single] Convex None None]]]
         [MountOpt [Some ^]]
         [Name DoorFrame2]
         [Offset [1.4305115E-06 1.7499992 -1.0430813E-07]]
@@ -3302,7 +3302,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse door] False None None]]]
+            [[SwampHouse door] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Door]
           [Offset [0.5000388 1.0343795 3.427267E-07]]
@@ -3324,7 +3324,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0010]
         [Offset [1.25 0 -1.2499999]]
@@ -3337,7 +3337,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3351,7 +3351,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3366,7 +3366,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3381,7 +3381,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0019]
         [Offset [1.25 0 -1.2499999]]
@@ -3394,7 +3394,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3408,7 +3408,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3423,7 +3423,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3438,7 +3438,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0026]
         [Offset [1.25 0 -1.2499999]]
@@ -3451,7 +3451,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3465,7 +3465,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3480,7 +3480,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3495,7 +3495,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0032]
         [Offset [1.25 0 -1.2499999]]
@@ -3508,7 +3508,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3523,7 +3523,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -3538,7 +3538,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3553,7 +3553,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0071]
         [Offset [1.25 0 -1.2499999]]
@@ -3566,7 +3566,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3580,7 +3580,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3595,7 +3595,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3610,7 +3610,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0078]
         [Offset [1.25 0 -1.2499999]]
@@ -3623,7 +3623,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3637,7 +3637,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3652,7 +3652,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3667,7 +3667,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0079]
         [Offset [1.25 0 -1.2499999]]
@@ -3680,7 +3680,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3694,7 +3694,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3709,7 +3709,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3724,7 +3724,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0080]
         [Offset [1.25 0 -1.2499999]]
@@ -3737,7 +3737,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3751,7 +3751,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3766,7 +3766,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3781,7 +3781,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0081]
         [Offset [1.25 0 -1.2499999]]
@@ -3794,7 +3794,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3808,7 +3808,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -3823,7 +3823,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3838,7 +3838,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0086]
         [Offset [1.25 0 -1.2499999]]
@@ -3851,7 +3851,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -3866,7 +3866,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -3881,7 +3881,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -4004,7 +4004,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0006]
         [Offset [1.25 0 -1.2499999]]
@@ -4017,7 +4017,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -4031,7 +4031,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -4046,7 +4046,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4061,7 +4061,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0007]
         [Offset [1.25 0 -1.2499999]]
@@ -4074,7 +4074,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -4088,7 +4088,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -4103,7 +4103,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4118,7 +4118,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0025]
         [Offset [1.25 0 -1.2499999]]
@@ -4131,7 +4131,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -4145,7 +4145,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -4160,7 +4160,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4175,7 +4175,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0034]
         [Offset [1.25 0 -1.2499999]]
@@ -4188,7 +4188,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -4202,7 +4202,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [-6.4074993E-07 1.7500013 -1.2499995]]
@@ -4217,7 +4217,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4232,7 +4232,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0046]
         [Offset [1.25 0 -1.2499999]]
@@ -4245,7 +4245,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [-6.2584877E-07 1.7500004 -1.2499998]]
@@ -4259,7 +4259,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500002 -5.2154064E-07]]
@@ -4273,7 +4273,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4323,7 +4323,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse lamp_wall] False None None]]]
+          [[SwampHouse lamp_wall] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt None]
           [RoughnessOpt None]
@@ -4343,7 +4343,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse lamp_wall] False None None]]]
+              [[SwampHouse lamp_wall] Convex None None]]]
             [MaterialProperties
              [[AlbedoOpt None]
               [RoughnessOpt None]
@@ -4437,7 +4437,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse coffee_table] False None None]]]
+          [[SwampHouse coffee_table] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Table]
         [Offset [-0.0003068447 0.2888431 5.722046E-06]]
@@ -4480,7 +4480,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse lamp_desk] False None None]]]
+            [[SwampHouse lamp_desk] Convex None None]]]
           [CastShadow False]
           [MaterialProperties
            [[AlbedoOpt None]
@@ -4529,7 +4529,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0008]
         [Offset [1.25 0 -1.2499999]]
@@ -4542,7 +4542,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -4557,7 +4557,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4572,7 +4572,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0013]
         [Offset [1.25 0 -1.2499999]]
@@ -4585,7 +4585,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4600,7 +4600,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4615,7 +4615,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0003]
         [Offset [1.25 0 -1.2499999]]
@@ -4628,7 +4628,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4642,7 +4642,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4657,7 +4657,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4672,7 +4672,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0004]
         [Offset [1.25 0 -1.2499999]]
@@ -4685,7 +4685,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4699,7 +4699,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4714,7 +4714,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4729,7 +4729,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0027]
         [Offset [1.25 0 -1.2499999]]
@@ -4742,7 +4742,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4756,7 +4756,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4771,7 +4771,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4786,7 +4786,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0067]
         [Offset [1.25 0 -1.2499999]]
@@ -4799,7 +4799,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4813,7 +4813,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -4828,7 +4828,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -4945,7 +4945,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse table_dining] False None None]]]
+          [[SwampHouse table_dining] Convex None None]]]
         [MountOpt [Some ^]]
         [Name Table]
         [Offset [-0.0004582405 0.36791298 -1.5258789E-05]]
@@ -4975,7 +4975,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0005]
         [Offset [1.25 0 -1.2499999]]
@@ -4988,7 +4988,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5003,7 +5003,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0021]
         [Offset [1.25 0 -1.2499999]]
@@ -5016,7 +5016,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5031,7 +5031,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0022]
         [Offset [1.25 0 -1.2499999]]
@@ -5044,7 +5044,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5059,7 +5059,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0023]
         [Offset [1.25 0 -1.2499999]]
@@ -5072,7 +5072,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5087,7 +5087,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0029]
         [Offset [1.25 0 -1.2499999]]
@@ -5100,7 +5100,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5115,7 +5115,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0035]
         [Offset [1.25 0 -1.2499999]]
@@ -5128,7 +5128,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5143,7 +5143,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0037]
         [Offset [1.25 0 -1.2499999]]
@@ -5156,7 +5156,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -5170,7 +5170,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5185,7 +5185,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0038]
         [Offset [1.25 0 -1.2499999]]
@@ -5198,7 +5198,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -5212,7 +5212,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5227,7 +5227,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0039]
         [Offset [1.25 0 -1.2499999]]
@@ -5240,7 +5240,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -5254,7 +5254,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5269,7 +5269,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0041]
         [Offset [1.25 0 -1.2499999]]
@@ -5282,7 +5282,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -5297,7 +5297,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -5311,7 +5311,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5326,7 +5326,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0042]
         [Offset [1.25 0 -1.2499999]]
@@ -5339,7 +5339,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -5354,7 +5354,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5369,7 +5369,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0043]
         [Offset [1.25 0 -1.2499999]]
@@ -5382,7 +5382,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -5397,7 +5397,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5412,7 +5412,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0044]
         [Offset [1.25 0 -1.2499999]]
@@ -5425,7 +5425,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -5440,7 +5440,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5455,7 +5455,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0045]
         [Offset [1.25 0 -1.2499999]]
@@ -5468,7 +5468,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -5483,7 +5483,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5498,7 +5498,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0047]
         [Offset [1.25 0 -1.2499999]]
@@ -5511,7 +5511,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5526,7 +5526,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0048]
         [Offset [1.25 0 -1.2499999]]
@@ -5539,7 +5539,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5554,7 +5554,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0049]
         [Offset [1.25 0 -1.2499999]]
@@ -5567,7 +5567,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5582,7 +5582,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0050]
         [Offset [1.25 0 -1.2499999]]
@@ -5595,7 +5595,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5610,7 +5610,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0053]
         [Offset [1.25 0 -1.2499999]]
@@ -5623,7 +5623,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5638,7 +5638,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0054]
         [Offset [1.25 0 -1.2499999]]
@@ -5651,7 +5651,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -5666,7 +5666,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -5837,7 +5837,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0083]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5848,7 +5848,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse shelf_storage] False None None]]]
+              [[SwampHouse shelf_storage] Convex None None]]]
             [MountOpt [Some ^]]
             [Name RigidModel-0083]
             [Offset [0 0.42858738 8.940697E-08]]
@@ -5873,7 +5873,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0087]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5891,7 +5891,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0088]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5909,7 +5909,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0090]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5927,7 +5927,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0091]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5945,7 +5945,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0092]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5956,7 +5956,7 @@
           [RigidModelDispatcher
            [[BodyShape
              [StaticModelShape
-              [[SwampHouse shelf_storage] False None None]]]
+              [[SwampHouse shelf_storage] Convex None None]]]
             [MountOpt [Some ^]]
             [Name RigidModel-0092]
             [Offset [0 0.42858738 8.940697E-08]]
@@ -5981,7 +5981,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0093]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -5999,7 +5999,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0094]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6017,7 +6017,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0095]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6035,7 +6035,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0096]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6053,7 +6053,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0097]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6069,7 +6069,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0098]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6085,7 +6085,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0099]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6101,7 +6101,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0110]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6117,7 +6117,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0112]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6133,7 +6133,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse shelf_storage] False None None]]]
+          [[SwampHouse shelf_storage] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0113]
         [Offset [0 0.42858738 8.940697E-08]]
@@ -6162,7 +6162,7 @@
      [[RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0036]
         [Offset [1.25 0 -1.2499999]]
@@ -6175,7 +6175,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6190,7 +6190,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0040]
         [Offset [1.25 0 -1.2499999]]
@@ -6203,7 +6203,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6218,7 +6218,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0055]
         [Offset [1.25 0 -1.2499999]]
@@ -6231,7 +6231,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6246,7 +6246,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0056]
         [Offset [1.25 0 -1.2499999]]
@@ -6259,7 +6259,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6274,7 +6274,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0060]
         [Offset [1.25 0 -1.2499999]]
@@ -6287,7 +6287,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6302,7 +6302,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0066]
         [Offset [1.25 0 -1.2499999]]
@@ -6315,7 +6315,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6330,7 +6330,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0069]
         [Offset [1.25 0 -1.2499999]]
@@ -6343,7 +6343,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6358,7 +6358,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0070]
         [Offset [1.25 0 -1.2499999]]
@@ -6371,7 +6371,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6386,7 +6386,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0073]
         [Offset [1.25 0 -1.2499999]]
@@ -6399,7 +6399,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6414,7 +6414,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0074]
         [Offset [1.25 0 -1.2499999]]
@@ -6427,7 +6427,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6442,7 +6442,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0076]
         [Offset [1.25 0 -1.2499999]]
@@ -6455,7 +6455,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6470,7 +6470,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0077]
         [Offset [1.25 0 -1.2499999]]
@@ -6483,7 +6483,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6498,7 +6498,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0100]
         [Offset [1.25 0 -1.2499999]]
@@ -6511,7 +6511,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -6525,7 +6525,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6540,7 +6540,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0101]
         [Offset [1.25 0 -1.2499999]]
@@ -6553,7 +6553,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -6567,7 +6567,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6582,7 +6582,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0102]
         [Offset [1.25 0 -1.2499999]]
@@ -6595,7 +6595,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -6609,7 +6609,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6624,7 +6624,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0103]
         [Offset [1.25 0 -1.2499999]]
@@ -6637,7 +6637,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [1.25 1.7500011 -4.172325E-07]]
@@ -6651,7 +6651,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6666,7 +6666,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0105]
         [Offset [1.25 0 -1.2499999]]
@@ -6679,7 +6679,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -6693,7 +6693,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6708,7 +6708,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0106]
         [Offset [1.25 0 -1.2499999]]
@@ -6721,7 +6721,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -6735,7 +6735,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6750,7 +6750,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0107]
         [Offset [1.25 0 -1.2499999]]
@@ -6763,7 +6763,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Wall]
           [Offset [3.1292439E-07 1.7500013 -1.2499999]]
@@ -6777,7 +6777,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6792,7 +6792,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse floor] False None None]]]
+          [[SwampHouse floor] Convex None None]]]
         [MountOpt [Some ^]]
         [Name RigidModel-0109]
         [Offset [1.25 0 -1.2499999]]
@@ -6805,7 +6805,7 @@
        [[RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_vertical] False None None]]]
+            [[SwampHouse wall_vertical] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallA]
           [Offset [-6.2584877E-07 1.7500004 -1.2499998]]
@@ -6819,7 +6819,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse wall_horizontal] False None None]]]
+            [[SwampHouse wall_horizontal] Convex None None]]]
           [MountOpt [Some ^]]
           [Name WallB]
           [Offset [1.25 1.7500002 -5.2154064E-07]]
@@ -6833,7 +6833,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[SwampHouse ceiling] False None None]]]
+            [[SwampHouse ceiling] Convex None None]]]
           [MountOpt [Some ^]]
           [Name Ceiling]
           [Offset [1.2499999 3.0351237E-07 -1.2499999]]
@@ -6848,7 +6848,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -6872,7 +6872,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -6896,7 +6896,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -6920,7 +6920,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -6944,7 +6944,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -6968,7 +6968,7 @@
       [RigidModelDispatcher
        [[BodyShape
          [StaticModelShape
-          [[SwampHouse wall_column] False None None]]]
+          [[SwampHouse wall_column] Convex None None]]]
         [MaterialProperties
          [[AlbedoOpt
            [Some [1 1 1 1]]]
@@ -7142,7 +7142,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 0 False None None]]]
+                      [[Gameplay CabinetStanding] 0 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [0.026929557 2.9098656 0.3956652]]
@@ -7203,7 +7203,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 1 False None None]]]
+                      [[Gameplay CabinetStanding] 1 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [0.39797416 2.4869857 -0.02120167]]
@@ -7265,7 +7265,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 2 False None None]]]
+                      [[Gameplay CabinetStanding] 2 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [-0.39797157 2.4869857 -0.021202803]]
@@ -7327,7 +7327,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 3 False None None]]]
+                      [[Gameplay CabinetStanding] 3 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [4.4703484E-06 2.4869857 -0.39160156]]
@@ -7389,7 +7389,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 4 False None None]]]
+                      [[Gameplay CabinetStanding] 4 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [2.6226044E-06 0.1620435 -0.021202207]]
@@ -7451,7 +7451,7 @@
                  [[RigidModelSurfaceDispatcher
                    [[BodyShape
                      [StaticModelSurfaceShape
-                      [[Gameplay CabinetStanding] 5 False None None]]]
+                      [[Gameplay CabinetStanding] 5 Convex None None]]]
                     [MountOpt [Some ^]]
                     [Name Geometry]
                     [Offset [2.6226044E-06 2.9087675 -0.021202147]]
@@ -7471,7 +7471,7 @@
     [RigidModelDispatcher
      [[BodyShape
        [StaticModelShape
-        [[Gameplay CabinetStandingDoor] False None None]]]
+        [[Gameplay CabinetStandingDoor] Convex None None]]]
       [MountOpt [Some ^]]
       [Name Door]
       [Offset [0.30171448 0.98813885 0.011992567]]

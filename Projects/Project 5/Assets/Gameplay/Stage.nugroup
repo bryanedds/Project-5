@@ -306,7 +306,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 0 True None None]]]
+                          [[Gameplay CabinetStanding] 0 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [0.026929557 2.9098656 0.3956652]]
@@ -367,7 +367,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 1 True None None]]]
+                          [[Gameplay CabinetStanding] 1 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [0.39797416 2.4869857 -0.02120167]]
@@ -429,7 +429,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 2 True None None]]]
+                          [[Gameplay CabinetStanding] 2 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [-0.39797157 2.4869857 -0.021202803]]
@@ -491,7 +491,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 3 True None None]]]
+                          [[Gameplay CabinetStanding] 3 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [4.4703484E-06 2.4869857 -0.39160156]]
@@ -553,7 +553,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 4 True None None]]]
+                          [[Gameplay CabinetStanding] 4 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [2.6226044E-06 0.1620435 -0.021202207]]
@@ -615,7 +615,7 @@
                      [[RigidModelSurfaceDispatcher
                        [[BodyShape
                          [StaticModelSurfaceShape
-                          [[Gameplay CabinetStanding] 5 True None None]]]
+                          [[Gameplay CabinetStanding] 5 Concave None None]]]
                         [MountOpt [Some ^]]
                         [Name Geometry]
                         [Offset [2.6226044E-06 2.9087675 -0.021202147]]
@@ -635,7 +635,7 @@
         [RigidModelDispatcher
          [[BodyShape
            [StaticModelShape
-            [[Gameplay CabinetStandingDoor] True None None]]]
+            [[Gameplay CabinetStandingDoor] Concave None None]]]
           [MountOpt [Some ^]]
           [Name Door]
           [Offset [0.30171448 0.98813885 0.011992567]]
