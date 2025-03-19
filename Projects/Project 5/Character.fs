@@ -554,7 +554,7 @@ type CharacterDispatcher () =
                 | Standing _ -> world
                 | Walking (startTime, lastStepTime) ->
                     let strideTime = GameTime.ofSeconds 0.75f
-                    let offsetTime = GameTime.ofSeconds 0.25f
+                    let offsetTime = GameTime.ofSeconds 0.255f
                     let localStepTime = world.GameTime - lastStepTime + offsetTime
                     if localStepTime >= strideTime then
                         World.playSound 0.25f Assets.Gameplay.StepSound world
