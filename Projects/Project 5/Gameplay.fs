@@ -554,17 +554,17 @@ type GameplayDispatcher () =
         | ViewportOverlay _ ->
 
             // show spawn points
-            let entitiesInView = World.getEntities3dInView (HashSet ()) world            
-            let spawnPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<SpawnPointDispatcher> world)
-            for spawnPoint in spawnPoints do World.imGuiCircle3d (spawnPoint.GetPosition world) 10.0f false Color.Magenta world
+            let entitiesInView = World.getEntities3dInView (HashSet ()) world
+            for entity in entitiesInView do
+                match entity.GetDispatcher world with
+                | :? WayPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 10.0f false Color.Yellow world
+                | :? SpawnPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 10.0f false Color.Magenta world
+                | :? InsertionPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightGreen world
+                | :? DoorDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.Brown world
+                | :? InvestigationDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightBlue world
+                | _ -> ()
 
-            // show way points
-            let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<WayPointDispatcher> world)
-            for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 10.0f false Color.Yellow world
-
-            // show investigations
-            let wayPoints = entitiesInView |> Seq.filter (fun entity -> entity.Is<InvestigationDispatcher> world)
-            for wayPoint in wayPoints do World.imGuiCircle3d (wayPoint.GetPosition world) 5.0f false Color.Green world
+            // fins
             world
 
         | _ -> world
