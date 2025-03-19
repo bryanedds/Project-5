@@ -12,28 +12,31 @@ type ItemType =
     | BronzeKey
 
 type [<SymbolicExpansion>] Inventory =
-    { Items : Map<ItemType, int>
-      Currency : int }
+    Map<ItemType, int>
 
-    static member empty =
-        { Items = Map.empty
-          Currency = 0 }
+[<RequireQualifiedAccess>]
+module Inventory =
 
-    static member initial =
-        { Items = Map.singleton BlackKey 1
-          Currency = 10 }
+    let empty =
+        Map.empty
+
+    let initial =
+        Map.singleton BlackKey 1
 
 (* Advents *)
 
 type Advent =
-    | ItemAcquired of ItemType
-    | ItemInserted of ItemType
+    | Narrated of string
+    | Found of ItemType
+    | Inserted of ItemType
 
 (* Interaction *)
 
 type InteractionResult =
-    | FindDescription of string * Advent
-    | FindItem of ItemType * Advent
+    | Description of string
+    | Narration of string
+    | Find of ItemType
+    | FindNonUnique of ItemType * Advent
     | EndGame
     | Nothing
 

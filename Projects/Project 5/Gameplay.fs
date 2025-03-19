@@ -150,16 +150,16 @@ type GameplayDispatcher () =
                                         (true, world)
                                     else (inserting, world))
                                     (false, world)
-                                    (screen.GetInventory world).Items
+                                    (screen.GetInventory world)
                             let world = World.endPanel world
                             if inserting then
                                 let world = insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
                                 screen.Inventory.Map (fun inv ->
-                                    match inv.Items.TryGetValue insertionKey with
+                                    match inv.TryGetValue insertionKey with
                                     | (true, count) ->
                                         if count > 1
-                                        then { inv with Items = Map.add insertionKey (dec count) inv.Items }
-                                        else { inv with Items = Map.remove insertionKey inv.Items }
+                                        then Map.add insertionKey (dec count) inv
+                                        else Map.remove insertionKey inv
                                     | (false, _) -> Log.error "Unexpected match error."; inv)
                                     world
                             else world
@@ -169,9 +169,14 @@ type GameplayDispatcher () =
                                 player.SetActionState NormalState world
                             | InsertionStarted _ ->
                                 match insertionSpot.GetInteractionResult world with
-                                | FindDescription (description, _) ->
+                                | Description description ->
                                     World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | FindItem (itemType, _) ->
+                                | Narration narration ->
+                                    World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                | Find itemType ->
+                                    let itemNameSpaced = (scstringMemo itemType).Spaced
+                                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                | FindNonUnique (itemType, _) ->
                                     let itemNameSpaced = (scstringMemo itemType).Spaced
                                     World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                 | EndGame ->
@@ -180,12 +185,19 @@ type GameplayDispatcher () =
                                     World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                             | InsertionFinished ->
                                 match insertionSpot.GetInteractionResult world with
-                                | FindDescription (_, advent) ->
-                                    let world = screen.Advents.Map (Set.add advent) world
+                                | Description _ ->
+                                    player.SetActionState NormalState world
+                                | Narration narration ->
+                                    let world = screen.Advents.Map (Set.add (Narrated narration)) world
                                     let world = player.SetActionState NormalState world
                                     world
-                                | FindItem (itemType, advent) ->
-                                    let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                | Find itemType ->
+                                    let world = screen.Inventory.Map (Map.add itemType 1) world
+                                    let world = screen.Advents.Map (Set.add (Found itemType)) world
+                                    let world = player.SetActionState NormalState world
+                                    world
+                                | FindNonUnique (itemType, advent) ->
+                                    let world = screen.Inventory.Map (Map.add itemType 1) world
                                     let world = screen.Advents.Map (Set.add advent) world
                                     let world = player.SetActionState NormalState world
                                     world
@@ -241,9 +253,14 @@ type GameplayDispatcher () =
                                         let localTime = world.GameTime - startTime
                                         if localTime < 2.0f then
                                             match investigationSpot.GetInteractionResult world with
-                                            | FindDescription (description, _) ->
+                                            | Description description ->
                                                 World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | FindItem (itemType, _) ->
+                                            | Narration narration ->
+                                                World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                            | Find itemType ->
+                                                let itemNameSpaced = (scstringMemo itemType).Spaced
+                                                World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                                            | FindNonUnique (itemType, _) ->
                                                 let itemNameSpaced = (scstringMemo itemType).Spaced
                                                 World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                             | EndGame ->
@@ -253,15 +270,22 @@ type GameplayDispatcher () =
                                         else
                                             let world =
                                                 match investigationSpot.GetInteractionResult world with
-                                                | FindDescription (_, advent) ->
-                                                    screen.Advents.Map (Set.add advent) world
-                                                | FindItem (itemType, advent) ->
-                                                    let world = screen.Inventory.Map (fun inv -> { inv with Items = Map.add itemType 1 inv.Items }) world
+                                                | Description _ ->
+                                                    world
+                                                | Narration narration ->
+                                                    screen.Advents.Map (Set.add (Narrated narration)) world
+                                                | Find itemType ->
+                                                    let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
+                                                    let world = screen.Advents.Map (Set.add (Found itemType)) world
+                                                    world
+                                                | FindNonUnique (itemType, advent) ->
+                                                    let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
                                                     let world = screen.Advents.Map (Set.add advent) world
                                                     world
                                                 | EndGame ->
                                                     screen.SetGameplayState Quit world
-                                                | Nothing -> world
+                                                | Nothing ->
+                                                    world
                                             player.SetActionState NormalState world
                                 | _ -> world
                             | None -> world
@@ -287,7 +311,7 @@ type GameplayDispatcher () =
                                      Entity.Size .= v3 32.0f 32.0f 0.0f]
                                     world
                             world)
-                            world (screen.GetInventory world).Items
+                            world (screen.GetInventory world)
                     let world = World.endPanel world
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -104.0f 0.0f] world
                     if clicked then player.SetActionState NormalState world else world

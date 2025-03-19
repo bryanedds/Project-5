@@ -15781,7 +15781,7 @@
     [Size [0.08261318 0.007999994 0.02644255]]
     [StaticModel [Gameplay Key]]]
    [[InvestigationSpotDispatcher
-     [[InteractionResult [FindItem BronzeKey BronzeKeyAcquired]]
+     [[InteractionResult [Find BronzeKey]]
       [MountOpt [Some ^]]
       [Name Investigation-0002]
       [Position [-13.400002 12.749998 -17.650011]]
