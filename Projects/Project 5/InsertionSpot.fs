@@ -8,9 +8,9 @@ open MyGame
 [<AutoOpen>]
 module InsertionSpotDispatcherExtensions =
     type Entity with
-        member this.GetInsertionState world : InsertionState = this.Get (nameof this.InsertionState) world
-        member this.SetInsertionState (value : InsertionState) world = this.Set (nameof this.InsertionState) value world
-        member this.InsertionState = lens (nameof this.InsertionState) this this.GetInsertionState this.SetInsertionState
+        member this.GetInsertionPhase world : InsertionPhase = this.Get (nameof this.InsertionPhase) world
+        member this.SetInsertionPhase (value : InsertionPhase) world = this.Set (nameof this.InsertionPhase) value world
+        member this.InsertionPhase = lens (nameof this.InsertionPhase) this this.GetInsertionPhase this.SetInsertionPhase
         member this.GetInsertionKey world : ItemType = this.Get (nameof this.InsertionKey) world
         member this.SetInsertionKey (value : ItemType) world = this.Set (nameof this.InsertionKey) value world
         member this.InsertionKey = lens (nameof this.InsertionKey) this this.GetInsertionKey this.SetInsertionKey
@@ -27,17 +27,17 @@ type InsertionSpotDispatcher () =
     static member Properties =
         [define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
-         define Entity.InsertionState InsertionNotStarted
+         define Entity.InsertionPhase InsertionNotStarted
          define Entity.InsertionKey BlackKey
          define Entity.InteractionResult Nothing]
 
     override this.Process (entity, world) =
-        match entity.GetInsertionState world with
+        match entity.GetInsertionPhase world with
         | InsertionNotStarted -> world
         | InsertionStarted startTime ->
             let localTime = world.GameTime - startTime
             if localTime > 4.0f
-            then entity.SetInsertionState InsertionFinished world
+            then entity.SetInsertionPhase InsertionFinished world
             else world
         | InsertionFinished -> world
 

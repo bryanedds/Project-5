@@ -89,7 +89,7 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Single.MaxValue
 
-type InsertionState =
+type InsertionPhase =
     | InsertionNotStarted
     | InsertionStarted of StartTime : GameTime
     | InsertionFinished
@@ -226,10 +226,10 @@ type AttackState =
           AttackSoundPlayed = false
           AttackedCharacters = Set.empty }
 
-type InsertionSpotState =
+type InsertionState =
     { InsertionSpot : Entity }
 
-type InvestigateState =
+type InvestigationState =
     { InvestigationSpot : Entity }
 
 type InjuryState =
@@ -243,8 +243,8 @@ type ActionState =
     | NormalState
     | AttackState of AttackState
     | InventoryState
-    | InsertionSpotState of InsertionSpotState
-    | InvestigateState of InvestigateState
+    | InsertionState of InsertionState
+    | InvestigationState of InvestigationState
     | HideState of HideState
     | InjuryState of InjuryState
     | WoundState of WoundState

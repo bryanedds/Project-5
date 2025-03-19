@@ -27,7 +27,7 @@ type CharacterType =
         | Enemy -> 5.0f
         | Player -> 3.0f
 
-    member this.InjureTime =
+    member this.InjuryTime =
         match this with
         | Enemy -> 40
         | Player -> 30
@@ -47,8 +47,8 @@ type AttackState =
           FollowUpBuffered = false
           AttackedCharacters = Set.empty }
 
-type InjureState =
-    { InjureTime : int64 }
+type InjuryState =
+    { InjuryTime : int64 }
 
 type WoundState =
     { WoundTime : int64 }
@@ -56,7 +56,7 @@ type WoundState =
 type ActionState =
     | NormalState
     | AttackState of AttackState
-    | InjureState of InjureState
+    | InjuryState of InjuryState
     | WoundState of WoundState
 
 [<AutoOpen>]
@@ -134,8 +134,8 @@ type CharacterDispatcher () =
                 else (attack.AttackTime + 55L, "AttackHorizontal")
             let animation = Animation.once animationTime None animationName
             (true, [|animation|], world)
-        | InjureState injure ->
-            let animation = Animation.once injure.InjureTime None "WalkBack"
+        | InjuryState injury ->
+            let animation = Animation.once injury.InjuryTime None "WalkBack"
             (true, [|animation|], world)
         | WoundState wound ->
             let localTime = world.UpdateTime - wound.WoundTime
@@ -226,7 +226,7 @@ type CharacterDispatcher () =
                     if localTime > 10L && not attack.FollowUpBuffered
                     then entity.SetActionState (AttackState { attack with FollowUpBuffered = true }) world
                     else world
-                | InjureState _ | WoundState _ -> world
+                | InjuryState _ | WoundState _ -> world
 
             // no action
             else world
@@ -327,10 +327,10 @@ type CharacterDispatcher () =
                         then AttackState attack
                         else NormalState
                     entity.SetActionState actionState world
-                | InjureState injure ->
-                    let localTime = world.UpdateTime - injure.InjureTime
-                    let injureTime = characterType.InjureTime
-                    let actionState = if localTime < injureTime then InjureState injure else NormalState
+                | InjuryState injury ->
+                    let localTime = world.UpdateTime - injury.InjuryTime
+                    let injuryTime = characterType.InjuryTime
+                    let actionState = if localTime < injuryTime then InjuryState injury else NormalState
                     entity.SetActionState actionState world
                 | WoundState _ -> world
             else world

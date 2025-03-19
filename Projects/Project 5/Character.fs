@@ -303,7 +303,7 @@ type CharacterDispatcher () =
         // rotation
         let world =
             match entity.GetActionState world with
-            | NormalState | InventoryState | InsertionSpotState _  | InvestigateState _ | HideState _ ->
+            | NormalState | InventoryState | InsertionState _  | InvestigationState _ | HideState _ ->
                 let rotation = entity.GetRotation world
                 let characterType = entity.GetCharacterType world
                 let turnSpeed = characterType.TurnSpeed
@@ -419,7 +419,7 @@ type CharacterDispatcher () =
                 let enemyTargetingEir =
                     let processEnemies =
                         match player.GetActionState world with
-                        | InvestigateState investigation -> not (investigation.InvestigationSpot.GetInvestigationPhase world).IsInvestigationFinished
+                        | InvestigationState investigation -> not (investigation.InvestigationSpot.GetInvestigationPhase world).IsInvestigationFinished
                         | _ -> true
                     if processEnemies then
                         let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
@@ -452,8 +452,8 @@ type CharacterDispatcher () =
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
                 | InventoryState -> world
-                | InsertionSpotState _ -> world
-                | InvestigateState _ -> world
+                | InsertionState _ -> world
+                | InvestigationState _ -> world
                 | HideState hide ->
                     match hide.HidePhase with
                     | HideEntering ->
@@ -575,9 +575,9 @@ type CharacterDispatcher () =
                 animatedModel.SetAnimations [|animation|] world
             | InventoryState ->
                 world
-            | InsertionSpotState insertionSpot ->
+            | InsertionState insertion ->
                 world
-            | InvestigateState investigate ->
+            | InvestigationState investigation ->
                 world
             | HideState hide ->
                 world

@@ -146,14 +146,14 @@ type GameplayDispatcher () =
                                              Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
                                              Entity.Size .= v3 32.0f 32.0f 0.0f] world
                                     if clicked && itemType = insertionKey then
-                                        let world = player.SetActionState (InsertionSpotState { InsertionSpot = insertionSpot }) world
+                                        let world = player.SetActionState (InsertionState { InsertionSpot = insertionSpot }) world
                                         (true, world)
                                     else (inserting, world))
                                     (false, world)
                                     (screen.GetInventory world).Items
                             let world = World.endPanel world
                             if inserting then
-                                let world = insertionSpot.SetInsertionState (InsertionStarted world.GameTime) world
+                                let world = insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
                                 screen.Inventory.Map (fun inv ->
                                     match inv.Items.TryGetValue insertionKey with
                                     | (true, count) ->
@@ -163,8 +163,8 @@ type GameplayDispatcher () =
                                     | (false, _) -> Log.error "Unexpected match error."; inv)
                                     world
                             else world
-                        | InsertionSpotState insertion ->
-                            match insertionSpot.GetInsertionState world with
+                        | InsertionState insert ->
+                            match insertionSpot.GetInsertionPhase world with
                             | InsertionNotStarted ->
                                 player.SetActionState NormalState world
                             | InsertionStarted _ ->
@@ -222,10 +222,10 @@ type GameplayDispatcher () =
                                     let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
                                     if clicked then
                                         let world = investigationSpot.SetInvestigationPhase (InvestigationStarted world.GameTime) world
-                                        let world = player.SetActionState (InvestigateState { InvestigationSpot = investigationSpot }) world
+                                        let world = player.SetActionState (InvestigationState { InvestigationSpot = investigationSpot }) world
                                         world
                                     else world
-                                | InvestigateState investigation ->
+                                | InvestigationState investigation ->
                                     match investigation.InvestigationSpot.GetInvestigationPhase world with
                                     | InvestigationNotStarted ->
                                         player.SetActionState NormalState world
@@ -291,7 +291,7 @@ type GameplayDispatcher () =
                     let world = World.endPanel world
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -104.0f 0.0f] world
                     if clicked then player.SetActionState NormalState world else world
-                | InvestigateState _ | InsertionSpotState _ | WoundState _ ->
+                | InvestigationState _ | InsertionState _ | WoundState _ ->
                     world // can't open inventory when wounded
                 | _ ->
                     if  hidingSpotCollisionOpt.IsNone &&
@@ -461,7 +461,7 @@ type GameplayDispatcher () =
                         if not actionState.IsInjuryState then
                             let world =
                                 match actionState with
-                                | InvestigateState investigateState -> investigateState.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
+                                | InvestigationState investigation -> investigation.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
                                 | _ -> world
                             let world = attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
                             let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
