@@ -39,6 +39,191 @@ module GameplayExtensions =
 type GameplayDispatcher () =
     inherit ScreenDispatcherImNui ()
 
+    static let processPlayerHidingSpot (hidingSpot : Entity) (doorSpotCollisionOpt : Entity option) (player : Entity) world =
+        match player.GetActionState world with
+        | NormalState ->
+            let (clicked, world) = World.doButton "Hide" [Entity.Text .= "Hide"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+            if clicked then
+                let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEntering }) world
+                match doorSpotCollisionOpt with
+                | Some doorSpot -> doorSpot.SetDoorState (DoorClosing world.GameTime) world
+                | None -> world
+            else world
+        | HideState hide ->
+            match hide.HidePhase with
+            | HideWaiting ->
+                let (clicked, world) = World.doButton "Emerge" [Entity.Text .= "Emerge"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                if clicked then
+                    let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEmerging }) world
+                    match doorSpotCollisionOpt with
+                    | Some doorSpot -> doorSpot.SetDoorState (DoorOpening world.GameTime) world
+                    | None -> world
+                else world
+            | _ -> world
+        | _ -> world
+
+    static let processPlayerInsertionSpot (insertionSpot : Entity) (player : Entity) (screen : Screen) world =
+        match player.GetActionState world with
+        | NormalState ->
+            let insertionKey =
+                insertionSpot.GetInsertionKey world
+            let world =
+                World.beginPanel "Inventory"
+                    [Entity.Position .= v3 0.0f 144.0f 0.0f
+                     Entity.Size .= v3 460.0f 40.0f 0.0f
+                     Entity.Color .= Color.White.WithA 0.25f
+                     Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
+                     Entity.LayoutMargin .= v2Dup 4.0f] world
+            let (inserting, world) =
+                Map.fold (fun (inserting, world) itemType itemCount ->
+                    let itemName = scstringMemo itemType
+                    let (clicked, world) =
+                        World.doButton itemName
+                            [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
+                             Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
+                             Entity.Size .= v3 32.0f 32.0f 0.0f] world
+                    if clicked && itemType = insertionKey then
+                        let world = player.SetActionState (InsertionState { InsertionSpot = insertionSpot }) world
+                        (true, world)
+                    else (inserting, world))
+                    (false, world)
+                    (screen.GetInventory world)
+            let world = World.endPanel world
+            if inserting then
+                let world = insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
+                screen.Inventory.Map (fun inv ->
+                    match inv.TryGetValue insertionKey with
+                    | (true, count) ->
+                        if count > 1
+                        then Map.add insertionKey (dec count) inv
+                        else Map.remove insertionKey inv
+                    | (false, _) -> Log.error "Unexpected match error."; inv)
+                    world
+            else world
+        | InsertionState insertion ->
+            match insertionSpot.GetInsertionPhase world with
+            | InsertionNotStarted ->
+                player.SetActionState NormalState world
+            | InsertionStarted _ ->
+                match insertionSpot.GetInteractionResult world with
+                | Description description ->
+                    World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                | Narration narration ->
+                    World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                | Find itemType ->
+                    let itemNameSpaced = (scstringMemo itemType).Spaced
+                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                | FindNonUnique (itemType, _) ->
+                    let itemNameSpaced = (scstringMemo itemType).Spaced
+                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                | EndGame ->
+                    World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                | Nothing ->
+                    World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+            | InsertionFinished ->
+                match insertionSpot.GetInteractionResult world with
+                | Description _ ->
+                    player.SetActionState NormalState world
+                | Narration narration ->
+                    let world = screen.Advents.Map (Set.add (Narrated narration)) world
+                    let world = player.SetActionState NormalState world
+                    world
+                | Find itemType ->
+                    let world = screen.Inventory.Map (Map.add itemType 1) world
+                    let world = screen.Advents.Map (Set.add (Found itemType)) world
+                    let world = player.SetActionState NormalState world
+                    world
+                | FindNonUnique (itemType, advent) ->
+                    let world = screen.Inventory.Map (Map.add itemType 1) world
+                    let world = screen.Advents.Map (Set.add advent) world
+                    let world = player.SetActionState NormalState world
+                    world
+                | EndGame ->
+                    screen.SetGameplayState Quit world
+                | Nothing ->
+                    player.SetActionState NormalState world                                    
+        | _ -> world
+
+    static let processPlayerDoorSpot (doorSpot : Entity) (player : Entity) (_ : Screen) world =
+        match player.GetActionState world with
+        | NormalState ->
+            match doorSpot.GetDoorState world with
+            | DoorClosed ->
+                let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                if clicked
+                then doorSpot.SetDoorState (DoorOpening world.GameTime) world
+                else world
+            | DoorOpened ->
+                if doorSpot.GetClosable world then
+                    let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                    if clicked
+                    then doorSpot.SetDoorState (DoorClosing world.GameTime) world
+                    else world
+                else world
+            | DoorClosing _ | DoorOpening _ -> world
+        | _ -> world
+
+    static let processPlayerInvestigationSpot (investigationSpot : Entity) (player : Entity) (screen : Screen) world =
+        match player.GetActionState world with
+        | NormalState ->
+            let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+            if clicked then
+                let world = investigationSpot.SetInvestigationPhase (InvestigationStarted world.GameTime) world
+                let world = player.SetActionState (InvestigationState { InvestigationSpot = investigationSpot }) world
+                world
+            else world
+        | InvestigationState investigation ->
+            match investigation.InvestigationSpot.GetInvestigationPhase world with
+            | InvestigationNotStarted ->
+                player.SetActionState NormalState world
+            | InvestigationStarted startTime ->
+                let localTime = world.GameTime - startTime
+                if localTime < 8.0f then
+                    let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
+                    if clicked
+                    then investigationSpot.SetInvestigationPhase InvestigationNotStarted world
+                    else world
+                else investigationSpot.SetInvestigationPhase (InvestigationFinished world.GameTime) world
+            | InvestigationFinished startTime ->
+                let localTime = world.GameTime - startTime
+                if localTime < 2.0f then
+                    match investigationSpot.GetInteractionResult world with
+                    | Description description ->
+                        World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                    | Narration narration ->
+                        World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                    | Find itemType ->
+                        let itemNameSpaced = (scstringMemo itemType).Spaced
+                        World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                    | FindNonUnique (itemType, _) ->
+                        let itemNameSpaced = (scstringMemo itemType).Spaced
+                        World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                    | EndGame ->
+                        World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                    | Nothing ->
+                        World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
+                else
+                    let world =
+                        match investigationSpot.GetInteractionResult world with
+                        | Description _ ->
+                            world
+                        | Narration narration ->
+                            screen.Advents.Map (Set.add (Narrated narration)) world
+                        | Find itemType ->
+                            let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
+                            let world = screen.Advents.Map (Set.add (Found itemType)) world
+                            world
+                        | FindNonUnique (itemType, advent) ->
+                            let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
+                            let world = screen.Advents.Map (Set.add advent) world
+                            world
+                        | EndGame ->
+                            screen.SetGameplayState Quit world
+                        | Nothing ->
+                            world
+                    player.SetActionState NormalState world
+        | _ -> world
+
     // here we define default property values
     static member Properties =
         [define Screen.GameplayState Quit
@@ -94,203 +279,26 @@ type GameplayDispatcher () =
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
             let player = world.DeclaredEntity
 
-            // declare player interaction button
+            // process player interaction spots
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let insertionSpotCollisionOpt = player.GetInsertionSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let doorSpotCollisionOpt = player.GetDoorSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let investigationSpotCollisionOpt = player.GetInvestigationSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let world =
                 match hidingSpotCollisionOpt with
-                | Some hidingSpot ->
-                    match player.GetActionState world with
-                    | NormalState ->
-                        let (clicked, world) = World.doButton "Hide" [Entity.Text .= "Hide"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                        if clicked then
-                            let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEntering }) world
-                            match doorSpotCollisionOpt with
-                            | Some doorSpot -> doorSpot.SetDoorState (DoorClosing world.GameTime) world
-                            | None -> world
-                        else world
-                    | HideState hide ->
-                        match hide.HidePhase with
-                        | HideWaiting ->
-                            let (clicked, world) = World.doButton "Emerge" [Entity.Text .= "Emerge"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                            if clicked then
-                                let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEmerging }) world
-                                match doorSpotCollisionOpt with
-                                | Some doorSpot -> doorSpot.SetDoorState (DoorOpening world.GameTime) world
-                                | None -> world
-                            else world
-                        | _ -> world
-                    | _ -> world
+                | Some hidingSpot -> processPlayerHidingSpot hidingSpot doorSpotCollisionOpt player world
                 | None ->
                     match insertionSpotCollisionOpt with
-                    | Some insertionSpot ->
-                        match player.GetActionState world with
-                        | NormalState ->
-                            let insertionKey =
-                                insertionSpot.GetInsertionKey world
-                            let world =
-                                World.beginPanel "Inventory"
-                                    [Entity.Position .= v3 0.0f 144.0f 0.0f
-                                     Entity.Size .= v3 460.0f 40.0f 0.0f
-                                     Entity.Color .= Color.White.WithA 0.25f
-                                     Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
-                                     Entity.LayoutMargin .= v2Dup 4.0f] world
-                            let (inserting, world) =
-                                Map.fold (fun (inserting, world) itemType itemCount ->
-                                    let itemName = scstringMemo itemType
-                                    let (clicked, world) =
-                                        World.doButton itemName
-                                            [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
-                                             Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
-                                             Entity.Size .= v3 32.0f 32.0f 0.0f] world
-                                    if clicked && itemType = insertionKey then
-                                        let world = player.SetActionState (InsertionState { InsertionSpot = insertionSpot }) world
-                                        (true, world)
-                                    else (inserting, world))
-                                    (false, world)
-                                    (screen.GetInventory world)
-                            let world = World.endPanel world
-                            if inserting then
-                                let world = insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
-                                screen.Inventory.Map (fun inv ->
-                                    match inv.TryGetValue insertionKey with
-                                    | (true, count) ->
-                                        if count > 1
-                                        then Map.add insertionKey (dec count) inv
-                                        else Map.remove insertionKey inv
-                                    | (false, _) -> Log.error "Unexpected match error."; inv)
-                                    world
-                            else world
-                        | InsertionState insert ->
-                            match insertionSpot.GetInsertionPhase world with
-                            | InsertionNotStarted ->
-                                player.SetActionState NormalState world
-                            | InsertionStarted _ ->
-                                match insertionSpot.GetInteractionResult world with
-                                | Description description ->
-                                    World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | Narration narration ->
-                                    World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | Find itemType ->
-                                    let itemNameSpaced = (scstringMemo itemType).Spaced
-                                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | FindNonUnique (itemType, _) ->
-                                    let itemNameSpaced = (scstringMemo itemType).Spaced
-                                    World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | EndGame ->
-                                    World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                | Nothing ->
-                                    World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                            | InsertionFinished ->
-                                match insertionSpot.GetInteractionResult world with
-                                | Description _ ->
-                                    player.SetActionState NormalState world
-                                | Narration narration ->
-                                    let world = screen.Advents.Map (Set.add (Narrated narration)) world
-                                    let world = player.SetActionState NormalState world
-                                    world
-                                | Find itemType ->
-                                    let world = screen.Inventory.Map (Map.add itemType 1) world
-                                    let world = screen.Advents.Map (Set.add (Found itemType)) world
-                                    let world = player.SetActionState NormalState world
-                                    world
-                                | FindNonUnique (itemType, advent) ->
-                                    let world = screen.Inventory.Map (Map.add itemType 1) world
-                                    let world = screen.Advents.Map (Set.add advent) world
-                                    let world = player.SetActionState NormalState world
-                                    world
-                                | EndGame ->
-                                    screen.SetGameplayState Quit world
-                                | Nothing ->
-                                    player.SetActionState NormalState world                                    
-                        | _ -> world
+                    | Some insertionSpot -> processPlayerInsertionSpot insertionSpot player screen world
                     | None ->
                         match doorSpotCollisionOpt with
-                        | Some doorSpot ->
-                            match player.GetActionState world with
-                            | NormalState ->
-                                match doorSpot.GetDoorState world with
-                                | DoorClosed ->
-                                    let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                                    if clicked
-                                    then doorSpot.SetDoorState (DoorOpening world.GameTime) world
-                                    else world
-                                | DoorOpened ->
-                                    if doorSpot.GetClosable world then
-                                        let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                                        if clicked
-                                        then doorSpot.SetDoorState (DoorClosing world.GameTime) world
-                                        else world
-                                    else world
-                                | DoorClosing _ | DoorOpening _ -> world
-                            | _ -> world
+                        | Some doorSpot -> processPlayerDoorSpot doorSpot player screen world
                         | None ->
                             match investigationSpotCollisionOpt with
-                            | Some investigationSpot ->
-                                match player.GetActionState world with
-                                | NormalState ->
-                                    let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                                    if clicked then
-                                        let world = investigationSpot.SetInvestigationPhase (InvestigationStarted world.GameTime) world
-                                        let world = player.SetActionState (InvestigationState { InvestigationSpot = investigationSpot }) world
-                                        world
-                                    else world
-                                | InvestigationState investigation ->
-                                    match investigation.InvestigationSpot.GetInvestigationPhase world with
-                                    | InvestigationNotStarted ->
-                                        player.SetActionState NormalState world
-                                    | InvestigationStarted startTime ->
-                                        let localTime = world.GameTime - startTime
-                                        if localTime < 8.0f then
-                                            let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -104.0f 0.0f] world
-                                            if clicked
-                                            then investigationSpot.SetInvestigationPhase InvestigationNotStarted world
-                                            else world
-                                        else investigationSpot.SetInvestigationPhase (InvestigationFinished world.GameTime) world
-                                    | InvestigationFinished startTime ->
-                                        let localTime = world.GameTime - startTime
-                                        if localTime < 2.0f then
-                                            match investigationSpot.GetInteractionResult world with
-                                            | Description description ->
-                                                World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | Narration narration ->
-                                                World.doText "InteractionResult" [Entity.Text @= narration; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | Find itemType ->
-                                                let itemNameSpaced = (scstringMemo itemType).Spaced
-                                                World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | FindNonUnique (itemType, _) ->
-                                                let itemNameSpaced = (scstringMemo itemType).Spaced
-                                                World.doText "InteractionResult" [Entity.Text @= "Found " + itemNameSpaced; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | EndGame ->
-                                                World.doText "InteractionResult" [Entity.Text @= "And the story ends here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                            | Nothing ->
-                                                World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
-                                        else
-                                            let world =
-                                                match investigationSpot.GetInteractionResult world with
-                                                | Description _ ->
-                                                    world
-                                                | Narration narration ->
-                                                    screen.Advents.Map (Set.add (Narrated narration)) world
-                                                | Find itemType ->
-                                                    let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
-                                                    let world = screen.Advents.Map (Set.add (Found itemType)) world
-                                                    world
-                                                | FindNonUnique (itemType, advent) ->
-                                                    let world = screen.Inventory.Map (fun inv -> Map.add itemType 1 inv) world
-                                                    let world = screen.Advents.Map (Set.add advent) world
-                                                    world
-                                                | EndGame ->
-                                                    screen.SetGameplayState Quit world
-                                                | Nothing ->
-                                                    world
-                                            player.SetActionState NormalState world
-                                | _ -> world
+                            | Some investigationSpot -> processPlayerInvestigationSpot investigationSpot player screen world
                             | None -> world
 
-            // declare inventory view button
+            // declare inventory view
             let world =
                 match player.GetActionState world with
                 | InventoryState ->
@@ -316,7 +324,7 @@ type GameplayDispatcher () =
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -104.0f 0.0f] world
                     if clicked then player.SetActionState NormalState world else world
                 | InvestigationState _ | InsertionState _ | WoundState _ ->
-                    world // can't open inventory when wounded
+                    world
                 | _ ->
                     if  hidingSpotCollisionOpt.IsNone &&
                         insertionSpotCollisionOpt.IsNone &&
