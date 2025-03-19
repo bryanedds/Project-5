@@ -41,5 +41,10 @@ type InsertionSpotDispatcher () =
             else world
         | InsertionFinished -> world
 
+    override this.RayCast (ray, entity, world) =
+        let intersectionOpt = ray.Intersects (entity.GetBounds world)
+        if intersectionOpt.HasValue then [|intersectionOpt.Value|]
+        else [||]
+
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 1.0f) v3Zero

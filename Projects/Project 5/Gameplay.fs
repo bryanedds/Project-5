@@ -585,6 +585,7 @@ type GameplayDispatcher () =
                 | :? InsertionSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightGreen world
                 | :? DoorSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.Brown world
                 | :? InvestigationSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightBlue world
+                | :? HidingSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.Turquoise world
                 | _ -> ()
 
             // fins
