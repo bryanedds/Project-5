@@ -190,7 +190,7 @@ and CharacterType =
     member this.SubsortOffsets =
         match this with
         | Hunter | Stalker -> Map.empty
-        | Player -> Map.ofList [(2, -3.0f); (3, -1.0f); (8, -4.0f); (14, -1.0f)]
+        | Player -> Map.ofList [(3, -1.0f); (8, -2.0f); (14, -1.0f)]
 
     member this.BodyShapeTransform =
         match this with
