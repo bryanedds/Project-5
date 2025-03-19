@@ -212,9 +212,6 @@ and CharacterType =
         | Stalker -> StalkerState StalkerState.initial
         | Player -> PlayerState
 
-type InventoryView =
-    { ItemSelectedOpt : ItemType option }
-
 type AttackState =
     { AttackTime : GameTime
       AttackSoundPlayed : bool
@@ -241,6 +238,7 @@ type WoundState =
 type ActionState =
     | NormalState
     | AttackState of AttackState
+    | InventoryState
     | InsertionPointState of InsertionPointState
     | InvestigateState of InvestigateState
     | HideState of HideState

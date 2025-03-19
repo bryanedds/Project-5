@@ -264,19 +264,19 @@ type CharacterDispatcher () =
 
     static let processPlayerInput (entity : Entity) world =
 
-        // action - NOTE: dummied out for this game.
-        //let world =
-        //
-        //    // attacking
-        //    if World.isKeyboardKeyPressed KeyboardKey.RShift world then
-        //        match entity.GetActionState world with
-        //        | NormalState ->
-        //            let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
-        //            entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-        //        | _ -> world
-        //
-        //    // do nothing
-        //    else world
+        // action
+        let world =
+        
+            // attacking
+            if World.isKeyboardKeyPressed KeyboardKey.RShift world && false then
+                match entity.GetActionState world with
+                | NormalState ->
+                    let world = entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
+                    entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
+                | _ -> world
+        
+            // do nothing
+            else world
 
         // movement
         let world =
@@ -300,7 +300,7 @@ type CharacterDispatcher () =
         // rotation
         let world =
             match entity.GetActionState world with
-            | NormalState | InsertionPointState _  | InvestigateState _ | HideState _ ->
+            | NormalState | InventoryState | InsertionPointState _  | InvestigateState _ | HideState _ ->
                 let rotation = entity.GetRotation world
                 let characterType = entity.GetCharacterType world
                 let turnSpeed = characterType.TurnSpeed
@@ -447,6 +447,7 @@ type CharacterDispatcher () =
                     let localTime = world.GameTime - attack.AttackTime
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
+                | InventoryState -> world
                 | InsertionPointState _ -> world
                 | InvestigateState _ -> world
                 | HideState hide ->
@@ -549,6 +550,8 @@ type CharacterDispatcher () =
                     else world
                 let animation = Animation.once attack.AttackTime None "Attack"
                 animatedModel.SetAnimations [|animation|] world
+            | InventoryState ->
+                world
             | InsertionPointState insertionPoint ->
                 world
             | InvestigateState investigate ->

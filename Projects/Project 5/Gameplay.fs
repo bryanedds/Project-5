@@ -19,9 +19,6 @@ module GameplayExtensions =
         member this.GetInventory world : Inventory = this.Get (nameof Screen.Inventory) world
         member this.SetInventory (value : Inventory) world = this.Set (nameof Screen.Inventory) value world
         member this.Inventory = lens (nameof Screen.Inventory) this this.GetInventory this.SetInventory
-        member this.GetInventoryViewOpt world : InventoryView option = this.Get (nameof Screen.InventoryViewOpt) world
-        member this.SetInventoryViewOpt (value : InventoryView option) world = this.Set (nameof Screen.InventoryViewOpt) value world
-        member this.InventoryViewOpt = lens (nameof Screen.InventoryViewOpt) this this.GetInventoryViewOpt this.SetInventoryViewOpt
         member this.GetAdvents world : Advent Set = this.Get (nameof Screen.Advents) world
         member this.SetAdvents (value : Advent Set) world = this.Set (nameof Screen.Advents) value world
         member this.Advents = lens (nameof Screen.Advents) this this.GetAdvents this.SetAdvents
@@ -46,7 +43,6 @@ type GameplayDispatcher () =
     static member Properties =
         [define Screen.GameplayState Quit
          define Screen.Inventory Inventory.initial
-         define Screen.InventoryViewOpt None
          define Screen.Advents Set.empty
          define Screen.HuntedTimeOpt None
          define Screen.StalkerSpawnAllowed true
@@ -109,8 +105,8 @@ type GameplayDispatcher () =
 
             // declare inventory view button
             let world =
-                match screen.GetInventoryViewOpt world with
-                | Some inventoryView ->
+                match player.GetActionState world with
+                | InventoryState ->
                     let world =
                         World.beginPanel "Inventory"
                             [Entity.Position .= v3 0.0f 144.0f 0.0f
@@ -131,10 +127,12 @@ type GameplayDispatcher () =
                             world (screen.GetInventory world).Items
                     let world = World.endPanel world
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
-                    if clicked then screen.SetInventoryViewOpt None world else world
-                | None ->
+                    if clicked then player.SetActionState NormalState world else world
+                | InvestigateState _ | InsertionPointState _ | WoundState _ ->
+                    world // can't open inventory when wounded
+                | _ ->
                     let (clicked, world) = World.doButton "Open Inventory" [Entity.Text .= "Open Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
-                    if clicked then screen.SetInventoryViewOpt (Some { ItemSelectedOpt = None }) world else world
+                    if clicked then player.SetActionState InventoryState world else world
 
             // declare player interaction button
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
@@ -170,8 +168,6 @@ type GameplayDispatcher () =
                     | Some insertionPoint ->
                         match player.GetActionState world with
                         | NormalState ->
-                            let world =
-                                screen.SetInventoryViewOpt None world
                             let insertionKey =
                                 insertionPoint.GetInsertionKey world
                             let world =
@@ -544,7 +540,6 @@ type GameplayDispatcher () =
 
         // otherwise, clear game state
         else
-            let world = screen.SetInventoryViewOpt None world
             let world = screen.SetInventory Inventory.initial world
             let world = screen.SetAdvents Set.empty world
             world
