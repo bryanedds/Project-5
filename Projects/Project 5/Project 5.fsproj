@@ -43,9 +43,9 @@
 		<Compile Include="Events.fs" />
 		<Compile Include="WayPoint.fs" />
 		<Compile Include="SpawnPoint.fs" />
-		<Compile Include="InsertionPoint.fs" />
-		<Compile Include="Door.fs" />
-		<Compile Include="Investigation.fs" />
+		<Compile Include="InsertionSpot.fs" />
+		<Compile Include="DoorSpot.fs" />
+		<Compile Include="InvestigationSpot.fs" />
 		<Compile Include="HidingSpot.fs" />
 		<Compile Include="Character.fs" />
 		<Compile Include="Gameplay.fs" />

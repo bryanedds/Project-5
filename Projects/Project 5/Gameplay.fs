@@ -105,9 +105,9 @@ type GameplayDispatcher () =
 
             // declare player interaction button
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
-            let insertionPointCollisionOpt = player.GetInsertionPointCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
-            let doorCollisionOpt = player.GetDoorCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
-            let investigationCollisionOpt = player.GetInvestigationCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let insertionSpotCollisionOpt = player.GetInsertionSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let doorSpotCollisionOpt = player.GetDoorSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let investigationSpotCollisionOpt = player.GetInvestigationSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let world =
                 match hidingSpotCollisionOpt with
                 | Some hidingSpot ->
@@ -116,8 +116,8 @@ type GameplayDispatcher () =
                         let (clicked, world) = World.doButton "Hide" [Entity.Text .= "Hide"; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                         if clicked then
                             let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEntering }) world
-                            match doorCollisionOpt with
-                            | Some door -> door.SetDoorState (DoorClosing world.GameTime) world
+                            match doorSpotCollisionOpt with
+                            | Some doorSpot -> doorSpot.SetDoorState (DoorClosing world.GameTime) world
                             | None -> world
                         else world
                     | HideState hide ->
@@ -126,19 +126,19 @@ type GameplayDispatcher () =
                             let (clicked, world) = World.doButton "Emerge" [Entity.Text .= "Emerge"; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                             if clicked then
                                 let world = player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideEmerging }) world
-                                match doorCollisionOpt with
-                                | Some door -> door.SetDoorState (DoorOpening world.GameTime) world
+                                match doorSpotCollisionOpt with
+                                | Some doorSpot -> doorSpot.SetDoorState (DoorOpening world.GameTime) world
                                 | None -> world
                             else world
                         | _ -> world
                     | _ -> world
                 | None ->
-                    match insertionPointCollisionOpt with
-                    | Some insertionPoint ->
+                    match insertionSpotCollisionOpt with
+                    | Some insertionSpot ->
                         match player.GetActionState world with
                         | NormalState ->
                             let insertionKey =
-                                insertionPoint.GetInsertionKey world
+                                insertionSpot.GetInsertionKey world
                             let world =
                                 World.beginPanel "Inventory"
                                     [Entity.Position .= v3 0.0f 144.0f 0.0f
@@ -155,14 +155,14 @@ type GameplayDispatcher () =
                                              Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
                                              Entity.Size .= v3 32.0f 32.0f 0.0f] world
                                     if clicked && itemType = insertionKey then
-                                        let world = player.SetActionState (InsertionPointState { InsertionPoint = insertionPoint }) world
+                                        let world = player.SetActionState (InsertionSpotState { InsertionSpot = insertionSpot }) world
                                         (true, world)
                                     else (inserting, world))
                                     (false, world)
                                     (screen.GetInventory world).Items
                             let world = World.endPanel world
                             if inserting then
-                                let world = insertionPoint.SetInsertionState (InsertionStarted world.GameTime) world
+                                let world = insertionSpot.SetInsertionState (InsertionStarted world.GameTime) world
                                 screen.Inventory.Map (fun inv ->
                                     match inv.Items.TryGetValue insertionKey with
                                     | (true, count) ->
@@ -172,12 +172,12 @@ type GameplayDispatcher () =
                                     | (false, _) -> Log.error "Unexpected match error."; inv)
                                     world
                             else world
-                        | InsertionPointState insertion ->
-                            match insertionPoint.GetInsertionState world with
+                        | InsertionSpotState insertion ->
+                            match insertionSpot.GetInsertionState world with
                             | InsertionNotStarted ->
                                 player.SetActionState NormalState world
                             | InsertionStarted _ ->
-                                match insertionPoint.GetInteractionResult world with
+                                match insertionSpot.GetInteractionResult world with
                                 | FindDescription (description, _) ->
                                     World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                 | FindItem (itemType, _) ->
@@ -188,7 +188,7 @@ type GameplayDispatcher () =
                                 | Nothing ->
                                     World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                             | InsertionFinished ->
-                                match insertionPoint.GetInteractionResult world with
+                                match insertionSpot.GetInteractionResult world with
                                 | FindDescription (_, advent) ->
                                     let world = screen.Advents.Map (Set.add advent) world
                                     let world = player.SetActionState NormalState world
@@ -204,38 +204,38 @@ type GameplayDispatcher () =
                                     player.SetActionState NormalState world                                    
                         | _ -> world
                     | None ->
-                        match doorCollisionOpt with
-                        | Some door ->
+                        match doorSpotCollisionOpt with
+                        | Some doorSpot ->
                             match player.GetActionState world with
                             | NormalState ->
-                                match door.GetDoorState world with
+                                match doorSpot.GetDoorState world with
                                 | DoorClosed ->
                                     let (clicked, world) = World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                                     if clicked
-                                    then door.SetDoorState (DoorOpening world.GameTime) world
+                                    then doorSpot.SetDoorState (DoorOpening world.GameTime) world
                                     else world
                                 | DoorOpened ->
-                                    if door.GetClosable world then
+                                    if doorSpot.GetClosable world then
                                         let (clicked, world) = World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 -232.0f -144f 0.0f] world
                                         if clicked
-                                        then door.SetDoorState (DoorClosing world.GameTime) world
+                                        then doorSpot.SetDoorState (DoorClosing world.GameTime) world
                                         else world
                                     else world
                                 | DoorClosing _ | DoorOpening _ -> world
                             | _ -> world
                         | None ->
-                            match investigationCollisionOpt with
-                            | Some investigation ->
+                            match investigationSpotCollisionOpt with
+                            | Some investigationSpot ->
                                 match player.GetActionState world with
                                 | NormalState ->
                                     let (clicked, world) = World.doButton "Investigate" [Entity.Text .= "Investigate"; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                                     if clicked then
-                                        let world = investigation.SetInvestigationPhase (InvestigationStarted world.GameTime) world
-                                        let world = player.SetActionState (InvestigateState { Investigation = investigation }) world
+                                        let world = investigationSpot.SetInvestigationPhase (InvestigationStarted world.GameTime) world
+                                        let world = player.SetActionState (InvestigateState { InvestigationSpot = investigationSpot }) world
                                         world
                                     else world
-                                | InvestigateState state ->
-                                    match state.Investigation.GetInvestigationPhase world with
+                                | InvestigateState investigation ->
+                                    match investigation.InvestigationSpot.GetInvestigationPhase world with
                                     | InvestigationNotStarted ->
                                         player.SetActionState NormalState world
                                     | InvestigationStarted startTime ->
@@ -243,13 +243,13 @@ type GameplayDispatcher () =
                                         if localTime < 8.0f then
                                             let (clicked, world) = World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                                             if clicked
-                                            then investigation.SetInvestigationPhase InvestigationNotStarted world
+                                            then investigationSpot.SetInvestigationPhase InvestigationNotStarted world
                                             else world
-                                        else investigation.SetInvestigationPhase (InvestigationFinished world.GameTime) world
+                                        else investigationSpot.SetInvestigationPhase (InvestigationFinished world.GameTime) world
                                     | InvestigationFinished startTime ->
                                         let localTime = world.GameTime - startTime
                                         if localTime < 2.0f then
-                                            match investigation.GetInteractionResult world with
+                                            match investigationSpot.GetInteractionResult world with
                                             | FindDescription (description, _) ->
                                                 World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                             | FindItem (itemType, _) ->
@@ -261,7 +261,7 @@ type GameplayDispatcher () =
                                                 World.doText "InteractionResult" [Entity.Text @= "Nothing of interest here..."; Entity.Size .= v3 640.0f 32.0f 0.0f] world
                                         else
                                             let world =
-                                                match investigation.GetInteractionResult world with
+                                                match investigationSpot.GetInteractionResult world with
                                                 | FindDescription (_, advent) ->
                                                     screen.Advents.Map (Set.add advent) world
                                                 | FindItem (itemType, advent) ->
@@ -300,13 +300,13 @@ type GameplayDispatcher () =
                     let world = World.endPanel world
                     let (clicked, world) = World.doButton "Close Inventory" [Entity.Text .= "Close Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                     if clicked then player.SetActionState NormalState world else world
-                | InvestigateState _ | InsertionPointState _ | WoundState _ ->
+                | InvestigateState _ | InsertionSpotState _ | WoundState _ ->
                     world // can't open inventory when wounded
                 | _ ->
                     if  hidingSpotCollisionOpt.IsNone &&
-                        insertionPointCollisionOpt.IsNone &&
-                        doorCollisionOpt.IsNone &&
-                        investigationCollisionOpt.IsNone then
+                        insertionSpotCollisionOpt.IsNone &&
+                        doorSpotCollisionOpt.IsNone &&
+                        investigationSpotCollisionOpt.IsNone then
                         let (clicked, world) = World.doButton "Open Inventory" [Entity.Text .= "Open Inv."; Entity.Position .= v3 232.0f -64.0f 0.0f] world
                         if clicked then player.SetActionState InventoryState world else world
                     else world
@@ -470,7 +470,7 @@ type GameplayDispatcher () =
                         if not actionState.IsInjuryState then
                             let world =
                                 match actionState with
-                                | InvestigateState investigateState -> investigateState.Investigation.SetInvestigationPhase InvestigationNotStarted world
+                                | InvestigateState investigateState -> investigateState.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
                                 | _ -> world
                             let world = attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
                             let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
@@ -559,9 +559,9 @@ type GameplayDispatcher () =
                 match entity.GetDispatcher world with
                 | :? WayPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 10.0f false Color.Yellow world
                 | :? SpawnPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 10.0f false Color.Magenta world
-                | :? InsertionPointDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightGreen world
-                | :? DoorDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.Brown world
-                | :? InvestigationDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightBlue world
+                | :? InsertionSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightGreen world
+                | :? DoorSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.Brown world
+                | :? InvestigationSpotDispatcher -> World.imGuiCircle3d (entity.GetPosition world) 5.0f false Color.LightBlue world
                 | _ -> ()
 
             // fins

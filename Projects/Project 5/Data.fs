@@ -226,11 +226,11 @@ type AttackState =
           AttackSoundPlayed = false
           AttackedCharacters = Set.empty }
 
-type InsertionPointState =
-    { InsertionPoint : Entity }
+type InsertionSpotState =
+    { InsertionSpot : Entity }
 
 type InvestigateState =
-    { Investigation : Entity }
+    { InvestigationSpot : Entity }
 
 type InjuryState =
     { InjuryTime : GameTime }
@@ -243,7 +243,7 @@ type ActionState =
     | NormalState
     | AttackState of AttackState
     | InventoryState
-    | InsertionPointState of InsertionPointState
+    | InsertionSpotState of InsertionSpotState
     | InvestigateState of InvestigateState
     | HideState of HideState
     | InjuryState of InjuryState

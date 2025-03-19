@@ -6,13 +6,13 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module InvestigationDispatcherExtensions =
+module InvestigationSpotDispatcherExtensions =
     type Entity with
         member this.GetInvestigationPhase world : InvestigationPhase = this.Get (nameof this.InvestigationPhase) world
         member this.SetInvestigationPhase (value : InvestigationPhase) world = this.Set (nameof this.InvestigationPhase) value world
         member this.InvestigationPhase = lens (nameof this.InvestigationPhase) this this.GetInvestigationPhase this.SetInvestigationPhase
 
-type InvestigationDispatcher () =
+type InvestigationSpotDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
     static member Facets =

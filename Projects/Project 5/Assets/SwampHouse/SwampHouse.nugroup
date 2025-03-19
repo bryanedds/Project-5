@@ -7479,7 +7479,7 @@
       [PositionLocal [-0.293 0 0.28799987]]
       [Size [0.60342896 1.9762782 0.023985134]]
       [StaticModel [Gameplay CabinetStandingDoor]]]
-     [[DoorDispatcher
+     [[DoorSpotDispatcher
        [[MountOpt [Some ^]]
         [Name Door-0002]
         [Position [6 1.5 -3.9]]

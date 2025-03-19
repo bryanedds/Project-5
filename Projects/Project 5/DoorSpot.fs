@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module DoorDispatcherExtensions =
+module DoorSpotDispatcherExtensions =
     type Entity with
         member this.GetDoorState world : DoorState = this.Get (nameof this.DoorState) world
         member this.SetDoorState (value : DoorState) world = this.Set (nameof this.DoorState) value world
@@ -18,7 +18,7 @@ module DoorDispatcherExtensions =
         member this.SetClosable (value : bool) world = this.Set (nameof this.Closable) value world
         member this.Closable = lens (nameof this.Closable) this this.GetClosable this.SetClosable
 
-type DoorDispatcher () =
+type DoorSpotDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
     static member Facets =

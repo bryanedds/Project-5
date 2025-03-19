@@ -23,15 +23,15 @@ module CharacterExtensions =
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
-        member this.GetInsertionPointCollisions world : Entity Set = this.Get (nameof this.InsertionPointCollisions) world
-        member this.SetInsertionPointCollisions (value : Entity Set) world = this.Set (nameof this.InsertionPointCollisions) value world
-        member this.InsertionPointCollisions = lens (nameof this.InsertionPointCollisions) this this.GetInsertionPointCollisions this.SetInsertionPointCollisions
-        member this.GetDoorCollisions world : Entity Set = this.Get (nameof this.DoorCollisions) world
-        member this.SetDoorCollisions (value : Entity Set) world = this.Set (nameof this.DoorCollisions) value world
-        member this.DoorCollisions = lens (nameof this.DoorCollisions) this this.GetDoorCollisions this.SetDoorCollisions
-        member this.GetInvestigationCollisions world : Entity Set = this.Get (nameof this.InvestigationCollisions) world
-        member this.SetInvestigationCollisions (value : Entity Set) world = this.Set (nameof this.InvestigationCollisions) value world
-        member this.InvestigationCollisions = lens (nameof this.InvestigationCollisions) this this.GetInvestigationCollisions this.SetInvestigationCollisions
+        member this.GetInsertionSpotCollisions world : Entity Set = this.Get (nameof this.InsertionSpotCollisions) world
+        member this.SetInsertionSpotCollisions (value : Entity Set) world = this.Set (nameof this.InsertionSpotCollisions) value world
+        member this.InsertionSpotCollisions = lens (nameof this.InsertionSpotCollisions) this this.GetInsertionSpotCollisions this.SetInsertionSpotCollisions
+        member this.GetDoorSpotCollisions world : Entity Set = this.Get (nameof this.DoorSpotCollisions) world
+        member this.SetDoorSpotCollisions (value : Entity Set) world = this.Set (nameof this.DoorSpotCollisions) value world
+        member this.DoorSpotCollisions = lens (nameof this.DoorSpotCollisions) this this.GetDoorSpotCollisions this.SetDoorSpotCollisions
+        member this.GetInvestigationSpotCollisions world : Entity Set = this.Get (nameof this.InvestigationSpotCollisions) world
+        member this.SetInvestigationSpotCollisions (value : Entity Set) world = this.Set (nameof this.InvestigationSpotCollisions) value world
+        member this.InvestigationSpotCollisions = lens (nameof this.InvestigationSpotCollisions) this this.GetInvestigationSpotCollisions this.SetInvestigationSpotCollisions
         member this.GetHidingSpotCollisions world : Entity Set = this.Get (nameof this.HidingSpotCollisions) world
         member this.SetHidingSpotCollisions (value : Entity Set) world = this.Set (nameof this.HidingSpotCollisions) value world
         member this.HidingSpotCollisions = lens (nameof this.HidingSpotCollisions) this this.GetHidingSpotCollisions this.SetHidingSpotCollisions
@@ -119,12 +119,12 @@ type CharacterDispatcher () =
         let (uncovered, world) =
             match entity.GetActionState world with
             | NormalState ->
-                let doorCollisions = entity.GetDoorCollisions world
-                match Seq.tryHead doorCollisions with
-                | Some door ->
-                    match door.GetDoorState world with
+                let doorSpotCollisions = entity.GetDoorSpotCollisions world
+                match Seq.tryHead doorSpotCollisions with
+                | Some doorSpot ->
+                    match doorSpot.GetDoorState world with
                     | DoorClosed ->
-                        let world = door.SetDoorState (DoorOpening world.GameTime) world
+                        let world = doorSpot.SetDoorState (DoorOpening world.GameTime) world
                         (true, world)
                     | _ -> (false, world)
                 | None -> (false, world)
@@ -303,7 +303,7 @@ type CharacterDispatcher () =
         // rotation
         let world =
             match entity.GetActionState world with
-            | NormalState | InventoryState | InsertionPointState _  | InvestigateState _ | HideState _ ->
+            | NormalState | InventoryState | InsertionSpotState _  | InvestigateState _ | HideState _ ->
                 let rotation = entity.GetRotation world
                 let characterType = entity.GetCharacterType world
                 let turnSpeed = characterType.TurnSpeed
@@ -341,9 +341,9 @@ type CharacterDispatcher () =
          define Entity.ActionState NormalState
          define Entity.MovementState (Standing 0.0f)
          define Entity.HitPoints characterType.HitPointsMax
-         define Entity.InsertionPointCollisions Set.empty
-         define Entity.DoorCollisions Set.empty
-         define Entity.InvestigationCollisions Set.empty
+         define Entity.InsertionSpotCollisions Set.empty
+         define Entity.DoorSpotCollisions Set.empty
+         define Entity.InvestigationSpotCollisions Set.empty
          define Entity.HidingSpotCollisions Set.empty
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
@@ -359,13 +359,13 @@ type CharacterDispatcher () =
                 | BodyPenetrationData penetration ->
                     match penetration.BodyShapePenetratee.BodyId.BodySource with
                     | :? Entity as penetratee ->
-                        if penetratee.Is<InsertionPointDispatcher> world then
-                            entity.InsertionPointCollisions.Map (Set.add penetratee) world
-                        elif penetratee.Is<DoorDispatcher> world then
-                            entity.DoorCollisions.Map (Set.add penetratee) world
-                        elif penetratee.Is<InvestigationDispatcher> world then
+                        if penetratee.Is<InsertionSpotDispatcher> world then
+                            entity.InsertionSpotCollisions.Map (Set.add penetratee) world
+                        elif penetratee.Is<DoorSpotDispatcher> world then
+                            entity.DoorSpotCollisions.Map (Set.add penetratee) world
+                        elif penetratee.Is<InvestigationSpotDispatcher> world then
                             if characterType.IsPlayer
-                            then entity.InvestigationCollisions.Map (Set.add penetratee) world
+                            then entity.InvestigationSpotCollisions.Map (Set.add penetratee) world
                             else world
                         elif penetratee.Is<HidingSpotDispatcher> world then
                             entity.HidingSpotCollisions.Map (Set.add penetratee) world
@@ -374,18 +374,18 @@ type CharacterDispatcher () =
                 | BodySeparationExplicitData separation ->
                     match separation.BodyShapeSeparatee.BodyId.BodySource with
                     | :? Entity as separatee ->
-                        let world = entity.InsertionPointCollisions.Map (Set.remove separatee) world
-                        let world = entity.DoorCollisions.Map (Set.remove separatee) world
-                        let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                        let world = entity.InsertionSpotCollisions.Map (Set.remove separatee) world
+                        let world = entity.DoorSpotCollisions.Map (Set.remove separatee) world
+                        let world = entity.InvestigationSpotCollisions.Map (Set.remove separatee) world
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
                         world
                     | _ -> world
                 | BodySeparationImplicitData separation ->
                     match separation.BodyId.BodySource with
                     | :? Entity as separatee ->
-                        let world = entity.InsertionPointCollisions.Map (Set.remove separatee) world
-                        let world = entity.DoorCollisions.Map (Set.remove separatee) world
-                        let world = entity.InvestigationCollisions.Map (Set.remove separatee) world
+                        let world = entity.InsertionSpotCollisions.Map (Set.remove separatee) world
+                        let world = entity.DoorSpotCollisions.Map (Set.remove separatee) world
+                        let world = entity.InvestigationSpotCollisions.Map (Set.remove separatee) world
                         let world = entity.HidingSpotCollisions.Map (Set.remove separatee) world
                         world
                     | _ -> world
@@ -419,7 +419,7 @@ type CharacterDispatcher () =
                 let enemyTargetingEir =
                     let processEnemies =
                         match player.GetActionState world with
-                        | InvestigateState investigation -> not (investigation.Investigation.GetInvestigationPhase world).IsInvestigationFinished
+                        | InvestigateState investigation -> not (investigation.InvestigationSpot.GetInvestigationPhase world).IsInvestigationFinished
                         | _ -> true
                     if processEnemies then
                         let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
@@ -452,7 +452,7 @@ type CharacterDispatcher () =
                     let actionState = if localTime <= 0.92f then actionState else NormalState
                     entity.SetActionState actionState world
                 | InventoryState -> world
-                | InsertionPointState _ -> world
+                | InsertionSpotState _ -> world
                 | InvestigateState _ -> world
                 | HideState hide ->
                     match hide.HidePhase with
@@ -575,7 +575,7 @@ type CharacterDispatcher () =
                 animatedModel.SetAnimations [|animation|] world
             | InventoryState ->
                 world
-            | InsertionPointState insertionPoint ->
+            | InsertionSpotState insertionSpot ->
                 world
             | InvestigateState investigate ->
                 world

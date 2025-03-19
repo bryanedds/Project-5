@@ -813,7 +813,7 @@
           [PositionLocal [-0.293 0 0.28799987]]
           [Size [0.60342896 1.9762782 0.023985134]]
           [StaticModel [Gameplay CabinetStandingDoor]]]
-         [[DoorDispatcher
+         [[DoorSpotDispatcher
            [[MountOpt [Some ^]]
             [Name Door-0002]
             [Position [-12.2 1.5 30.5]]
@@ -3768,7 +3768,7 @@
           [Static True]
           [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
           [SurfaceIndex 183]]
-         [[InvestigationDispatcher
+         [[InvestigationSpotDispatcher
            [[MountOpt [Some ^]]
             [Name Investigation-0001]
             [Position [-7.4 12.999883 -3]]
@@ -6089,7 +6089,7 @@
           [Static True]
           [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
           [SurfaceIndex 312]]
-         [[InvestigationDispatcher
+         [[InvestigationSpotDispatcher
            [[MountOpt [Some ^]]
             [Name Investigation-0003]
             [Position [-1.1644286 13.004201 -15.790181]]
@@ -15753,7 +15753,7 @@
     [Static True]
     [StaticModel [AbandonedMansion Abandoned_Mansion_Scene]]
     [SurfaceIndex 183]]
-   [[InsertionPointDispatcher
+   [[InsertionSpotDispatcher
      [[InsertionKey BronzeKey]
       [InteractionResult EndGame]
       [MountOpt [Some ^]]
@@ -15780,7 +15780,7 @@
     [Rotation [0 0.21643962 0 0.976296]]
     [Size [0.08261318 0.007999994 0.02644255]]
     [StaticModel [Gameplay Key]]]
-   [[InvestigationDispatcher
+   [[InvestigationSpotDispatcher
      [[InteractionResult [FindItem BronzeKey BronzeKeyAcquired]]
       [MountOpt [Some ^]]
       [Name Investigation-0002]

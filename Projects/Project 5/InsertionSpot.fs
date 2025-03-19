@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module InsertionPointDispatcherExtensions =
+module InsertionSpotDispatcherExtensions =
     type Entity with
         member this.GetInsertionState world : InsertionState = this.Get (nameof this.InsertionState) world
         member this.SetInsertionState (value : InsertionState) world = this.Set (nameof this.InsertionState) value world
@@ -18,7 +18,7 @@ module InsertionPointDispatcherExtensions =
         member this.SetInteractionResult (value : InteractionResult) world = this.Set (nameof this.InteractionResult) value world
         member this.InteractionResult = lens (nameof this.InteractionResult) this this.GetInteractionResult this.SetInteractionResult
 
-type InsertionPointDispatcher () =
+type InsertionSpotDispatcher () =
     inherit Entity3dDispatcherImNui (true, false, false)
 
     static member Facets =
