@@ -5,6 +5,8 @@ open Prime
 open Nu
 open MyGame
 
+(* Inventory *)
+
 type ItemType =
     | BlackKey // just for testing
     | BronzeKey
@@ -21,8 +23,13 @@ type [<SymbolicExpansion>] Inventory =
         { Items = Map.singleton BlackKey 1
           Currency = 10 }
 
+(* Advents *)
+
 type Advent =
-    | BronzeKeyAcquired
+    | ItemAcquired of ItemType
+    | ItemInserted of ItemType
+
+(* Interaction *)
 
 type InteractionResult =
     | FindDescription of string * Advent
@@ -30,9 +37,108 @@ type InteractionResult =
     | EndGame
     | Nothing
 
+(* Movement *)
+
+type MovementState =
+    | Standing of GameTime
+    | Walking of startTime : GameTime * lastStepTime : GameTime
+
+(* Action *)
+
+type AttackState =
+    { AttackTime : GameTime
+      AttackSoundPlayed : bool
+      AttackedCharacters : Entity Set }
+
+    static member make time =
+        { AttackTime = time
+          AttackSoundPlayed = false
+          AttackedCharacters = Set.empty }
+
+type InsertionPhase =
+    | InsertionNotStarted
+    | InsertionStarted of StartTime : GameTime
+    | InsertionFinished
+
+type InsertionState =
+    { InsertionSpot : Entity }
+
+type InvestigationPhase =
+    | InvestigationNotStarted
+    | InvestigationStarted of GameTime
+    | InvestigationFinished of GameTime
+
+type InvestigationState =
+    { InvestigationSpot : Entity }
+
+type InjuryState =
+    { InjuryTime : GameTime }
+
+type HideType =
+    | HideStanding // like a locker or tall cupboard
+    | HideKneeling // like in a floor cabinet
+    | HideLying // like under a bed
+
+type HidePhase =
+    | HideEntering
+    | HideWaiting
+    | HideEmerging
+    | HideUncovered
+
+type HideState =
+    { HideTime : GameTime
+      HidePhase : HidePhase }
+
+type HidingSpot =
+    | CabinetStanding of Cabinet : Entity * CabinetDoor : Entity
+
+type WoundState =
+    { WoundTime : GameTime
+      WoundEventPublished : bool }
+
+type ActionState =
+    | NormalState
+    | AttackState of AttackState
+    | InventoryState
+    | InsertionState of InsertionState
+    | InvestigationState of InvestigationState
+    | HideState of HideState
+    | InjuryState of InjuryState
+    | WoundState of WoundState
+
+    static member computeEyeDistanceScalar time state =
+        match state with
+        | HideState hide ->
+            match hide.HidePhase with
+            | HideEntering -> 1.0f - GameTime.progress hide.HideTime time 1.5f
+            | HideEmerging -> GameTime.progress hide.HideTime time 1.5f
+            | HideWaiting -> 0.0f
+            | HideUncovered -> 0.0f
+        | _ -> 1.0f
+
+    static member computeVisibilityScalar time state =
+        let eyeDistanceScalar = ActionState.computeEyeDistanceScalar time state
+        let eyeDistanceScalar =
+            if eyeDistanceScalar > Constants.Gameplay.PlayerVisibilityDistanceMin
+            then (eyeDistanceScalar - Constants.Gameplay.PlayerVisibilityDistanceMin) * (1.0f / Constants.Gameplay.PlayerVisibilityDistanceMin) + 0.0001f
+            else 0.0f
+        saturate eyeDistanceScalar
+
+(* Way Point *)
+
 type WayPoint =
     { WayPoint : Entity Relation
       WayPointWaitTime : GameTime }
+
+(* Door *)
+
+type DoorState =
+    | DoorClosed
+    | DoorOpening of StartTime : GameTime
+    | DoorOpened
+    | DoorClosing of StartTime : GameTime
+
+(* Hunter *)
 
 type Awareness =
     | UnawareOfTarget
@@ -54,6 +160,8 @@ type [<SymbolicExpansion>] HunterState =
           HunterWayPointIndexOpt = None
           HunterWayPointTimeOpt = None
           HunterAwareness = UnawareOfTarget }
+
+(* Stalker *)
 
 type StalkingState =
     { SpawnPosition : Vector3
@@ -89,43 +197,7 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Single.MaxValue
 
-type InsertionPhase =
-    | InsertionNotStarted
-    | InsertionStarted of StartTime : GameTime
-    | InsertionFinished
-
-type DoorState =
-    | DoorClosed
-    | DoorOpening of StartTime : GameTime
-    | DoorOpened
-    | DoorClosing of StartTime : GameTime
-
-type InvestigationPhase =
-    | InvestigationNotStarted
-    | InvestigationStarted of GameTime
-    | InvestigationFinished of GameTime
-
-type HideType =
-    | HideStanding // like a locker or tall cupboard
-    | HideKneeling // like in a floor cabinet
-    | HideLying // like under a bed
-
-type HidePhase =
-    | HideEntering
-    | HideWaiting
-    | HideEmerging
-    | HideUncovered
-
-type HidingSpot =
-    | CabinetStanding of Cabinet : Entity * CabinetDoor : Entity
-
-type HideState =
-    { HideTime : GameTime
-      HidePhase : HidePhase }
-
-type MovementState =
-    | Standing of GameTime
-    | Walking of startTime : GameTime * lastStepTime : GameTime
+(* Character *)
 
 type CharacterState =
     | HunterState of HunterState
@@ -215,54 +287,3 @@ and CharacterType =
         | Hunter -> HunterState HunterState.initial
         | Stalker -> StalkerState StalkerState.initial
         | Player -> PlayerState
-
-type AttackState =
-    { AttackTime : GameTime
-      AttackSoundPlayed : bool
-      AttackedCharacters : Entity Set }
-
-    static member make time =
-        { AttackTime = time
-          AttackSoundPlayed = false
-          AttackedCharacters = Set.empty }
-
-type InsertionState =
-    { InsertionSpot : Entity }
-
-type InvestigationState =
-    { InvestigationSpot : Entity }
-
-type InjuryState =
-    { InjuryTime : GameTime }
-
-type WoundState =
-    { WoundTime : GameTime
-      WoundEventPublished : bool }
-
-type ActionState =
-    | NormalState
-    | AttackState of AttackState
-    | InventoryState
-    | InsertionState of InsertionState
-    | InvestigationState of InvestigationState
-    | HideState of HideState
-    | InjuryState of InjuryState
-    | WoundState of WoundState
-
-    static member computeEyeDistanceScalar time state =
-        match state with
-        | HideState hide ->
-            match hide.HidePhase with
-            | HideEntering -> 1.0f - GameTime.progress hide.HideTime time 1.5f
-            | HideEmerging -> GameTime.progress hide.HideTime time 1.5f
-            | HideWaiting -> 0.0f
-            | HideUncovered -> 0.0f
-        | _ -> 1.0f
-
-    static member computeVisibilityScalar time state =
-        let eyeDistanceScalar = ActionState.computeEyeDistanceScalar time state
-        let eyeDistanceScalar =
-            if eyeDistanceScalar > Constants.Gameplay.PlayerVisibilityDistanceMin
-            then (eyeDistanceScalar - Constants.Gameplay.PlayerVisibilityDistanceMin) * (1.0f / Constants.Gameplay.PlayerVisibilityDistanceMin) + 0.0001f
-            else 0.0f
-        saturate eyeDistanceScalar
