@@ -126,7 +126,6 @@ type HideState =
 type MovementState =
     | Standing of GameTime
     | Walking of startTime : GameTime * lastStepTime : GameTime
-    | Running of startTime : GameTime * lastStepTime : GameTime
 
 type CharacterState =
     | HunterState of HunterState

@@ -520,7 +520,6 @@ type CharacterDispatcher () =
                     match entity.GetMovementState world with
                     | Standing startTime -> startTime
                     | Walking (startTime, _) -> startTime
-                    | Running (startTime, _) -> startTime
                 let animations =
                     [Animation.make startTime None "Idle" Loop rate 1.0f None]
                 let animations =
@@ -541,7 +540,10 @@ type CharacterDispatcher () =
                         if movementState.IsStanding
                         then entity.SetMovementState (Walking (world.GameTime, world.GameTime)) world
                         else world
-                    else entity.SetMovementState (Standing world.GameTime) world
+                    else
+                        if movementState.IsWalking
+                        then entity.SetMovementState (Standing world.GameTime) world
+                        else world
                 let world = animatedModel.SetAnimations (Array.ofList animations) world
                 world
             | _ -> world
@@ -560,7 +562,6 @@ type CharacterDispatcher () =
                         World.playSound 0.25f Assets.Gameplay.StepSound world
                         entity.SetMovementState (Walking (startTime, lastStepTime + strideTime)) world
                     else world
-                | Running (_, _) -> world // not yet implemented
             | AttackState attack ->
                 let localTime = world.GameTime - attack.AttackTime
                 let world =
