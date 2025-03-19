@@ -542,8 +542,12 @@ type GameplayDispatcher () =
             // end scene declaration
             World.endGroup world
 
-        // otherwise, no processing
-        else world
+        // otherwise, clear game state
+        else
+            let world = screen.SetInventoryViewOpt None world
+            let world = screen.SetInventory Inventory.initial world
+            let world = screen.SetAdvents Set.empty world
+            world
 
     override this.Edit (op, _, world) =
         match op with
