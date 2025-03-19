@@ -104,10 +104,10 @@ type GameplayDispatcher () =
                     if clicked then World.setAdvancing true world else world
 
             // declare player interaction button
-            let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
-            let insertionPointCollisionOpt = player.GetInsertionPointCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
-            let doorCollisionOpt = player.GetDoorCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
-            let investigationCollisionOpt = player.GetInvestigationCollisions world |> Seq.filter (fun c -> c.GetExists world) |> Seq.tryHead
+            let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let insertionPointCollisionOpt = player.GetInsertionPointCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let doorCollisionOpt = player.GetDoorCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
+            let investigationCollisionOpt = player.GetInvestigationCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let world =
                 match hidingSpotCollisionOpt with
                 | Some hidingSpot ->

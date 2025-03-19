@@ -62,7 +62,7 @@ type InvestigationDispatcher () =
                      Entity.CelRun @= cels] world)
                 world [0 .. dec 2]
 
-        // try to make parent visibility match body enabled
+        // toggle based on result and advents
         let world =
             match entity.GetInteractionResult world with
             | FindDescription (_, advent)
