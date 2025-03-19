@@ -17,6 +17,9 @@ module CharacterExtensions =
         member this.GetActionState world : ActionState = this.Get (nameof this.ActionState) world
         member this.SetActionState (value : ActionState) world = this.Set (nameof this.ActionState) value world
         member this.ActionState = lens (nameof this.ActionState) this this.GetActionState this.SetActionState
+        member this.GetMovementState world : MovementState = this.Get (nameof this.MovementState) world
+        member this.SetMovementState (value : MovementState) world = this.Set (nameof this.MovementState) value world
+        member this.MovementState = lens (nameof this.MovementState) this this.GetMovementState this.SetMovementState
         member this.GetHitPoints world : int = this.Get (nameof this.HitPoints) world
         member this.SetHitPoints (value : int) world = this.Set (nameof this.HitPoints) value world
         member this.HitPoints = lens (nameof this.HitPoints) this this.GetHitPoints this.SetHitPoints
@@ -336,6 +339,7 @@ type CharacterDispatcher () =
          define Entity.CharacterState characterType.InitialState
          define Entity.CharacterType characterType
          define Entity.ActionState NormalState
+         define Entity.MovementState (Standing 0.0f)
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.InsertionPointCollisions Set.empty
          define Entity.DoorCollisions Set.empty
@@ -512,33 +516,51 @@ type CharacterDispatcher () =
                 let turnRightness = if angularVelocity.Y < 0.0f then -angularVelocity.Y * 0.5f else 0.0f
                 let turnLeftness = if angularVelocity.Y > 0.0f then angularVelocity.Y * 0.5f else 0.0f
                 let rate = characterType.AnimationRate
+                let startTime =
+                    match entity.GetMovementState world with
+                    | Standing startTime -> startTime
+                    | Walking (startTime, _) -> startTime
+                    | Running (startTime, _) -> startTime
                 let animations =
-                    [Animation.make 0.0f None "Idle" Loop rate 1.0f None]
+                    [Animation.make startTime None "Idle" Loop rate 1.0f None]
                 let animations =
-                    if forwardness >= 0.01f then Animation.make 0.0f None "WalkForward" Loop rate forwardness None :: animations
-                    elif backness >= 0.01f then Animation.make 0.0f None "WalkBack" Loop rate backness None :: animations
+                    if forwardness >= 0.01f then Animation.make startTime None "WalkForward" Loop rate forwardness None :: animations
+                    elif backness >= 0.01f then Animation.make startTime None "WalkBack" Loop rate backness None :: animations
                     else animations
                 let animations =
-                    if rightness >= 0.01f then Animation.make 0.0f None "WalkRight" Loop rate rightness None :: animations
-                    elif leftness >= 0.01f then Animation.make 0.0f None "WalkLeft" Loop rate leftness None :: animations
+                    if rightness >= 0.01f then Animation.make startTime None "WalkRight" Loop rate rightness None :: animations
+                    elif leftness >= 0.01f then Animation.make startTime None "WalkLeft" Loop rate leftness None :: animations
                     else animations
                 let animations =
-                    if turnRightness >= 0.01f then Animation.make 0.0f None "TurnRight" Loop rate turnRightness None :: animations
-                    elif turnLeftness >= 0.01f then Animation.make 0.0f None "TurnLeft" Loop rate turnLeftness None :: animations
+                    if turnRightness >= 0.01f then Animation.make startTime None "TurnRight" Loop rate turnRightness None :: animations
+                    elif turnLeftness >= 0.01f then Animation.make startTime None "TurnLeft" Loop rate turnLeftness None :: animations
                     else animations
-                animatedModel.SetAnimations (Array.ofList animations) world
+                let movementState = entity.GetMovementState world
+                let world =
+                    if List.hasAtLeast 2 animations then
+                        if movementState.IsStanding
+                        then entity.SetMovementState (Walking (world.GameTime, world.GameTime)) world
+                        else world
+                    else entity.SetMovementState (Standing world.GameTime) world
+                let world = animatedModel.SetAnimations (Array.ofList animations) world
+                world
             | _ -> world
 
         // process action animations
         let world =
             match entity.GetActionState world with
             | NormalState ->
-                match animatedModel.GetAnimations world with
-                | [|_|] -> world
-                | _ when characterType.IsPlayer && world.GameTime.Seconds % 0.74f <= (1.0f / 60.0f) -> // NOTE: bullshit way to do this; needs traverse start state.
-                    World.playSound 0.25f Assets.Gameplay.StepSound world
-                    world
-                | _ -> world
+                match entity.GetMovementState world with
+                | Standing _ -> world
+                | Walking (startTime, lastStepTime) ->
+                    let strideTime = GameTime.ofSeconds 0.75f
+                    let offsetTime = GameTime.ofSeconds 0.25f
+                    let localStepTime = world.GameTime - lastStepTime + offsetTime
+                    if localStepTime >= strideTime then
+                        World.playSound 0.25f Assets.Gameplay.StepSound world
+                        entity.SetMovementState (Walking (startTime, lastStepTime + strideTime)) world
+                    else world
+                | Running (_, _) -> world // not yet implemented
             | AttackState attack ->
                 let localTime = world.GameTime - attack.AttackTime
                 let world =

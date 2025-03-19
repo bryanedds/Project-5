@@ -123,6 +123,11 @@ type HideState =
     { HideTime : GameTime
       HidePhase : HidePhase }
 
+type MovementState =
+    | Standing of GameTime
+    | Walking of startTime : GameTime * lastStepTime : GameTime
+    | Running of startTime : GameTime * lastStepTime : GameTime
+
 type CharacterState =
     | HunterState of HunterState
     | StalkerState of StalkerState
