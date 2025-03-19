@@ -60,8 +60,8 @@ type GameplayDispatcher () =
                 FQueue.fold (fun world (attack : Entity) ->
                     let world = attack.HitPoints.Map (dec >> max 0) world
                     if attack.GetHitPoints world > 0 then
-                        if not (attack.GetActionState world).IsInjuryState then
-                            let world = attack.SetActionState (InjuryState { InjuryTime = world.UpdateTime }) world
+                        if not (attack.GetActionState world).IsInjureState then
+                            let world = attack.SetActionState (InjureState { InjureTime = world.UpdateTime }) world
                             let world = attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                             world
