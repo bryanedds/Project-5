@@ -1,1 +1,7 @@
-﻿[]
+﻿[[P5ButtonOverlay
+  [ButtonOverlay]
+  [ButtonDispatcher]
+  [[ClickSoundOpt [Some [Gui Affirm]]]
+   [DownOffset [0 -1]]
+   [DownImage [Gui ButtonDown]]
+   [UpImage [Gui ButtonUp]]]]]
