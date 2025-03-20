@@ -1,0 +1,47 @@
+Mesh SM_EWall400DDoor has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_CeilingA400x200 has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_CurtainHanger has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_MWall400Door_DS has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_MArc400 has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_CeilingA200x200 has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Maximum value (-1) used in indices accessor for mesh SM_Fireplace (section ), this may not be supported on some glTF viewers
+Mesh SM_BergereCover has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_Canopy has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_VanityTableB has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Maximum value (-1) used in indices accessor for mesh SM_Wall400_Door_DS (section ), this may not be supported on some glTF viewers
+Maximum value (-1) used in indices accessor for mesh SM_Pine (section ), this may not be supported on some glTF viewers
+Mesh SM_Tub has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_Wall400D_DS has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Maximum value (-1) used in indices accessor for mesh SM_Wall400D_DS (section ), this may not be supported on some glTF viewers
+Mesh SM_Wall200B_DS has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_WineRackB has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_DeskB has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_Gate has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Mesh SM_ReadingGlasses has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Maximum value (-1) used in indices accessor for mesh SM_KitchenwareJ (section ), this may not be supported on some glTF viewers
+Mesh SM_Shovel has some nearly zero-length tangents which may not be supported in some glTF applications. Consider checking 'Recompute Tangents' in the asset settings
+Unsupported shading model (Two Sided Foliage) in material M_CurtainA, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_SideTableCover, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_DrawersCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_Lights, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_SideboardCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_BergereCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_Plants, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_CanopyCurtain, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_PineBranch, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_PineBillboard, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_Weed, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_TubCurtain, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_ArmchairCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_MirrorCover, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_VanityTableCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_CofeeTableCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_CabinetCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_ChairCover, will export as Default Lit
+Unsupported shading model (Two Sided Foliage) in material M_CurtainB, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_WineBottles, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_RoundTableCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_DiningTableCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_Candlestick, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_ChesterfieldSofaCover, will export as Default Lit
+Unsupported shading model (Subsurface) in material M_ChesterfieldChairCover, will export as Default Lit
