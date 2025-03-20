@@ -46,6 +46,12 @@ module Assets =
         let PackageName = "AbandonedMansion"
         let CountryNightCrickets = asset<Song> PackageName "CountryNightCrickets"
 
+    // these are assets from the ClassicMansion package.
+    [<RequireQualifiedAccess>]
+    module ClassicMansion =
+
+        let PackageName = "ClassicMansion"
+
     // these are assets from the Residence package.
     [<RequireQualifiedAccess>]
     module Residence =
