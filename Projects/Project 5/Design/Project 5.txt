@@ -82,6 +82,12 @@ B <- R
 
 deexponentiate roughness (red) with Paint.NET curve editor.
 
+Camera Controls -
+
+forward-paced camera control where  eye rotates initially ahead of character forward to quicken 'glancing' when turning and to show off a bit more of the player character model.
+
+Eye zoom in when in investigation results phase.
+
 MISC
 
 death ideas -
