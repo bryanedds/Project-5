@@ -193,11 +193,11 @@ type [<CustomEquality; CustomComparison; TypeConverter (typeof<AddressConverter>
 
     interface 'a Address IEquatable with
         member this.Equals that =
-            Address<'a>.equals this that
+            Address<'a>.equals<'a> this that
 
     override this.Equals that =
         match that with
-        | :? ('a Address) as that -> Address.equals this that
+        | :? ('a Address) as that -> Address.equals<'a> this that
         | _ -> false
 
     override this.GetHashCode () =
@@ -234,7 +234,7 @@ module Address =
         Address.ntoa<'a> name
 
     /// Convert a weakly-typed Address interface into a strongly-typed address.
-    let makeFromInterface address : 'a Address =
+    let makeFromInterface<'a> address : 'a Address =
         Address.itoa<'a> address
 
     /// Anonymize an address.
