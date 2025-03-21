@@ -786,67 +786,10 @@ type Nav3dConfigDispatcher () =
             | None -> world
         | _ -> world
 
-    override this.GetAttributesInferred (_, _) =
-        AttributesInferred.unimportant
-
-/// Enables common operations on entities that intersect this entity's bounds.
-type VolumeEditDispatcher () =
+/// Enables common operations on 3D entities that intersect this entity's bounds.
+/// TODO: P1: implement EditAreaDispatcher for 2D entities.
+type EditVolumeDispatcher () =
     inherit Entity3dDispatcher (false, false, false)
 
-    override this.Edit (op, entity, world) =
-        match op with
-        | AppendProperties append ->
-            let world =
-                if ImGui.Button "Parent Intersected" then
-                    let world = append.EditContext.Snapshot (VolumeEdit "Parent Intersected") world
-                    let bounds = entity.GetBounds world
-                    let intersecteds =
-                        world |>
-                        World.getEntities3dInBounds bounds (hashSetPlus HashIdentity.Structural []) |>
-                        Seq.filter (fun intersected ->
-                            let presence = intersected.GetPresence world
-                            intersected <> entity &&
-                            not (intersected.GetProtected world) &&
-                            not presence.IsOmnipresent) |>
-                        Seq.toArray |>
-                        Array.sortBy _.Names.Length
-                    Array.fold (fun world (intersected : Entity) ->
-                        if intersected.GetExists world then
-                            let intersected' =
-                                if intersected.Has<StaticModelSurfaceFacet> world && intersected.Name.StartsWith "Geometry"
-                                then entity / intersected.Parent.Name // probably generic geometry imported from another engine's scene, so use likely more descriptive parent name
-                                else entity / intersected.Name
-                            let intersected' =
-                                if intersected'.GetExists world
-                                then entity / (intersected'.Name + Gen.name)
-                                else intersected'
-                            let world = World.renameEntityImmediate intersected intersected' world
-                            let world = intersected'.SetMountOptWithAdjustment None world // NOTE: we have to set mount to none in order to convince engine it's changing.
-                            intersected'.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
-                        else world)
-                        world intersecteds
-                else world
-            world
-        | ViewportOverlay viewportOverlay ->
-            let mutable bounds = entity.GetBounds world
-            let manipulationResult =
-                ImGuizmo.ManipulateBox3
-                    (world.Eye3dCenter,
-                     world.Eye3dRotation,
-                     world.Eye3dFieldOfView,
-                     world.RasterViewport,
-                     viewportOverlay.EditContext.SnapDrag,
-                     &bounds)
-            match manipulationResult with
-            | ImGuiEditActive started ->
-                let world = if started then viewportOverlay.EditContext.Snapshot (ChangeProperty (None, nameof Entity.Bounds)) world else world
-                if entity.IsMounter world then
-                    let world = entity.SetPositionLocal bounds.Center world
-                    let world = entity.SetSize bounds.Size world
-                    world
-                else
-                    let world = entity.SetPosition bounds.Center world
-                    let world = entity.SetSize bounds.Size world
-                    world
-            | ImGuiEditInactive -> world
-        | _ -> world
+    static member Facets =
+        [typeof<EditVolumeFacet>]

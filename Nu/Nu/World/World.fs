@@ -173,7 +173,7 @@ module WorldModule3 =
                  BodyJoint3dDispatcher ()
                  TerrainDispatcher ()
                  Nav3dConfigDispatcher ()
-                 VolumeEditDispatcher ()
+                 EditVolumeDispatcher ()
                  StaticModelHierarchyDispatcher ()
                  RigidModelHierarchyDispatcher ()]
 
@@ -209,6 +209,7 @@ module WorldModule3 =
                  StaticModelSurfaceFacet ()
                  AnimatedModelFacet ()
                  TerrainFacet ()
+                 EditVolumeFacet ()
                  TraversalInterpoledFacet ()
                  NavBodyFacet ()
                  FollowerFacet ()
