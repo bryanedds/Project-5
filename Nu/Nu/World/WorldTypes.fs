@@ -79,6 +79,7 @@ and SnapshotType =
     | VolumeEdit of string
     | FreezeEntities
     | ThawEntities
+    | Permafreeze
     | ReregisterPhysics
     | SynchronizeNav
     | SetEditMode of int
@@ -120,6 +121,7 @@ and SnapshotType =
         | VolumeEdit volumeEditType -> "Volume Edit " + volumeEditType
         | FreezeEntities -> (scstringMemo this).Spaced
         | ThawEntities -> (scstringMemo this).Spaced
+        | Permafreeze -> (scstringMemo this).Spaced
         | ReregisterPhysics -> (scstringMemo this).Spaced
         | SynchronizeNav -> (scstringMemo this).Spaced
         | SetEditMode i -> (scstringMemo this).Spaced + " (" + string (inc i) + " of 2)"
