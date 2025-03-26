@@ -309,8 +309,6 @@ void computeSsr(vec4 position, vec3 albedo, float roughness, float metallic, vec
         // compute depth delta and thickness based on view state
         float depthDelta = currentDepthView - -currentPositionView.z;
         float thickness = max(-currentPositionView.z * ssrRayThickness, ssrRayThickness);
-        if (-currentPositionView.z > 3.0 && eyeDistanceFromPlane < 1.0)
-            thickness = max(1.0 - eyeDistanceFromPlane + ssrRayThickness, thickness);
 
         // determine whether we hit geometry within acceptable thickness
         if (currentPosition.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
@@ -329,8 +327,6 @@ void computeSsr(vec4 position, vec3 albedo, float roughness, float metallic, vec
                 // compute depth delta and thickness based on view state
                 float depthDelta = currentDepthView - -currentPositionView.z;
                 float thickness = max(-currentPositionView.z * ssrRayThickness, ssrRayThickness);
-                if (-currentPositionView.z > 3.0 && eyeDistanceFromPlane < 1.0)
-                    thickness = max(1.0 - eyeDistanceFromPlane + ssrRayThickness, thickness);
 
                 // determine whether we hit geometry within acceptable thickness
                 if (currentPosition.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
@@ -486,6 +482,14 @@ void main()
             texCoordsBelow.y = max(0.0, texCoordsBelow.y);
             vec4 positionBelow = texture(positionTexture, texCoordsBelow);
             computeSsr(positionBelow, albedo, roughness, metallic, normal, slope, specularScreen, specularScreenWeight);
+
+            // if hit failed, try again on the proper tex coord
+            if (specularScreenWeight == 0.0)
+            {
+                vec2 texCoords = texCoordsOut;
+                texCoords.y = max(0.0, texCoords.y);
+                computeSsr(position, albedo, roughness, metallic, normal, slope, specularScreen, specularScreenWeight);
+            }
         }
 
         // compute specular term
