@@ -189,7 +189,7 @@ float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, mat4 shado
         travel = clamp(travel, 0.0, 1.0);
         return travel;
     }
-    
+
     // tracing out of range, return default
     return 1.0;
 }
@@ -286,9 +286,9 @@ vec3 computeSubsurfaceScattering(vec4 position, vec3 albedo, vec3 normal, vec4 s
     float trace = 1.0;
     if (shadowIndex >= 0)
         trace =
-            lightType == 0 ?
-            geometryTraceFromShadowMap(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
-            geometryTraceFromShadowTexture(position, lightOrigin, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+        lightType == 0 ?
+        geometryTraceFromShadowMap(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
+        geometryTraceFromShadowTexture(position, lightOrigin, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
 
     // compute scattered color
     vec3 subdermal = subdermalPlus.rgb;
@@ -712,9 +712,9 @@ void main()
             float shadowScalar = 1.0f;
             if (shadowIndex >= 0)
                 shadowScalar =
-                    shadowIndex < SHADOW_TEXTURES_MAX ?
-                    computeShadowTextureScalar(position, lightDirectional, lightConeOuters[i], shadowMatrices[shadowIndex], shadowTextures[shadowIndex]) :
-                    computeShadowMapScalar(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]);
+                shadowIndex < SHADOW_TEXTURES_MAX ?
+                computeShadowTextureScalar(position, lightDirectional, lightConeOuters[i], shadowMatrices[shadowIndex], shadowTextures[shadowIndex]) :
+                computeShadowMapScalar(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]);
 
             // cook-torrance brdf
             float hDotV = max(dot(h, v), 0.0);
@@ -749,9 +749,9 @@ void main()
                 vec3 fog = vec3(0.0);
                 switch (lightType)
                 {
-                    case 0: { fog = computeFogAccumPoint(position, i); break; } // point
-                    case 1: { fog = computeFogAccumSpot(position, i); break; } // spot
-                    default: { fog = computeFogAccumDirectional(position, i); break; } // directional
+                case 0: { fog = computeFogAccumPoint(position, i); break; } // point
+                case 1: { fog = computeFogAccumSpot(position, i); break; } // spot
+                default: { fog = computeFogAccumDirectional(position, i); break; } // directional
                 }
                 if (shadowIndex == 0) fogAccum = vec4(fog, 1.0);
                 else lightAccum += fog;
@@ -801,8 +801,11 @@ void main()
         vec3 specularEnvironment = environmentFilter * specularEnvironmentSubterm * ambientLight;
         vec3 specular = (1.0 - specularScreenWeight) * specularEnvironment + specularScreenWeight * specularScreen;
 
+        // compute global darkness
+        vec3 darkness = vec3(1.0 - smoothstep(0.9, 1.0, min(1.0, length(eyeCenter - position.xyz) / 20.0)));
+
         // write remaining lighting values
-        color = vec4(lightAccum + diffuse + emission * albedo + specular, 1.0);
+        color = vec4((lightAccum + diffuse + emission * albedo + specular) * darkness, 1.0);
         depth = depthViewToDepthBuffer(positionView.z);
     }
 }
