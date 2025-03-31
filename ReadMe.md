@@ -27,10 +27,10 @@ Look here to get started with your own project in Nu -
 Some Media on the Nu Game Engine
 ================================
 
-![image](https://github.com/user-attachments/assets/9dec0a86-f0e2-41bd-8354-7175c35aacb0)
+![image](https://github.com/user-attachments/assets/22ae1562-e316-4709-8bf2-ef5f5cd95d49)
 Our new soft-shadow, screen-space reflection, and volumetric fog systems.
 
-![image](https://github.com/bryanedds/Nu/assets/1625560/54785591-6b39-4a27-939d-b2f3b29f9bf1)
+![image](https://github.com/user-attachments/assets/44ec5233-3ed3-4038-9cc4-646bc4ddc96d)
 Real-time WYSIWYG editing with hot asset and live code reloading, and the ability to undo and redo gameplay.
 
 ![image](https://github.com/user-attachments/assets/fa88a1a5-e793-44cb-8113-4a6bf8468d4c)
@@ -38,6 +38,9 @@ Photo-realistic yet user-friendly deferred, physically-based rendering.
 
 ![image](https://github.com/user-attachments/assets/d8406232-2bb9-4b60-b7a0-4a49cfa29236)
 Rendering made efficient with instancing-by-default.
+
+![image](https://github.com/user-attachments/assets/8d579e7a-36b2-443e-9b73-c564290ab4bd)
+Our new subsurface scattering functionality for skin and foliage.
 
 ![image](https://github.com/user-attachments/assets/0789e71d-fc49-496c-b9fc-2c9855a9e8e7)
 First class support for unified 2D game development in our fully realized 20-hour indie RPG, OmniBlade.
@@ -76,3 +79,9 @@ Recursive Prefab-like functionality via Entity Structure Propagation.
 **[@creynolds138](https://github.com/creynolds138)**
 
 **And a huge thank you to all of you who donate privately to keep this project going!**
+
+Please Become a Sponsor for Nu Today!
+=====================================
+
+Sponsor here - https://github.com/sponsors/bryanedds
+

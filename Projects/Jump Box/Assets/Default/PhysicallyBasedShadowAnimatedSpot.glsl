@@ -26,7 +26,7 @@ void main()
     // compute output values
     vec4 positionBlended = boneBlended * vec4(position, 1.0);
     vec4 positionOut = model * positionBlended;
-    positionOut.xyzw /= positionOut.w; // NOTE: normalizing by w seems to fix a bug caused by weights not summing to 1.0.
+    positionOut /= positionOut.w; // NOTE: normalizing by w seems to fix a bug caused by weights not summing to 1.0.
     gl_Position = projection * view * positionOut;
 }
 
@@ -39,6 +39,6 @@ layout(location = 0) out vec2 depths;
 
 void main()
 {
-	depths.x = gl_FragCoord.z;
+	depths.x = gl_FragCoord.z; // clip space depth
 	depths.y = exp(lightShadowExponent * depths.x);
 }
