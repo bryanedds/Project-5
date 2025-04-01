@@ -282,7 +282,7 @@ and CharacterType =
 
     member this.CharacterProperties =
         match this with
-        | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f }
+        | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f } // NOTE: I think this is to make enemies able to climb stairs, but now I'm not sure I remember...
         | Player -> { CharacterProperties.defaultProperties with StairStepUp = v3 0.0f 0.125f 0.0f; StairStepDownStickToFloor = v3 0.0f -0.125f 0.0f }
 
     member this.InitialState =
