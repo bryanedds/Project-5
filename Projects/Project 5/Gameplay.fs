@@ -248,7 +248,7 @@ type GameplayDispatcher () =
                 else world
 
             // begin scene declaration
-            let world = World.beginGroupFromFile "Scene" "Assets/AbandonedMansion/AbandonedMansion.nugroup" [] world
+            let world = World.beginGroupFromFile "Scene" "Assets/ClassicMansion/ClassicMansion.nugroup" [] world
 
             // collect spawn points
             let entitiesSovereign = World.getSovereignEntities Simulants.GameplayScene world                
@@ -273,7 +273,9 @@ type GameplayDispatcher () =
             // declare player
             let world =
                 World.doEntity<PlayerDispatcher> "Player"
-                    [if initializing then Entity.Position @= v3 6.6f 11.6f 4.575f
+                    [if initializing then
+                        Entity.Position @= v3 -8.25f 0.0f -2.5f
+                        Entity.Degrees @= v3 0.0f 90.0f 0.0f
                      Entity.Size .= v3 1.5f 2.0f 1.5f
                      Entity.Offset .= v3 0.0f 1.0f 0.0f
                      Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
@@ -470,8 +472,8 @@ type GameplayDispatcher () =
 
             // process lighting
             let world =
-                let sunColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world)
-                Simulants.GameplaySun.SetColor sunColor world
+                let fillLightColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world)
+                Simulants.GameplayFillLight.SetColor fillLightColor world
 
             // collect attacks
             let (attacks, world) =
