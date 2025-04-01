@@ -802,7 +802,7 @@ void main()
         vec3 specular = (1.0 - specularScreenWeight) * specularEnvironment + specularScreenWeight * specularScreen;
 
         // compute global darkness
-        vec3 darkness = vec3(1.0 - smoothstep(0.9, 1.0, min(1.0, length(eyeCenter - position.xyz) / 20.0)));
+        vec3 darkness = vec3(1.0 - smoothstep(0.85, 1.0, min(1.0, length(eyeCenter - position.xyz) / 20.0)));
 
         // write remaining lighting values
         color = vec4((lightAccum + diffuse + emission * albedo + specular) * darkness, 1.0);
