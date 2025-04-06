@@ -20,5 +20,5 @@ module Constants =
         let [<Uniform>] AwareOfTargetHidingDuration = GameTime.ofSeconds 32.0f
         let [<Uniform>] StalkDelay = GameTime.ofSeconds 180.0f
         let [<Uniform>] StalkDuration = GameTime.ofSeconds 120.0f
-        let [<Uniform>] PlayerEyeLevel = 1.5f
+        let [<Uniform>] PlayerEyeLevel = 1.45f
         let [<Uniform>] PlayerVisibilityDistanceMin = 0.4f

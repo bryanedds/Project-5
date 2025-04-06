@@ -551,9 +551,9 @@ type GameplayDispatcher () =
                 if world.Advancing then
                     let actionState = player.GetActionState world
                     let position = player.GetPositionInterpolated world
-                    let rotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.1f)
+                    let rotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
                     let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position rotation actionState player world
-                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.5333f * eyeDistanceScalar + rotation.Right * 0.333f * eyeDistanceScalar) world
+                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * 1.5333f * eyeDistanceScalar + rotation.Right * 0.4f * eyeDistanceScalar) world
                     let world = World.setEye3dRotation rotation world
                     world
                 else world
