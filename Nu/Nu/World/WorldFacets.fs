@@ -1390,8 +1390,7 @@ module RigidBodyFacetExtensions =
         member this.GetBodyId world : BodyId = this.Get (nameof this.BodyId) world
         member this.BodyId = lensReadOnly (nameof this.BodyId) this this.GetBodyId
         member this.BodyPenetrationEvent = Events.BodyPenetrationEvent --> this
-        member this.BodySeparationExplicitEvent = Events.BodySeparationExplicitEvent --> this
-        member this.BodySeparationImplicitEvent = Events.BodySeparationImplicitEvent --> Game
+        member this.BodySeparationEvent = Events.BodySeparationEvent --> this
         member this.BodyTransformEvent = Events.BodyTransformEvent --> this
 
 /// Augments an entity with a physics-driven rigid body.
@@ -2863,7 +2862,7 @@ type BasicStaticBillboardEmitterFacet () =
                               HeightOpt = match emitterProperties.HeightOpt with ValueSome height -> ValueSome height | ValueNone -> descriptor.MaterialProperties.HeightOpt
                               IgnoreLightMapsOpt = match emitterProperties.IgnoreLightMapsOpt with ValueSome ignoreLightMaps -> ValueSome ignoreLightMaps | ValueNone -> descriptor.MaterialProperties.IgnoreLightMapsOpt
                               OpaqueDistanceOpt = ValueNone
-                              ThicknessOffsetOpt = match emitterProperties.ThicknessOffsetOpt with ValueSome thicknessOffset -> ValueSome thicknessOffset | ValueNone -> descriptor.MaterialProperties.ThicknessOffsetOpt
+                              FinenessOffsetOpt = match emitterProperties.FinenessOffsetOpt with ValueSome finenessOffset -> ValueSome finenessOffset | ValueNone -> descriptor.MaterialProperties.FinenessOffsetOpt
                               ScatterTypeOpt = match emitterProperties.ScatterTypeOpt with ValueSome scatterType -> ValueSome scatterType | ValueNone -> descriptor.MaterialProperties.ScatterTypeOpt }
                         let emitterMaterial = entity.GetEmitterMaterial world
                         let material =
@@ -2875,7 +2874,7 @@ type BasicStaticBillboardEmitterFacet () =
                               NormalImageOpt = match emitterMaterial.NormalImageOpt with ValueSome normalImage -> ValueSome normalImage | ValueNone -> descriptor.Material.NormalImageOpt
                               HeightImageOpt = match emitterMaterial.HeightImageOpt with ValueSome heightImage -> ValueSome heightImage | ValueNone -> descriptor.Material.HeightImageOpt
                               SubdermalImageOpt = match emitterMaterial.SubdermalImageOpt with ValueSome subdermalImage -> ValueSome subdermalImage | ValueNone -> descriptor.Material.SubdermalImageOpt
-                              ThicknessImageOpt = match emitterMaterial.ThicknessImageOpt with ValueSome thicknessImage -> ValueSome thicknessImage | ValueNone -> descriptor.Material.ThicknessImageOpt
+                              FinenessImageOpt = match emitterMaterial.FinenessImageOpt with ValueSome finenessImage -> ValueSome finenessImage | ValueNone -> descriptor.Material.FinenessImageOpt
                               ScatterImageOpt = match emitterMaterial.ScatterImageOpt with ValueSome scatterImage -> ValueSome scatterImage | ValueNone -> descriptor.Material.ScatterImageOpt
                               TwoSidedOpt = match emitterMaterial.TwoSidedOpt with ValueSome twoSided -> ValueSome twoSided | ValueNone -> descriptor.Material.TwoSidedOpt }
                         Some

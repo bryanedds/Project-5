@@ -155,7 +155,7 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
     return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, mat4 shadowMatrix, sampler2D shadowTexture)
+float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, float lightCutoff, mat4 shadowMatrix, sampler2D shadowTexture)
 {
     vec4 positionShadow = shadowMatrix * position;
     vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w; // ndc space
@@ -176,16 +176,14 @@ float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, mat4 shado
             for (int j = -1; j <= 1; ++j)
             {
                 float shadowDepth = texture(shadowTexture, shadowTexCoords + vec2(i, j) * shadowTexelSize).x;
-                float travelMax = 0.01; // TODO: see if we can make this unnecessary or expose as a global uniform.
-                float delta = min(shadowZ - shadowDepth, travelMax);
+                float delta = shadowZ - shadowDepth;
                 travel += delta;
             }
         }
         travel /= 9.0;
 
-        // negatively exponentiate travel with a constant to make its appearance visible, clamping to keep in range
-        float sssShadowExponent = 192.0; // TODO: expose a global uniform for this.
-        travel = exp(-travel * sssShadowExponent);
+        // negatively exponentiate travel, clamping to keep in range
+        travel = exp(-travel * lightCutoff);
         travel = clamp(travel, 0.0, 1.0);
         return travel;
     }
@@ -194,7 +192,7 @@ float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, mat4 shado
     return 1.0;
 }
 
-float geometryTraceFromShadowMap(vec4 position, vec3 lightOrigin, samplerCube shadowMap)
+float geometryTraceFromShadowMap(vec4 position, vec3 lightOrigin, float lightCutoff, samplerCube shadowMap)
 {
     vec3 positionShadow = position.xyz - lightOrigin;
     float shadowZ = length(positionShadow);
@@ -207,17 +205,15 @@ float geometryTraceFromShadowMap(vec4 position, vec3 lightOrigin, samplerCube sh
             {
                 vec3 offset = vec3(i, j, k) * lightShadowSampleScalar;
                 float shadowDepth = texture(shadowMap, positionShadow + offset).x;
-                float travelMax = 0.01; // TODO: see if we can make this unnecessary or expose as a global uniform.
-                float delta = min(shadowZ - shadowDepth, travelMax);
+                float delta = shadowZ - shadowDepth;
                 travel += delta;
             }
         }
     }
     travel /= 8.0;
 
-    // negatively exponentiate travel with a constant to make its appearance visible, clamping to keep in range
-    float sssShadowExponent = 192.0; // TODO: expose a global uniform for this.
-    travel = exp(-travel * sssShadowExponent);
+    // negatively exponentiate travel, clamping to keep in range
+    travel = exp(-travel * lightCutoff);
     travel = clamp(travel, 0.0, 1.0);
     return travel;
 }
@@ -273,13 +269,12 @@ float computeShadowMapScalar(vec4 position, vec3 lightOrigin, samplerCube shadow
     return 1.0 - shadowHits / (lightShadowSamples * lightShadowSamples * lightShadowSamples);
 }
 
-vec3 computeSubsurfaceScattering(vec4 position, vec3 albedo, vec3 normal, vec4 subdermalPlus, vec4 scatterPlus, float intensity, vec2 texCoords, int lightIndex)
+vec3 computeSubsurfaceScatter(vec4 position, vec3 albedo, vec4 subdermalPlus, vec4 scatterPlus, float nDotL, vec2 texCoords, int lightIndex)
 {
     // retrieve light and shadow values
     int lightType = lightTypes[lightIndex];
     vec3 lightOrigin = lightOrigins[lightIndex];
-    vec3 lightColor = lightColors[lightIndex];
-    float lightBrightness = lightBrightnesses[lightIndex];
+    float lightCutoff = lightCutoffs[lightIndex];
     int shadowIndex = lightShadowIndices[lightIndex];
 
     // compute geometry trace length, defaulting to 1.0 when no shadow present for this light index
@@ -287,18 +282,15 @@ vec3 computeSubsurfaceScattering(vec4 position, vec3 albedo, vec3 normal, vec4 s
     if (shadowIndex >= 0)
         trace =
             lightType == 0 ?
-            geometryTraceFromShadowMap(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
-            geometryTraceFromShadowTexture(position, lightOrigin, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+            geometryTraceFromShadowMap(position, lightOrigin, lightCutoff, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
+            geometryTraceFromShadowTexture(position, lightOrigin, lightCutoff, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
 
     // compute scattered color
     vec3 subdermal = subdermalPlus.rgb;
-    float thickness = subdermalPlus.a;
+    float fineness = subdermalPlus.a;
     vec3 scatter = scatterPlus.rgb;
     float scatterType = scatterPlus.a;
-    vec3 radii = thickness * scatter.rgb * trace;
-    vec3 subcolor = subdermal * lightColor * lightBrightness;
-    vec3 l = normalize(lightOrigin - position.xyz);
-    float nDotL = max(dot(normal, l), 0.0);
+    vec3 radii = fineness * scatter.rgb * trace;
     if (scatterType == 1.0) // skin formula
     {
         float nDotLPos = clamp(nDotL, 0.0, 1.0);
@@ -307,14 +299,14 @@ vec3 computeSubsurfaceScattering(vec4 position, vec3 albedo, vec3 normal, vec4 s
             0.2 *
             pow(vec3(1.0 - nDotLPos), 3.0 / (radii + 0.001)) *
             pow(vec3(1.0 - nDotLNeg), 3.0 / (radii + 0.001));
-        return subcolor * radii * scalar * intensity;
+        return subdermal * radii * scalar;
     }
     else if (scatterType == 2.0) // foliage formula
     {
         vec3 scalar =
             0.2 *
             exp(-3.0 * abs(nDotL) / (radii + 0.001));
-        return subcolor * radii * scalar * intensity;
+        return subdermal * radii * scalar;
     }
     return vec3(0.0); // nop formula
 }
@@ -670,6 +662,7 @@ void main()
         float nDotV = max(dot(normal, v), 0.0);
         vec3 f0 = mix(vec3(0.04), albedo, metallic); // if dia-electric (plastic) use f0 of 0.04f and if metal, use the albedo color as f0.
         vec3 lightAccum = vec3(0.0);
+        vec3 scatterAccum = vec3(0.0);
         for (int i = 0; i < lightsCount; ++i)
         {
             // per-light radiance
@@ -731,15 +724,17 @@ void main()
             vec3 kD = vec3(1.0) - kS;
             kD *= 1.0 - metallic;
 
-            // compute subsurface scattering
-            float scatterType = scatterPlus.a;
-            vec3 scattering =
-                scatterType != 0.0 ?
-                computeSubsurfaceScattering(position, albedo, normal, subdermalPlus, scatterPlus, intensity, texCoordsOut, i) :
-                vec3(0.0);
+            // accumulate light
+            lightAccum += (kD * albedo / PI + specular) * radiance * nDotL * shadowScalar;
 
-            // add to outgoing lightAccum
-            lightAccum += (kD * (albedo / PI + scattering) + specular) * radiance * nDotL * shadowScalar;
+            // accumulate subsurface scattering
+            float scatterType = scatterPlus.a;
+            if (scatterType != 0.0)
+            {
+                vec3 scatter = computeSubsurfaceScatter(position, albedo, subdermalPlus, scatterPlus, nDotL, texCoordsOut, i);
+                float shadowScalarScatter = shadowScalar * (nDotL > 0.0 ? 1.0 : 1.0 - max(dot(normal, -l), 0.0)); // HACK: we blend shadow toward the backfaces in order to blend with backscattering on the forward faces.
+                scatterAccum += kD * scatter * radiance * shadowScalarScatter;
+            }
 
             // accumulate fog
             if (ssvfEnabled == 1 && lightDesireFogs[i] == 1)
@@ -799,7 +794,7 @@ void main()
         vec3 specular = (1.0 - specularScreenWeight) * specularEnvironment + specularScreenWeight * specularScreen;
 
         // write remaining lighting values
-        color = vec4(lightAccum + diffuse + emission * albedo + specular, 1.0);
+        color = vec4(lightAccum + scatterAccum + diffuse + emission * albedo + specular, 1.0);
         depth = depthViewToDepthBuffer(positionView.z);
     }
 }
