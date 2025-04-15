@@ -710,9 +710,9 @@ void main()
             float shadowScalar = 1.0f;
             if (shadowIndex >= 0)
                 shadowScalar =
-                shadowIndex < SHADOW_TEXTURES_MAX ?
-                computeShadowTextureScalar(position, lightDirectional, lightConeOuters[i], shadowMatrices[shadowIndex], shadowTextures[shadowIndex]) :
-                computeShadowMapScalar(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]);
+                    shadowIndex < SHADOW_TEXTURES_MAX ?
+                    computeShadowTextureScalar(position, lightDirectional, lightConeOuters[i], shadowMatrices[shadowIndex], shadowTextures[shadowIndex]) :
+                    computeShadowMapScalar(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]);
 
             // cook-torrance brdf
             float hDotV = max(dot(h, v), 0.0);
