@@ -286,9 +286,9 @@ vec3 computeSubsurfaceScattering(vec4 position, vec3 albedo, vec3 normal, vec4 s
     float trace = 1.0;
     if (shadowIndex >= 0)
         trace =
-        lightType == 0 ?
-        geometryTraceFromShadowMap(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
-        geometryTraceFromShadowTexture(position, lightOrigin, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+            lightType == 0 ?
+            geometryTraceFromShadowMap(position, lightOrigin, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
+            geometryTraceFromShadowTexture(position, lightOrigin, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
 
     // compute scattered color
     vec3 subdermal = subdermalPlus.rgb;
