@@ -155,45 +155,47 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
     return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float geometryTraceFromShadowTexture(vec4 position, vec3 lightOrigin, float lightCutoff, mat4 shadowMatrix, sampler2D shadowTexture)
+float depthViewToDepthBuffer(float near, float far, float depthView)
 {
-    vec4 positionShadow = shadowMatrix * position;
-    vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w; // ndc space
-    if (shadowTexCoordsProj.x > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
-        shadowTexCoordsProj.y > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
-        shadowTexCoordsProj.z > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
-    {
-        // compute z position in shadow space
-        vec2 shadowTexCoords = shadowTexCoordsProj.xy * 0.5 + 0.5; // adj-ndc space
-        vec2 shadowTextureSize = textureSize(shadowTexture, 0);
-        vec2 shadowTexelSize = 1.0 / shadowTextureSize;
-        float shadowZ = shadowTexCoordsProj.z * 0.5 + 0.5;
-
-        // compute light distance travel through surface (not accounting for incidental surface concavity)
-        float travel = 0.0;
-        for (int i = -1; i <= 1; ++i)
-        {
-            for (int j = -1; j <= 1; ++j)
-            {
-                float shadowDepth = texture(shadowTexture, shadowTexCoords + vec2(i, j) * shadowTexelSize).x;
-                float delta = shadowZ - shadowDepth;
-                travel += delta;
-            }
-        }
-        travel /= 9.0;
-
-        // negatively exponentiate travel, clamping to keep in range
-        travel = exp(-travel * lightCutoff);
-        travel = clamp(travel, 0.0, 1.0);
-        return travel;
-    }
-
-    // tracing out of range, return default
-    return 1.0;
+    return (-depthView - near) / (far - near);
 }
 
-float geometryTraceFromShadowMap(vec4 position, vec3 lightOrigin, float lightCutoff, samplerCube shadowMap)
+
+float depthScreenToDepthView(float near, float far, float depthScreen)
 {
+    // for a standard OpenGL projection, compute a and b:
+    float a = -(far + near) / (far - near);
+    float b = -(2.0 * far * near) / (far - near);
+
+    // convert depth from [0, 1] to normalized device coordinate (NDC) z in [-1, 1].
+    float ndcZ = depthScreen * 2.0 - 1.0;
+
+    // recover view-space z: note that view-space z is negative in front of the camera.
+    // when depthScreen is 0 (near plane), ndcZ is -1 and view.z becomes -near.
+    // when depthScreen is 1 (far plane), ndcZ is 1 and view.z becomes -far.
+    return b / (ndcZ + a);
+}
+
+float worldToDepthView(float near, float far, mat4 viewProjection, vec4 position)
+{
+    // for a standard OpenGL projection, compute a and b:
+    float a = -(far + near) / (far - near);
+    float b = -(2.0 * far * near) / (far - near);
+
+    // transform into light clip space using the combined shadow matrix.
+    vec4 positionClip = viewProjection * position;
+
+    // perspective division gives you the light's normalized device coordinates.
+    float ndcZ = positionClip.z / positionClip.w; // in range [-1, 1]
+
+    // invert the projection depth mapping to recover light view-space depth.
+    return b / (ndcZ + a);
+}
+
+float geometryTracePoint(vec4 position, int lightIndex, samplerCube shadowMap)
+{
+    // compute travel average in world space
+    vec3 lightOrigin = lightOrigins[lightIndex];
     vec3 positionShadow = position.xyz - lightOrigin;
     float shadowZ = length(positionShadow);
     float travel = 0.0;
@@ -212,28 +214,95 @@ float geometryTraceFromShadowMap(vec4 position, vec3 lightOrigin, float lightCut
     }
     travel /= 8.0;
 
-    // negatively exponentiate travel, clamping to keep in range
-    travel = exp(-travel * lightCutoff);
-    travel = clamp(travel, 0.0, 1.0);
+    // negatively exponentiate travel
+    travel = exp(-travel);
     return travel;
 }
 
-float depthViewToDepthBuffer(float depthView)
+float geometryTraceSpot(vec4 position, int lightIndex, mat4 shadowMatrix, sampler2D shadowTexture)
 {
-    // compute near and far planes (these _should_ get baked down to fragment constants)
-    float p2z = projection[2].z;
-    float p2w = projection[2].w;
-    float nearPlane = p2w / (p2z - 1.0);
-    float farPlane = p2w / (p2z + 1.0);
+    // attempt to compute travel average in view space
+    vec4 positionClip = shadowMatrix * position;
+    vec3 shadowTexCoordsProj = positionClip.xyz / positionClip.w; // ndc space
+    if (shadowTexCoordsProj.x > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.y > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.z > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
+    {
+        // compute z position in view space
+        float shadowNear = 0.125; // NOTE: presuming near plane at 0.125 since I don't know if I can recover it directly from shadowMatrix.
+        float shadowFar = lightCutoffs[lightIndex];
+        float shadowZ = worldToDepthView(shadowNear, shadowFar, shadowMatrix, position);
 
-    // compute depth
-    return (-depthView - nearPlane) / (farPlane - nearPlane);
+        // compute light distance travel through surface (not accounting for incidental surface concavity)
+        float travel = 0.0;
+        vec2 shadowTexCoords = shadowTexCoordsProj.xy * 0.5 + 0.5; // adj-ndc space
+        vec2 shadowTextureSize = textureSize(shadowTexture, 0);
+        vec2 shadowTexelSize = 1.0 / shadowTextureSize;
+        for (int i = -1; i <= 1; ++i)
+        {
+            for (int j = -1; j <= 1; ++j)
+            {
+                float shadowDepthScreen = texture(shadowTexture, shadowTexCoords + vec2(i, j) * shadowTexelSize).x;
+                float shadowDepth = depthScreenToDepthView(shadowNear, shadowFar, shadowDepthScreen);
+                float delta = shadowZ - shadowDepth;
+                travel += delta;
+            }
+        }
+        travel /= 9.0;
+
+        // negatively exponentiate travel
+        travel = exp(-travel);
+        return travel;
+    }
+
+    // tracing out of range, return default
+    return 1.0;
+}
+
+float geometryTraceDirectional(vec4 position, int lightIndex, mat4 shadowMatrix, sampler2D shadowTexture)
+{
+    // attempt to compute travel average in view space
+    vec4 positionClip = shadowMatrix * position;
+    vec3 shadowTexCoordsProj = positionClip.xyz / positionClip.w; // ndc space
+    if (shadowTexCoordsProj.x > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.y > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
+        shadowTexCoordsProj.z > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
+    {
+        // compute z position in view space
+        float shadowNear = 0.125; // NOTE: presuming near plane at 0.125 since I don't know if I can recover it directly from shadowMatrix.
+        float shadowFar = lightCutoffs[lightIndex];
+        float shadowZ = worldToDepthView(shadowNear, shadowFar, shadowMatrix, position);
+
+        // compute light distance travel through surface (not accounting for incidental surface concavity)
+        float travel = 0.0;
+        vec2 shadowTexCoords = shadowTexCoordsProj.xy * 0.5 + 0.5; // adj-ndc space
+        vec2 shadowTextureSize = textureSize(shadowTexture, 0);
+        vec2 shadowTexelSize = 1.0 / shadowTextureSize;
+        for (int i = -1; i <= 1; ++i)
+        {
+            for (int j = -1; j <= 1; ++j)
+            {
+                float shadowDepthScreen = texture(shadowTexture, shadowTexCoords + vec2(i, j) * shadowTexelSize).x;
+                float shadowDepth = depthScreenToDepthView(shadowNear, shadowFar, shadowDepthScreen);
+                float delta = shadowZ - shadowDepth;
+                travel += delta;
+            }
+        }
+        travel /= 9.0;
+
+        // negatively exponentiate travel
+        travel = exp(-travel);
+        return travel;
+    }
+
+    // tracing out of range, return default
+    return 1.0;
 }
 
 float computeShadowTextureScalar(vec4 position, bool lightDirectional, float lightConeOuter, mat4 shadowMatrix, sampler2D shadowTexture)
 {
-    vec4 positionShadow = shadowMatrix * position;
-    vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
+    vec4 positionClip = shadowMatrix * position;
+    vec3 shadowTexCoordsProj = positionClip.xyz / positionClip.w;
     if (shadowTexCoordsProj.x > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.x < 1.0 - SHADOW_SEAM_INSET &&
         shadowTexCoordsProj.y > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
         shadowTexCoordsProj.z > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
@@ -273,17 +342,25 @@ vec3 computeSubsurfaceScatter(vec4 position, vec3 albedo, vec4 subdermalPlus, ve
 {
     // retrieve light and shadow values
     int lightType = lightTypes[lightIndex];
-    vec3 lightOrigin = lightOrigins[lightIndex];
-    float lightCutoff = lightCutoffs[lightIndex];
     int shadowIndex = lightShadowIndices[lightIndex];
 
     // compute geometry trace length, defaulting to 1.0 when no shadow present for this light index
     float trace = 1.0;
     if (shadowIndex >= 0)
-        trace =
-            lightType == 0 ?
-            geometryTraceFromShadowMap(position, lightOrigin, lightCutoff, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]) :
-            geometryTraceFromShadowTexture(position, lightOrigin, lightCutoff, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+    {
+        switch (lightType)
+        {
+        case 0: // point light
+            trace = geometryTracePoint(position, lightIndex, shadowMaps[shadowIndex - SHADOW_TEXTURES_MAX]);
+            break;
+        case 1: // spot light
+            trace = geometryTraceSpot(position, lightIndex, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+            break;
+        default: // directional light
+            trace = geometryTraceDirectional(position, lightIndex, shadowMatrices[shadowIndex], shadowTextures[shadowIndex]);
+            break;
+        }
+    }
 
     // compute scattered color
     vec3 subdermal = subdermalPlus.rgb;
@@ -427,8 +504,8 @@ vec3 computeFogAccumSpot(vec4 position, int lightIndex)
         for (int i = 0; i < ssvfSteps; ++i)
         {
             // step through ray, accumulating fog light moment
-            vec4 positionShadow = shadowMatrix * vec4(currentPosition, 1.0);
-            vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
+            vec4 positionClip = shadowMatrix * vec4(currentPosition, 1.0);
+            vec3 shadowTexCoordsProj = positionClip.xyz / positionClip.w;
             vec2 shadowTexCoords = vec2(shadowTexCoordsProj.x, shadowTexCoordsProj.y) * 0.5 + 0.5;
             bool shadowTexCoordsInRange = shadowTexCoords.x >= 0.0 && shadowTexCoords.x < 1.0 && shadowTexCoords.y >= 0.0 && shadowTexCoords.y < 1.0;
             float shadowZ = shadowTexCoordsProj.z * 0.5 + 0.5;
@@ -501,8 +578,8 @@ vec3 computeFogAccumDirectional(vec4 position, int lightIndex)
         for (int i = 0; i < ssvfSteps; ++i)
         {
             // step through ray, accumulating fog light moment
-            vec4 positionShadow = shadowMatrix * vec4(currentPosition, 1.0);
-            vec3 shadowTexCoordsProj = positionShadow.xyz / positionShadow.w;
+            vec4 positionClip = shadowMatrix * vec4(currentPosition, 1.0);
+            vec3 shadowTexCoordsProj = positionClip.xyz / positionClip.w;
             vec2 shadowTexCoords = vec2(shadowTexCoordsProj.x, shadowTexCoordsProj.y) * 0.5 + 0.5;
             bool shadowTexCoordsInRange = shadowTexCoords.x >= 0.0 && shadowTexCoords.x < 1.0 && shadowTexCoords.y >= 0.0 && shadowTexCoords.y < 1.0;
             float shadowZ = shadowTexCoordsProj.z * 0.5 + 0.5;
@@ -793,8 +870,12 @@ void main()
         vec3 specularEnvironment = environmentFilter * specularEnvironmentSubterm * ambientLight;
         vec3 specular = (1.0 - specularScreenWeight) * specularEnvironment + specularScreenWeight * specularScreen;
 
-        // write remaining lighting values
+        // write color
         color = vec4(lightAccum + scatterAccum + diffuse + emission * albedo + specular, 1.0);
-        depth = depthViewToDepthBuffer(positionView.z);
+
+        // write depth
+        float near = projection[2].w / (projection[2].z - 1.0);
+        float far = projection[2].w / (projection[2].z + 1.0);
+        depth = depthViewToDepthBuffer(near, far, positionView.z);
     }
 }
