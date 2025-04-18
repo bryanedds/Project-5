@@ -14,6 +14,7 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const float PI = 3.141592654;
 const float REFLECTION_LOD_MAX = 7.0;
@@ -61,19 +62,19 @@ uniform float ssrEdgeHorizontalMargin;
 uniform float ssrEdgeVerticalMargin;
 uniform vec3 ssrLightColor;
 uniform float ssrLightBrightness;
-uniform sampler2D positionTexture;
-uniform sampler2D albedoTexture;
-uniform sampler2D materialTexture;
-uniform sampler2D normalPlusTexture;
-uniform sampler2D subdermalPlusTexture;
-uniform sampler2D scatterPlusTexture;
-uniform sampler2D brdfTexture;
-uniform sampler2D ambientTexture;
-uniform sampler2D irradianceTexture;
-uniform sampler2D environmentFilterTexture;
-uniform sampler2D ssaoTexture;
-uniform sampler2D shadowTextures[SHADOW_TEXTURES_MAX];
-uniform samplerCube shadowMaps[SHADOW_MAPS_MAX];
+layout(bindless_sampler) uniform sampler2D positionTexture;
+layout(bindless_sampler) uniform sampler2D albedoTexture;
+layout(bindless_sampler) uniform sampler2D materialTexture;
+layout(bindless_sampler) uniform sampler2D normalPlusTexture;
+layout(bindless_sampler) uniform sampler2D subdermalPlusTexture;
+layout(bindless_sampler) uniform sampler2D scatterPlusTexture;
+layout(bindless_sampler) uniform sampler2D brdfTexture;
+layout(bindless_sampler) uniform sampler2D ambientTexture;
+layout(bindless_sampler) uniform sampler2D irradianceTexture;
+layout(bindless_sampler) uniform sampler2D environmentFilterTexture;
+layout(bindless_sampler) uniform sampler2D ssaoTexture;
+layout(bindless_sampler) uniform sampler2D shadowTextures[SHADOW_TEXTURES_MAX];
+layout(bindless_sampler) uniform samplerCube shadowMaps[SHADOW_MAPS_MAX];
 uniform vec3 lightOrigins[LIGHTS_MAX];
 uniform vec3 lightDirections[LIGHTS_MAX];
 uniform vec3 lightColors[LIGHTS_MAX];

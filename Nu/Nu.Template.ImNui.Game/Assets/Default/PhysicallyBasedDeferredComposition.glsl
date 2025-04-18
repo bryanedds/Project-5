@@ -14,6 +14,7 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const float GAMMA = 2.2;
 
@@ -22,9 +23,9 @@ uniform int fogEnabled;
 uniform float fogStart;
 uniform float fogFinish;
 uniform vec4 fogColor;
-uniform sampler2D positionTexture;
-uniform sampler2D colorTexture;
-uniform sampler2D fogAccumTexture;
+layout(bindless_sampler) uniform sampler2D positionTexture;
+layout(bindless_sampler) uniform sampler2D colorTexture;
+layout(bindless_sampler) uniform sampler2D fogAccumTexture;
 
 in vec2 texCoordsOut;
 

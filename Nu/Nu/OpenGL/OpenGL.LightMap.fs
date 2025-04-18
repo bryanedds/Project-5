@@ -110,7 +110,8 @@ module LightMap =
         Gl.BindFramebuffer (FramebufferTarget.Framebuffer, 0u)
         Gl.DeleteRenderbuffers [|rasterRenderbuffer|]
         Gl.DeleteFramebuffers [|rasterFramebuffer|]
-        let rasterCubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = rasterCubeMapId }
+        let rasterCubeMapHandle = Texture.CreateTextureHandle rasterCubeMapId
+        let rasterCubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = rasterCubeMapId; TextureHandle = rasterCubeMapHandle }
         rasterCubeMap
 
     let CreateIrradianceMap
@@ -191,7 +192,8 @@ module LightMap =
         Gl.BindFramebuffer (FramebufferTarget.Framebuffer, 0u)
         Gl.DeleteRenderbuffers [|renderbuffer|]
         Gl.DeleteFramebuffers [|framebuffer|]
-        let cubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = cubeMapId }
+        let cubeMapHandle = Texture.CreateTextureHandle cubeMapId
+        let cubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = cubeMapId; TextureHandle = cubeMapHandle }
         cubeMap
 
     /// Describes an environment filter shader that's loaded into GPU.
@@ -242,9 +244,7 @@ module LightMap =
         Gl.UniformMatrix4 (shader.ProjectionUniform, false, projection)
         Gl.Uniform1 (shader.RoughnessUniform, roughness)
         Gl.Uniform1 (shader.ResolutionUniform, resolution)
-        Gl.Uniform1 (shader.CubeMapUniform, 0)
-        Gl.ActiveTexture TextureUnit.Texture0
-        Gl.BindTexture (TextureTarget.TextureCubeMap, cubeMap.TextureId)
+        Gl.UniformHandleARB (shader.CubeMapUniform, cubeMap.TextureHandle)
         Hl.Assert ()
 
         // setup geometry
@@ -263,8 +263,6 @@ module LightMap =
         Hl.Assert ()
 
         // teardown shader
-        Gl.ActiveTexture TextureUnit.Texture0
-        Gl.BindTexture (TextureTarget.TextureCubeMap, 0u)
         Gl.UseProgram 0u
         Hl.Assert ()
 
@@ -349,7 +347,8 @@ module LightMap =
         Gl.BindFramebuffer (FramebufferTarget.Framebuffer, 0u)
         Gl.DeleteRenderbuffers [|renderbuffer|]
         Gl.DeleteFramebuffers [|framebuffer|]
-        let cubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = cubeMapId }
+        let cubeMapHandle = Texture.CreateTextureHandle cubeMapId
+        let cubeMap = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = cubeMapId; TextureHandle = cubeMapHandle }
         cubeMap
 
     /// A collection of maps consisting a light map.

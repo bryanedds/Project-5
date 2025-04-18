@@ -162,12 +162,10 @@ module Sprite =
         Gl.UniformMatrix4 (modelViewProjectionUniform, false, modelViewProjection)
         Gl.Uniform4 (texCoords4Uniform, texCoords.Min.X, texCoords.Min.Y, texCoords.Size.X, texCoords.Size.Y)
         Gl.Uniform4 (colorUniform, color.R, color.G, color.B, color.A)
-        Gl.Uniform1 (textureUniform, 0)
         Hl.Assert ()
         
         // setup texture
-        Gl.ActiveTexture TextureUnit.Texture0
-        Gl.BindTexture (TextureTarget.Texture2d, texture.TextureId)
+        Gl.UniformHandleARB (textureUniform, texture.TextureHandle)
         Hl.Assert ()
 
         // setup geometry
@@ -184,10 +182,6 @@ module Sprite =
         // teardown geometry
         Gl.BindVertexArray 0u
         Hl.Assert ()
-
-        // teardown texture
-        Gl.ActiveTexture TextureUnit.Texture0
-        Gl.BindTexture (TextureTarget.Texture2d, 0u)
 
         // teardown shader
         Gl.UseProgram 0u

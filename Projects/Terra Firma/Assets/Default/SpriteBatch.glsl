@@ -54,8 +54,9 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
-uniform sampler2D tex;
+layout(bindless_sampler) uniform sampler2D tex;
 
 in vec2 texCoords;
 in vec4 color;

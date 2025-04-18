@@ -16,11 +16,12 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const float PI = 3.14159265359;
 const float SAMPLE_DELTA = 0.025;
 
-uniform samplerCube cubeMap;
+layout(bindless_sampler) uniform samplerCube cubeMap;
 
 in vec3 positionOut;
 

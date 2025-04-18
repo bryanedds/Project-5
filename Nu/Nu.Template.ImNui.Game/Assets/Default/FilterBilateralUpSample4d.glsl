@@ -14,12 +14,13 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const float SHARPNESS = 0.05;
 
-uniform sampler2D colorDownSampledTexture;
-uniform sampler2D depthDownSampledTexture;
-uniform sampler2D depthTexture;
+layout(bindless_sampler) uniform sampler2D colorDownSampledTexture;
+layout(bindless_sampler) uniform sampler2D depthDownSampledTexture;
+layout(bindless_sampler) uniform sampler2D depthTexture;
 
 in vec2 texCoordsOut;
 

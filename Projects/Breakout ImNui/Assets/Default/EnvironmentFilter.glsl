@@ -16,13 +16,14 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const float PI = 3.141592654;
 const uint SAMPLE_COUNT = 1024u;
 
 uniform float roughness;
 uniform float resolution; // resolution of cube map face
-uniform samplerCube cubeMap;
+layout(bindless_sampler) uniform samplerCube cubeMap;
 
 in vec3 positionOut;
 

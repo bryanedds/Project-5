@@ -14,11 +14,12 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
 const int LIGHT_MAPS_MAX = 27;
 
-uniform sampler2D positionTexture;
-uniform sampler2D lightMappingTexture;
+layout(bindless_sampler) uniform sampler2D positionTexture;
+layout(bindless_sampler) uniform sampler2D lightMappingTexture;
 uniform vec3 lightMapAmbientColor;
 uniform float lightMapAmbientBrightness;
 uniform vec3 lightMapAmbientColors[LIGHT_MAPS_MAX];

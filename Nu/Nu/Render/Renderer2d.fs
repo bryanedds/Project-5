@@ -763,7 +763,8 @@ type [<ReferenceEquality>] GlRenderer2d =
 
                             // make texture drawable
                             let textTextureMetadata = OpenGL.Texture.TextureMetadata.make textSurfaceWidth textSurfaceHeight
-                            let textTexture = OpenGL.Texture.EagerTexture { TextureMetadata = textTextureMetadata; TextureId = textTextureId }
+                            let textTextureHandle = OpenGL.Texture.CreateTextureHandle textTextureId
+                            let textTexture = OpenGL.Texture.EagerTexture { TextureMetadata = textTextureMetadata; TextureId = textTextureId; TextureHandle = textTextureHandle }
                             OpenGL.Hl.Assert ()
 
                             // draw text sprite

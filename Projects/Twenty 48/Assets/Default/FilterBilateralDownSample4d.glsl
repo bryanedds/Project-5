@@ -14,9 +14,10 @@ void main()
 
 #shader fragment
 #version 410
+#extension GL_ARB_bindless_texture : require
 
-uniform sampler2D colorTexture;
-uniform sampler2D depthTexture;
+layout(bindless_sampler) uniform sampler2D colorTexture;
+layout(bindless_sampler) uniform sampler2D depthTexture;
 
 in vec2 texCoordsOut;
 

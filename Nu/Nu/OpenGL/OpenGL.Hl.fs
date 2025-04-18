@@ -125,6 +125,10 @@ module Hl =
         if not (extensions.Contains "GL_ARB_texture_filter_anisotropic") then
             Log.warn "Anisotropic texture filtering required to properly run Nu."
 
+        // assert that GL_ARB_bindless_texture is available
+        if not (extensions.Contains "GL_ARB_bindless_texture") then
+            Log.fail "Bindless textures required to run Nu."
+
     /// Begin an OpenGL frame.
     let BeginFrame (windowSize : Vector2i, outerBounds : Box2i) =
 
