@@ -630,11 +630,11 @@ type private SortableLightMap =
 
     /// Sort light maps into array for uploading to OpenGL.
     /// TODO: consider getting rid of allocation here.
-    static member sortLightMapsIntoFloatArrays lightMapsMax position boundsOpt lightMaps =
-        let lightMapOrigins = Array.zeroCreate<single> (lightMapsMax * 3)
-        let lightMapMins = Array.zeroCreate<single> (lightMapsMax * 3)
-        let lightMapSizes = Array.zeroCreate<single> (lightMapsMax * 3)
-        let lightMapAmbientColors = Array.zeroCreate<single> (lightMapsMax * 3)
+    static member sortLightMaps lightMapsMax position boundsOpt lightMaps =
+        let lightMapOrigins = Array.zeroCreate<Vector3> lightMapsMax
+        let lightMapMins = Array.zeroCreate<Vector3> lightMapsMax
+        let lightMapSizes = Array.zeroCreate<Vector3> lightMapsMax
+        let lightMapAmbientColors = Array.zeroCreate<Color> lightMapsMax
         let lightMapAmbientBrightnesses = Array.zeroCreate<single> lightMapsMax
         let lightMapIrradianceMaps = Array.init<OpenGL.Texture.Texture> lightMapsMax (fun _ -> OpenGL.Texture.EmptyTexture)
         let lightMapEnvironmentFilterMaps = Array.init<OpenGL.Texture.Texture> lightMapsMax (fun _ -> OpenGL.Texture.EmptyTexture)
@@ -648,20 +648,11 @@ type private SortableLightMap =
             lightMapsFiltered |> Array.sortBy (fun lightMap -> lightMap.SortableLightMapDistanceSquared)
         for i in 0 .. dec lightMapsMax do
             if i < lightMapsSorted.Length then
-                let i3 = i * 3
                 let lightMap = lightMapsSorted.[i]
-                lightMapOrigins.[i3] <- lightMap.SortableLightMapOrigin.X
-                lightMapOrigins.[i3+1] <- lightMap.SortableLightMapOrigin.Y
-                lightMapOrigins.[i3+2] <- lightMap.SortableLightMapOrigin.Z
-                lightMapMins.[i3] <- lightMap.SortableLightMapBounds.Min.X
-                lightMapMins.[i3+1] <- lightMap.SortableLightMapBounds.Min.Y
-                lightMapMins.[i3+2] <- lightMap.SortableLightMapBounds.Min.Z
-                lightMapSizes.[i3] <- lightMap.SortableLightMapBounds.Size.X
-                lightMapSizes.[i3+1] <- lightMap.SortableLightMapBounds.Size.Y
-                lightMapSizes.[i3+2] <- lightMap.SortableLightMapBounds.Size.Z
-                lightMapAmbientColors.[i3] <- lightMap.SortableLightMapAmbientColor.R
-                lightMapAmbientColors.[i3+1] <- lightMap.SortableLightMapAmbientColor.G
-                lightMapAmbientColors.[i3+2] <- lightMap.SortableLightMapAmbientColor.B
+                lightMapOrigins.[i] <- lightMap.SortableLightMapOrigin
+                lightMapMins.[i] <- lightMap.SortableLightMapBounds.Min
+                lightMapSizes.[i] <- lightMap.SortableLightMapBounds.Size
+                lightMapAmbientColors.[i] <- lightMap.SortableLightMapAmbientColor
                 lightMapAmbientBrightnesses.[i] <- lightMap.SortableLightMapAmbientBrightness
                 lightMapIrradianceMaps.[i] <- lightMap.SortableLightMapIrradianceMap
                 lightMapEnvironmentFilterMaps.[i] <- lightMap.SortableLightMapEnvironmentFilterMap
@@ -722,11 +713,11 @@ type private SortableLight =
 
     /// Sort lights into float array for uploading to OpenGL.
     /// TODO: see if we can get rid of allocation here.
-    static member sortLightsIntoFloatArrays lightsMax position lights =
+    static member sortLights lightsMax position lights =
         let lightIds = Array.zeroCreate<uint64> lightsMax
-        let lightOrigins = Array.zeroCreate<single> (lightsMax * 3)
-        let lightDirections = Array.zeroCreate<single> (lightsMax * 3)
-        let lightColors = Array.zeroCreate<single> (lightsMax * 3)
+        let lightOrigins = Array.zeroCreate<Vector3> lightsMax
+        let lightDirections = Array.zeroCreate<Vector3> lightsMax
+        let lightColors = Array.zeroCreate<Color> lightsMax
         let lightBrightnesses = Array.zeroCreate<single> lightsMax
         let lightAttenuationLinears = Array.zeroCreate<single> lightsMax
         let lightAttenuationQuadratics = Array.zeroCreate<single> lightsMax
@@ -741,18 +732,11 @@ type private SortableLight =
         let lightsSorted = lights |> Seq.toArray |> Array.sortBy SortableLight.project
         for i in 0 .. dec lightsMax do
             if i < lightsSorted.Length then
-                let i3 = i * 3
                 let light = lightsSorted.[i]
                 lightIds.[i] <- light.SortableLightId
-                lightOrigins.[i3] <- light.SortableLightOrigin.X
-                lightOrigins.[i3+1] <- light.SortableLightOrigin.Y
-                lightOrigins.[i3+2] <- light.SortableLightOrigin.Z
-                lightDirections.[i3] <- light.SortableLightDirection.X
-                lightDirections.[i3+1] <- light.SortableLightDirection.Y
-                lightDirections.[i3+2] <- light.SortableLightDirection.Z
-                lightColors.[i3] <- light.SortableLightColor.R
-                lightColors.[i3+1] <- light.SortableLightColor.G
-                lightColors.[i3+2] <- light.SortableLightColor.B
+                lightOrigins.[i] <- light.SortableLightOrigin
+                lightDirections.[i] <- light.SortableLightDirection
+                lightColors.[i] <- light.SortableLightColor
                 lightBrightnesses.[i] <- light.SortableLightBrightness
                 lightAttenuationLinears.[i] <- light.SortableLightAttenuationLinear
                 lightAttenuationQuadratics.[i] <- light.SortableLightAttenuationQuadratic
@@ -2635,7 +2619,6 @@ type [<ReferenceEquality>] GlRenderer3d =
         // get ambient lighting, sky box opt, and fallback light map
         let (lightAmbientColor, lightAmbientBrightness, skyBoxOpt) = GlRenderer3d.getLastSkyBoxOpt renderPass renderer
         let (lightAmbientColor, lightAmbientBrightness) = Option.defaultValue (lightAmbientColor, lightAmbientBrightness) lightAmbientOverride
-        let lightAmbientColor = [|lightAmbientColor.R; lightAmbientColor.G; lightAmbientColor.B|]
         let lightMapFallback =
             match skyBoxOpt with
             | Some (ambientColor, ambientBrightness, _, (irradianceAndEnvironmentMapsOptRef : (OpenGL.Texture.Texture * OpenGL.Texture.Texture) option ref)) ->
@@ -2709,19 +2692,19 @@ type [<ReferenceEquality>] GlRenderer3d =
         // sort light maps for deferred rendering relative to eye center
         let (lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapIrradianceMaps, lightMapEnvironmentFilterMaps) =
             if topLevelRender then
-                SortableLightMap.sortLightMapsIntoFloatArrays Constants.Render.LightMapsMaxDeferred eyeCenter None lightMaps
+                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxDeferred eyeCenter None lightMaps
             else
-                (Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 3),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 3),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 3),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 3),
+                (Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
+                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
+                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
+                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
                  Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
                  Array.init Constants.Render.LightMapsMaxDeferred (fun _ -> OpenGL.Texture.EmptyTexture),
                  Array.init Constants.Render.LightMapsMaxDeferred (fun _ -> OpenGL.Texture.EmptyTexture))
 
         // sort lights for deferred rendering relative to eye center
         let (lightIds, lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs) =
-            SortableLight.sortLightsIntoFloatArrays Constants.Render.LightsMaxDeferred eyeCenter renderTasks.Lights
+            SortableLight.sortLights Constants.Render.LightsMaxDeferred eyeCenter renderTasks.Lights
 
         // compute light shadow indices according to sorted lights
         let lightShadowIndices = SortableLight.sortLightShadowIndices renderer.LightShadowIndices lightIds
@@ -2922,7 +2905,6 @@ type [<ReferenceEquality>] GlRenderer3d =
         // deferred render lighting quad to lighting buffers
         let ssvfEnabled = if renderer.RendererConfig.SsvfEnabled && renderer.LightingConfig.SsvfEnabled then 1 else 0
         let ssrEnabled = if renderer.RendererConfig.SsrEnabled && renderer.LightingConfig.SsrEnabled then 1 else 0
-        let ssrLightColor = Array.take 3 (renderer.LightingConfig.SsrLightColor.ToArray ())
         OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredLightingSurface
             (eyeCenter, viewArray, rasterProjectionArray, renderer.LightingConfig.LightCutoffMargin,
              renderer.LightingConfig.LightShadowSamples, renderer.LightingConfig.LightShadowBias, renderer.LightingConfig.LightShadowSampleScalar, renderer.LightingConfig.LightShadowExponent, renderer.LightingConfig.LightShadowDensity,
@@ -2930,7 +2912,7 @@ type [<ReferenceEquality>] GlRenderer3d =
              ssrEnabled, renderer.LightingConfig.SsrDetail, renderer.LightingConfig.SsrRefinementsMax, renderer.LightingConfig.SsrRayThickness, renderer.LightingConfig.SsrTowardEyeCutoff,
              renderer.LightingConfig.SsrDepthCutoff, renderer.LightingConfig.SsrDepthCutoffMargin, renderer.LightingConfig.SsrDistanceCutoff, renderer.LightingConfig.SsrDistanceCutoffMargin, renderer.LightingConfig.SsrRoughnessCutoff, renderer.LightingConfig.SsrRoughnessCutoffMargin,
              renderer.LightingConfig.SsrSlopeCutoff, renderer.LightingConfig.SsrSlopeCutoffMargin, renderer.LightingConfig.SsrEdgeHorizontalMargin, renderer.LightingConfig.SsrEdgeVerticalMargin,
-             ssrLightColor, renderer.LightingConfig.SsrLightBrightness, positionTexture, albedoTexture, materialTexture, normalPlusTexture, subdermalPlusTexture, scatterPlusTexture, renderer.BrdfTexture, ambientTexture, irradianceTexture, environmentFilterTexture, ssaoTextureFiltered, shadowTextures, shadowMaps,
+             renderer.LightingConfig.SsrLightColor, renderer.LightingConfig.SsrLightBrightness, positionTexture, albedoTexture, materialTexture, normalPlusTexture, subdermalPlusTexture, scatterPlusTexture, renderer.BrdfTexture, ambientTexture, irradianceTexture, environmentFilterTexture, ssaoTextureFiltered, shadowTextures, shadowMaps,
              lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs, lightShadowIndices, min lightIds.Length renderTasks.Lights.Count, shadowNear, shadowMatrices,
              renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedDeferredLightingShader)
         OpenGL.Hl.Assert ()
@@ -3011,9 +2993,9 @@ type [<ReferenceEquality>] GlRenderer3d =
                 renderer.LightingConfig.SsvfSteps * 2 // HACK: need an increase in forward-rendered steps since they don't get blurred.
             let (lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapIrradianceMaps, lightMapEnvironmentFilterMaps) =
                 let surfaceBounds = surface.SurfaceBounds.Transform model
-                SortableLightMap.sortLightMapsIntoFloatArrays Constants.Render.LightMapsMaxForward model.Translation (Some surfaceBounds) lightMaps
+                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxForward model.Translation (Some surfaceBounds) lightMaps
             let (lightIds, lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs) =
-                SortableLight.sortLightsIntoFloatArrays Constants.Render.LightsMaxForward model.Translation renderTasks.Lights
+                SortableLight.sortLights Constants.Render.LightsMaxForward model.Translation renderTasks.Lights
             let lightShadowIndices =
                 SortableLight.sortLightShadowIndices renderer.LightShadowIndices lightIds
             let (bonesArray, shader) =
@@ -3373,7 +3355,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                             let shouldDraw =
                                 match renderer.RenderPasses2.TryGetValue renderPass with
                                 | (true, renderTasksCached) ->
-                                    if Option.contains (shadowMapBufferIndex + Constants.Render.ShadowTexturesMaxShader) renderTasksCached.ShadowBufferIndexOpt then
+                                    if Option.contains (shadowMapBufferIndex + Constants.Render.ShadowTexturesMax) renderTasksCached.ShadowBufferIndexOpt then
                                         let upToDate = RenderTasks.shadowUpToDate renderer.LightingConfigChanged renderTasks renderTasksCached
                                         not upToDate
                                     else true
@@ -3384,13 +3366,13 @@ type [<ReferenceEquality>] GlRenderer3d =
                                 GlRenderer3d.renderShadowMapFace renderTasks renderer lightOrigin shadowFace shadowView shadowProjection shadowResolution shadowTexture shadowRenderbuffer shadowFramebuffer
 
                             // remember the utilized index for the next frame
-                            renderTasks.ShadowBufferIndexOpt <- Some (shadowMapBufferIndex + Constants.Render.ShadowTexturesMaxShader)
+                            renderTasks.ShadowBufferIndexOpt <- Some (shadowMapBufferIndex + Constants.Render.ShadowTexturesMax)
 
                             // update renderer values or next shadow
                             // NOTE: this behavior completely DEPENDS on shadow face messages for a shadow map
                             // being received and processed in numerical order.
                             if shadowFace = 0 then
-                                renderer.LightShadowIndices.[lightId] <- shadowMapBufferIndex + Constants.Render.ShadowTexturesMaxShader
+                                renderer.LightShadowIndices.[lightId] <- shadowMapBufferIndex + Constants.Render.ShadowTexturesMax
                             elif shadowFace = dec 6 then
                                 shadowMapBufferIndex <- inc shadowMapBufferIndex
 
@@ -3522,8 +3504,16 @@ type [<ReferenceEquality>] GlRenderer3d =
         OpenGL.Hl.Assert ()
 
         // create forward shaders
-        let forwardStaticShader = OpenGL.PhysicallyBased.CreatePhysicallyBasedShader Constants.Paths.PhysicallyBasedForwardStaticShaderFilePath
-        let forwardAnimatedShader = OpenGL.PhysicallyBased.CreatePhysicallyBasedShader Constants.Paths.PhysicallyBasedForwardAnimatedShaderFilePath
+        let forwardStaticShader =
+            OpenGL.PhysicallyBased.CreatePhysicallyBasedShader
+                Constants.Render.LightMapsMaxForward
+                Constants.Render.LightsMaxForward
+                Constants.Paths.PhysicallyBasedForwardStaticShaderFilePath
+        let forwardAnimatedShader =
+            OpenGL.PhysicallyBased.CreatePhysicallyBasedShader
+                Constants.Render.LightMapsMaxForward
+                Constants.Render.LightsMaxForward
+                Constants.Paths.PhysicallyBasedForwardAnimatedShaderFilePath
         OpenGL.Hl.Assert ()
 
         // create white cube map

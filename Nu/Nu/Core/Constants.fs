@@ -6,6 +6,7 @@ open System
 open System.Configuration
 open System.Diagnostics
 open System.Numerics
+open SDL2
 open Prime
 open Nu
 
@@ -13,7 +14,8 @@ module OpenGL =
 
     let [<Literal>] VersionMajor = 4
     let [<Literal>] VersionMinor = 1
-    let [<Uniform>] GlslVersionPragma = "#version " + string VersionMajor + string VersionMinor + "0"
+    let [<Literal>] Profile = SDL.SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_CORE
+    let [<Uniform>] GlslVersionPragma = "#version " + string VersionMajor + string VersionMinor + "0" // TODO: consider added "core" profile specifier here and in the glsl asset files.
     let [<Literal>] UncompressedTextureFormat = OpenGL.InternalFormat.Rgba8
     let [<Literal>] BlockCompressedTextureFormat = OpenGL.InternalFormat.CompressedRgbaS3tcDxt5Ext
     let [<Uniform>] mutable HlDebug = match ConfigurationManager.AppSettings.["HlDebug"] with null -> false | value -> scvalue value
@@ -135,10 +137,8 @@ module Render =
     let [<Literal>] LightsMaxDeferred = 64
     let [<Literal>] LightsMaxForward = 8
     let [<Uniform>] mutable ShadowVirtualResolution = match ConfigurationManager.AppSettings.["ShadowVirtualResolution"] with null -> 128 | value -> scvalue value
-    let [<Literal>] ShadowTexturesMaxShader = 16 // NOTE: remember to update SHADOW_TEXTURES_MAX in shaders when changing this!
-    let [<Literal>] ShadowMapsMaxShader = 16 // NOTE: remember to update SHADOW_TEXTURES_MAX in shaders when changing this!
-    let [<Uniform>] mutable ShadowTexturesMax = match ConfigurationManager.AppSettings.["ShadowTexturesMax"] with null -> 16 | value -> min (scvalue value) ShadowTexturesMaxShader
-    let [<Uniform>] mutable ShadowMapsMax = match ConfigurationManager.AppSettings.["ShadowMapsMax"] with null -> 8 | value -> min (scvalue value) ShadowMapsMaxShader
+    let [<Literal>] ShadowTexturesMax = 16 // NOTE: remember to update SHADOW_TEXTURES_MAX in shaders when changing this!
+    let [<Literal>] ShadowMapsMax = 16 // NOTE: remember to update SHADOW_MAPS_MAX in shaders when changing this!
     let [<Uniform>] mutable ShadowDetailedResolutionScalar = match ConfigurationManager.AppSettings.["ShadowDetailedResolutionScalar"] with null -> 2 | value -> scvalue value
     let [<Literal>] ShadowFovMax = 2.1f // NOTE: remember to update SHADOW_FOV_MAX in shaders when changing this!
     let [<Literal>] ReflectionMapResolution = 1024
