@@ -494,7 +494,7 @@ type CharacterDispatcher () =
                 | WoundState _ -> world
             else world
 
-        // declare animated model
+        // begin animated model
         let world =
             let actionState = entity.GetActionState world
             let position = entity.GetPositionInterpolated world
@@ -503,7 +503,7 @@ type CharacterDispatcher () =
                 if characterType.IsPlayer
                 then Algorithm.computePlayerVisibilityScalar position rotation actionState entity world
                 else 1.0f
-            World.doEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
+            World.beginEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
                 [Entity.Position @= position
                  Entity.Rotation @= rotation
                  Entity.Size .= entity.GetSize world
@@ -516,7 +516,25 @@ type CharacterDispatcher () =
                  Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
                  Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
                  Entity.SubsortOffsets @= characterType.SubsortOffsets] world
-        let animatedModel = world.DeclaredEntity
+        let animatedModel = world.ContextEntity
+
+        // declare player light
+        let world =
+            match entity.GetCharacterState world with
+            | PlayerState state ->
+                World.doLight3d Constants.Gameplay.CharacterLightName
+                    [Entity.PositionLocal .= v3 0.0f 1.2f -0.25f
+                     Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
+                     Entity.LightType .= SpotLight (0.9f, 1.2f)
+                     Entity.LightCutoff .= 11.0f
+                     Entity.Brightness .= 2.5f
+                     Entity.DesireShadows .= true
+                     Entity.Static .= false
+                     Entity.VisibleLocal @= state.FlashLightEnabled] world
+            | _ -> world
+
+        // end character model
+        let world = World.endEntity world
 
         // process traversal animations
         let world =
@@ -626,21 +644,6 @@ type CharacterDispatcher () =
                  Entity.BodyShape .= BoxShape { Size = v3 0.3f 1.2f 0.3f; TransformOpt = Some (Affine.makeTranslation (v3 0.0f 0.6f 0.0f)); PropertiesOpt = None }
                  Entity.Sensor .= true
                  Entity.NavShape .= EmptyNavShape] world
-
-        // declare player light
-        let world =
-            match entity.GetCharacterState world with
-            | PlayerState state ->
-                World.doLight3d Constants.Gameplay.CharacterLightName
-                    [Entity.PositionLocal .= v3 0.0f 1.1f -0.25f
-                     Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
-                     Entity.LightType .= SpotLight (0.9f, 1.2f)
-                     Entity.LightCutoff .= 9.0f
-                     Entity.Brightness .= 3.5f
-                     Entity.DesireShadows .= true
-                     Entity.Static .= false
-                     Entity.VisibleLocal @= state.FlashLightEnabled] world
-            | _ -> world
 
         // process weapon collisions
         let world =
