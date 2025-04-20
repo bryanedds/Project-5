@@ -613,16 +613,18 @@ type CharacterDispatcher () =
                  Entity.Sensor .= true
                  Entity.NavShape .= EmptyNavShape] world
 
-        // declare light
+        // declare player light
         let world =
-            World.doLight3d Constants.Gameplay.CharacterLightName
-                [Entity.PositionLocal .= v3 0.0f 1.0f -0.25f
-                 Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
-                 Entity.LightType .= SpotLight (0.9f, 1.2f)
-                 Entity.LightCutoff .= 9.0f
-                 Entity.Brightness .= 3.5f
-                 Entity.DesireShadows .= true
-                 Entity.Static .= false] world
+            if characterType.IsPlayer then
+                World.doLight3d Constants.Gameplay.CharacterLightName
+                    [Entity.PositionLocal .= v3 0.0f 1.1f -0.25f
+                     Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
+                     Entity.LightType .= SpotLight (0.9f, 1.2f)
+                     Entity.LightCutoff .= 9.0f
+                     Entity.Brightness .= 3.5f
+                     Entity.DesireShadows .= true
+                     Entity.Static .= false] world
+            else world
 
         // process weapon collisions
         let world =
