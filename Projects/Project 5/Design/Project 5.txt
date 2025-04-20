@@ -14,6 +14,8 @@ out of stalker view after time, goes back to originating spawn point, then disap
 
 hunter tracks player by last seen while player not in sight.
 
+holding V button switch eye side.
+
 hold down interact button for ten seconds to investigate (in a drawer, plays a sound like shuffling contents around during that time, or with a book, flipping pages).
 
 when interacting, camera gets an additional mode where turning it doesn't  turn the character and it can only turn so far.

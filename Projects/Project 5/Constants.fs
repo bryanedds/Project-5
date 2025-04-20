@@ -13,6 +13,7 @@ module Constants =
         let [<Literal>] CharacterAnimatedModelName = "AnimatedModel"
         let [<Literal>] CharacterWeaponName = "Weapon"
         let [<Literal>] CharacterWeaponHandBoneName = "mixamorig:RightHand"
+        let [<Literal>] CharacterLightName = "Light"
         let [<Literal>] EnemySightDistance = 7.5f
         let [<Uniform>] AttackProximity = 0.5f
         let [<Uniform>] HuntWayPointProximity = 0.5f
