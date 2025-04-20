@@ -551,10 +551,15 @@ type GameplayDispatcher () =
                 if world.Advancing then
                     let actionState = player.GetActionState world
                     let position = player.GetPositionInterpolated world
-                    let rotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
-                    let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position rotation actionState player world
-                    let world = World.setEye3dCenter (position + v3Up * Constants.Gameplay.PlayerEyeLevel - rotation.Forward * Constants.Gameplay.PlayerEyeDistance * eyeDistanceScalar + rotation.Right * Constants.Gameplay.PlayerEyeShift * eyeDistanceScalar) world
-                    let world = World.setEye3dRotation rotation world
+                    let eyeRotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
+                    let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position eyeRotation actionState player world
+                    let eyeOrigin = position + v3Up * Constants.Gameplay.PlayerEyeLevel
+                    let eyeDistancing = eyeRotation.Forward * Constants.Gameplay.PlayerEyeDistance * eyeDistanceScalar
+                    let eyeFlipping = match player.GetCharacterState world with PlayerState state -> (if state.ViewFlip then -1.0f else 1.0f) | _ -> failwithumf ()
+                    let eyeShifting = eyeRotation.Right * Constants.Gameplay.PlayerEyeShift * eyeDistanceScalar * eyeFlipping
+                    let eyeCenter = eyeOrigin - eyeDistancing + eyeShifting
+                    let world = World.setEye3dCenter eyeCenter world
+                    let world = World.setEye3dRotation eyeRotation world
                     world
                 else world
 

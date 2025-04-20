@@ -200,12 +200,22 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Single.MaxValue
 
+(* Player *)
+
+type PlayerState =
+    { ViewFlip : bool
+      FlashLightEnabled : bool }
+
+    static member initial =
+        { ViewFlip = false
+          FlashLightEnabled = true }
+
 (* Character *)
 
 type CharacterState =
     | HunterState of HunterState
     | StalkerState of StalkerState
-    | PlayerState
+    | PlayerState of PlayerState
 
     member this.IsEnemyState =
         not this.IsPlayerState
@@ -214,7 +224,7 @@ type CharacterState =
         match this with
         | HunterState _ -> Hunter
         | StalkerState _ -> Stalker
-        | PlayerState -> Player
+         | PlayerState _ -> Player
 
 and CharacterType =
     | Hunter
@@ -289,4 +299,4 @@ and CharacterType =
         match this with
         | Hunter -> HunterState HunterState.initial
         | Stalker -> StalkerState StalkerState.initial
-        | Player -> PlayerState
+        | Player -> PlayerState PlayerState.initial

@@ -265,7 +265,7 @@ type CharacterDispatcher () =
             else world
         | LeavingState leaving -> processEnemyNavigation leaving.UnspawnPosition entity world
 
-    static let processPlayerInput (entity : Entity) world =
+    static let processPlayerInput (state : PlayerState) (entity : Entity) world =
 
         // action
         let world =
@@ -316,11 +316,25 @@ type CharacterDispatcher () =
                 world
             | _ -> world
 
+        // toggle view flip
+        let world =
+            if World.isKeyboardKeyPressed KeyboardKey.Q world then
+                entity.SetCharacterState (PlayerState { state with ViewFlip = true }) world
+            elif World.isKeyboardKeyPressed KeyboardKey.E world then
+                entity.SetCharacterState (PlayerState { state with ViewFlip = false }) world
+            else world
+
+        // toggle flash light
+        let world =
+            if World.isKeyboardKeyPressed KeyboardKey.Space world
+            then entity.SetCharacterState (PlayerState { state with FlashLightEnabled = not state.FlashLightEnabled }) world
+            else world
+
         // fin
         world
 
-    static let processPlayerState entity world =
-        processPlayerInput entity world
+    static let processPlayerState state entity world =
+        processPlayerInput state entity world
 
     static member Facets =
         [typeof<RigidBodyFacet>
@@ -441,7 +455,7 @@ type CharacterDispatcher () =
                     match enemyTargetingEir with
                     | Right (targetPosition, targetBodyIds, targetActionState) -> processStalkerState targetPosition targetBodyIds targetActionState state entity world
                     | Left () -> world
-                | PlayerState -> processPlayerState entity world
+                | PlayerState state -> processPlayerState state entity world
             else world
 
         // process action state
@@ -615,7 +629,8 @@ type CharacterDispatcher () =
 
         // declare player light
         let world =
-            if characterType.IsPlayer then
+            match entity.GetCharacterState world with
+            | PlayerState state ->
                 World.doLight3d Constants.Gameplay.CharacterLightName
                     [Entity.PositionLocal .= v3 0.0f 1.1f -0.25f
                      Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
@@ -623,8 +638,9 @@ type CharacterDispatcher () =
                      Entity.LightCutoff .= 9.0f
                      Entity.Brightness .= 3.5f
                      Entity.DesireShadows .= true
-                     Entity.Static .= false] world
-            else world
+                     Entity.Static .= false
+                     Entity.VisibleLocal @= state.FlashLightEnabled] world
+            | _ -> world
 
         // process weapon collisions
         let world =
