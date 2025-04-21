@@ -563,8 +563,12 @@ type GameplayDispatcher () =
                     world
                 else world
 
-            // process nav sync
-            let world = if initializing then World.synchronizeNav3d screen world else world
+            // process nav sync at end of frame since optimized representations like frozen entities won't have their
+            // nav info registered until then
+            let world =
+                if initializing
+                then World.defer (World.synchronizeNav3d screen) screen world 
+                else world
 
             // declare quit button
             let (clicked, world) = World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world
