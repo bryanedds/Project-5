@@ -495,17 +495,17 @@ type CharacterDispatcher () =
             else world
 
         // begin animated model
+        let positionInterpolated = entity.GetPositionInterpolated world
+        let rotationInterpolated = entity.GetRotationInterpolated world
         let world =
             let actionState = entity.GetActionState world
-            let position = entity.GetPositionInterpolated world
-            let rotation = entity.GetRotationInterpolated world
             let visibilityScalar =
                 if characterType.IsPlayer
-                then Algorithm.computePlayerVisibilityScalar position rotation actionState entity world
+                then Algorithm.computePlayerVisibilityScalar positionInterpolated rotationInterpolated actionState entity world
                 else 1.0f
-            World.beginEntity<AnimatedModelDispatcher> Constants.Gameplay.CharacterAnimatedModelName
-                [Entity.Position @= position
-                 Entity.Rotation @= rotation
+            World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
+                [Entity.Position @= positionInterpolated
+                 Entity.Rotation @= rotationInterpolated
                  Entity.Size .= entity.GetSize world
                  Entity.Offset .= entity.GetOffset world
                  Entity.MountOpt .= None
@@ -516,25 +516,23 @@ type CharacterDispatcher () =
                  Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
                  Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
                  Entity.SubsortOffsets @= characterType.SubsortOffsets] world
-        let animatedModel = world.ContextEntity
+        let animatedModel = world.DeclaredEntity
 
         // declare player light
         let world =
             match entity.GetCharacterState world with
             | PlayerState state ->
                 World.doLight3d Constants.Gameplay.CharacterLightName
-                    [Entity.PositionLocal .= v3 0.0f 1.2f -0.25f
-                     Entity.DegreesLocal .= v3 90.0f 0.0f 0.0f
+                    [Entity.Position @= positionInterpolated + v3Up * 1.2f + rotationInterpolated.Forward * 0.25f
+                     Entity.Rotation @= rotationInterpolated * Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
+                     Entity.MountOpt .= None
+                     Entity.Static .= false
                      Entity.LightType .= SpotLight (0.9f, 1.2f)
                      Entity.LightCutoff .= 11.0f
                      Entity.Brightness .= 2.5f
                      Entity.DesireShadows .= true
-                     Entity.Static .= false
                      Entity.VisibleLocal @= state.FlashLightEnabled] world
             | _ -> world
-
-        // end character model
-        let world = World.endEntity world
 
         // process traversal animations
         let world =
