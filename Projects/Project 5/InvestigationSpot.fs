@@ -8,6 +8,9 @@ open MyGame
 [<AutoOpen>]
 module InvestigationSpotDispatcherExtensions =
     type Entity with
+        member this.GetViewDistance world : single = this.Get (nameof this.ViewDistance) world
+        member this.SetViewDistance (value : single) world = this.Set (nameof this.ViewDistance) value world
+        member this.ViewDistance = lens (nameof this.ViewDistance) this this.GetViewDistance this.SetViewDistance
         member this.GetInvestigationPhase world : InvestigationPhase = this.Get (nameof this.InvestigationPhase) world
         member this.SetInvestigationPhase (value : InvestigationPhase) world = this.Set (nameof this.InvestigationPhase) value world
         member this.InvestigationPhase = lens (nameof this.InvestigationPhase) this this.GetInvestigationPhase this.SetInvestigationPhase
@@ -21,6 +24,7 @@ type InvestigationSpotDispatcher () =
     static member Properties =
         [define Entity.BodyShape (BoxShape { Size = v3One; TransformOpt = None; PropertiesOpt = None })
          define Entity.Sensor true
+         define Entity.ViewDistance 5.0f
          define Entity.InvestigationPhase InvestigationNotStarted
          define Entity.InteractionResult Nothing]
 
@@ -29,13 +33,14 @@ type InvestigationSpotDispatcher () =
         // declare multi-layer icon
         let world =
             let phase = entity.GetInvestigationPhase world
+            let viewDistance = entity.GetViewDistance world
             let distanceScalar =
                 if Simulants.GameplayPlayer.GetExists world then
                     let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
                     let playerDistance = playerPosition.Distance (entity.GetPosition world)
-                    if playerDistance < 1.0f then 1.0f
-                    elif playerDistance > 2.0f then 0.0f
-                    else (2.0f - playerDistance) * 0.5f
+                    if playerDistance < dec viewDistance then 1.0f
+                    elif playerDistance > viewDistance then 0.0f
+                    else (viewDistance - playerDistance) / viewDistance
                 else 0.0f
             let visibility = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
             let albedoImage =
@@ -53,6 +58,7 @@ type InvestigationSpotDispatcher () =
                 World.doAnimatedBillboard ("InvestigationIcon+" + string layer)
                     [Entity.Rotation @= quatIdentity
                      Entity.ScaleLocal .= v3Dup 0.1f
+                     Entity.CastShadow .= false
                      Entity.MaterialProperties @= materialProperties
                      Entity.Material @= material
                      Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
