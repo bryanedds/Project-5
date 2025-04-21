@@ -263,8 +263,8 @@ and CharacterType =
 
     member this.AnimatedModel =
         match this with
-        | Hunter -> Assets.Gameplay.RhyoliteModel
-        | Stalker -> Assets.Gameplay.CruciformModel
+        | Hunter -> Assets.Gameplay.CruciformModel
+        | Stalker -> Assets.Gameplay.RhyoliteModel
         | Player -> Assets.Gameplay.AvaModel
 
     member this.AnimationRate =
