@@ -567,7 +567,7 @@ type GameplayDispatcher () =
             // nav info registered until then
             let world =
                 if initializing
-                then World.defer (World.synchronizeNav3d screen) screen world 
+                then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world 
                 else world
 
             // declare quit button
