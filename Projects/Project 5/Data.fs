@@ -208,7 +208,7 @@ type PlayerState =
 
     static member initial =
         { ViewFlip = false
-          FlashLightEnabled = false }
+          FlashLightEnabled = true }
 
 (* Character *)
 
