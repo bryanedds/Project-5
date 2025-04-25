@@ -3407,12 +3407,11 @@ type [<ReferenceEquality>] GlRenderer3d =
 
         // start lazy texture server
         let sglWindow = match window with SglWindow sglWindow -> sglWindow.SglWindow
-        SDL.SDL_GL_MakeCurrent (sglWindow, IntPtr.Zero) |> ignore<int>
-        OpenGL.Hl.Assert ()
+        if SDL.SDL_GL_MakeCurrent (sglWindow, IntPtr.Zero) <> 0 then Log.error "Could not clear OpenGL context current when desired."
         let lazyTextureQueues = ConcurrentDictionary<OpenGL.Texture.LazyTexture ConcurrentQueue, OpenGL.Texture.LazyTexture ConcurrentQueue> HashIdentity.Reference
         let textureServer = OpenGL.Texture.TextureServer (lazyTextureQueues, glContext, sglWindow)
         textureServer.Start ()
-        SDL.SDL_GL_MakeCurrent (sglWindow, glContext) |> ignore<int>
+        if SDL.SDL_GL_MakeCurrent (sglWindow, glContext) <> 0 then Log.error "Could not make OpenGL context current when required."
         OpenGL.Hl.Assert ()
 
         // create sky box shader
@@ -3695,3 +3694,4 @@ type [<ReferenceEquality>] GlRenderer3d =
             let renderAssets = renderPackages |> Seq.map (fun package -> package.Assets.Values) |> Seq.concat
             for (_, _, asset) in renderAssets do GlRenderer3d.freeRenderAsset asset renderer
             renderer.RenderPackages.Clear ()
+            renderer.TextureServer.Terminate ()
