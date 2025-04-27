@@ -1,9 +1,9 @@
-﻿namespace TerraFirma
+﻿namespace Breakout
 open System
 open System.Numerics
 open Prime
 open Nu
-open TerraFirma
+open Breakout
 
 // this determines what state the game is in. To learn about ImSim in Nu, see -
 // https://github.com/bryanedds/Nu/wiki/Immediate-Mode-for-Games-via-ImSim
@@ -13,16 +13,16 @@ type GameState =
     | Credits
     | Gameplay
 
-// this extends the Game API to expose the above ImSim model as a property.
+// this extends the Game API to expose GameState as a property.
 [<AutoOpen>]
-module TerraFirmaExtensions =
+module BreakoutExtensions =
     type Game with
         member this.GetGameState world : GameState = this.Get (nameof Game.GameState) world
         member this.SetGameState (value : GameState) world = this.Set (nameof Game.GameState) value world
         member this.GameState = lens (nameof Game.GameState) this this.GetGameState this.SetGameState
 
 // this is the dispatcher that customizes the top-level behavior of our game.
-type TerraFirmaDispatcher () =
+type BreakoutDispatcher () =
     inherit GameDispatcherImSim ()
 
     // here we define default property values
@@ -39,7 +39,7 @@ type TerraFirmaDispatcher () =
         let world = World.endScreen world
 
         // declare title screen
-        let behavior = Dissolve (Constants.Dissolve.Default, Some Assets.Gui.GuiSong)
+        let behavior = Dissolve (Constants.Dissolve.Default, None)
         let (_, world) = World.beginScreenWithGroupFromFile Simulants.Title.Name (game.GetGameState world = Title) behavior "Assets/Gui/Title.nugroup" [] world
         let world = World.beginGroup "Gui" [] world
         let (clicked, world) = World.doButton "Play" [] world
@@ -52,7 +52,7 @@ type TerraFirmaDispatcher () =
         let world = World.endScreen world
 
         // declare gameplay screen
-        let behavior = Dissolve (Constants.Dissolve.Default, Some Assets.Gameplay.DesertSong)
+        let behavior = Dissolve (Constants.Dissolve.Default, None)
         let (results, world) = World.beginScreen<GameplayDispatcher> Simulants.Gameplay.Name (game.GetGameState world = Gameplay) behavior [] world
         let world =
             if FQueue.contains Select results
@@ -69,7 +69,7 @@ type TerraFirmaDispatcher () =
         let world = World.endScreen world
 
         // declare credits screen
-        let behavior = Dissolve (Constants.Dissolve.Default, Some Assets.Gui.GuiSong)
+        let behavior = Dissolve (Constants.Dissolve.Default, None)
         let (_, world) = World.beginScreenWithGroupFromFile Simulants.Credits.Name (game.GetGameState world = Credits) behavior "Assets/Gui/Credits.nugroup" [] world
         let world = World.beginGroup "Gui" [] world
         let (clicked, world) = World.doButton "Back" [] world

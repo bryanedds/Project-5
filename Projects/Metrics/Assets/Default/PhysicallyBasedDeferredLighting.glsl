@@ -16,6 +16,7 @@ void main()
 #version 410
 
 const float PI = 3.141592654;
+const float PI_OVER_2 = PI / 2.0;
 const float REFLECTION_LOD_MAX = 7.0;
 const float ATTENUATION_CONSTANT = 1.0;
 const int LIGHTS_MAX = 64;
@@ -95,6 +96,11 @@ in vec2 texCoordsOut;
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 fogAccum;
 layout(location = 2) out float depth;
+
+float saturate(float v)
+{
+    return max(0.0f, min(1.0, v));
+}
 
 float linstep(float low, float high, float v)
 {
@@ -270,11 +276,7 @@ float geometryTracePoint(vec4 position, int lightIndex, samplerCube shadowMap)
             }
         }
     }
-    travel /= 8.0;
-
-    // negatively exponentiate travel
-    travel = exp(-travel);
-    return travel;
+    return 1.0 - saturate(travel / 8.0);
 }
 
 float geometryTraceSpot(vec4 position, int lightIndex, mat4 shadowMatrix, sampler2D shadowTexture)
@@ -305,11 +307,7 @@ float geometryTraceSpot(vec4 position, int lightIndex, mat4 shadowMatrix, sample
                 travel += delta;
             }
         }
-        travel /= 9.0;
-
-        // negatively exponentiate travel
-        travel = exp(-travel);
-        return travel;
+        return 1.0 - saturate(travel / 9.0);
     }
 
     // tracing out of range, return default
@@ -325,29 +323,15 @@ float geometryTraceDirectional(vec4 position, int lightIndex, mat4 shadowMatrix,
         shadowTexCoordsProj.y > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.y < 1.0 - SHADOW_SEAM_INSET &&
         shadowTexCoordsProj.z > -1.0 + SHADOW_SEAM_INSET && shadowTexCoordsProj.z < 1.0 - SHADOW_SEAM_INSET)
     {
-        // compute z position in view space
-        float shadowFar = lightCutoffs[lightIndex];
-        float shadowZ = worldToDepthView(shadowNear, shadowFar, shadowMatrix, position);
-
         // compute light distance travel through surface (not accounting for incidental surface concavity)
-        float travel = 0.0;
+        float shadowZ = shadowTexCoordsProj.z;
+        float shadowZExp = exp(-lightShadowExponent * shadowZ);
         vec2 shadowTexCoords = shadowTexCoordsProj.xy * 0.5 + 0.5; // adj-ndc space
         vec2 shadowTextureSize = textureSize(shadowTexture, 0);
         vec2 shadowTexelSize = 1.0 / shadowTextureSize;
-        for (int i = -1; i <= 1; ++i)
-        {
-            for (int j = -1; j <= 1; ++j)
-            {
-                float shadowDepthScreen = texture(shadowTexture, shadowTexCoords + vec2(i, j) * shadowTexelSize).x;
-                float shadowDepth = depthScreenToDepthView(shadowNear, shadowFar, shadowDepthScreen);
-                float delta = shadowZ - shadowDepth;
-                travel += delta;
-            }
-        }
-        travel /= 9.0;
-
-        // negatively exponentiate travel
-        travel = exp(-travel);
+        float shadowDepthExp = texture(shadowTexture, shadowTexCoords).y;
+        float shadowScalar = clamp(shadowZExp * shadowDepthExp, 0.0, 1.0);
+        float travel = pow(shadowScalar, lightShadowDensity);
         return travel;
     }
 
@@ -827,7 +811,7 @@ void main()
             if (scatterType != 0.0)
             {
                 vec3 scatter = computeSubsurfaceScatter(position, albedo, subdermalPlus, scatterPlus, nDotL, texCoordsOut, i);
-                scatterAccum += kD * scatter * radiance * shadowScalar;
+                scatterAccum += kD * scatter * radiance;
             }
 
             // accumulate fog
