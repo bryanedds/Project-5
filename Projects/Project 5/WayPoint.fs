@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 type WayPointDispatcher () =
-    inherit Entity3dDispatcherImNui (false, false, false)
+    inherit Entity3dDispatcherImSim (false, false, false)
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 0.25f) v3Zero

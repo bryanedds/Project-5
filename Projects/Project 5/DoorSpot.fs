@@ -19,7 +19,7 @@ module DoorSpotDispatcherExtensions =
         member this.Closable = lens (nameof this.Closable) this this.GetClosable this.SetClosable
 
 type DoorSpotDispatcher () =
-    inherit Entity3dDispatcherImNui (true, false, false)
+    inherit Entity3dDispatcherImSim (true, false, false)
 
     static member Facets =
         [typeof<RigidBodyFacet>]

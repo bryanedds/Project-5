@@ -13,7 +13,7 @@ module HidingSpotDispatcherExtensions =
         member this.HidingSpotOpt = lens (nameof this.HidingSpotOpt) this this.GetHidingSpotOpt this.SetHidingSpotOpt
 
 type HidingSpotDispatcher () =
-    inherit Entity3dDispatcherImNui (true, false, false)
+    inherit Entity3dDispatcherImSim (true, false, false)
 
     static member Facets =
         [typeof<RigidBodyFacet>]

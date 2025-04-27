@@ -19,7 +19,7 @@ module InsertionSpotDispatcherExtensions =
         member this.InteractionResult = lens (nameof this.InteractionResult) this this.GetInteractionResult this.SetInteractionResult
 
 type InsertionSpotDispatcher () =
-    inherit Entity3dDispatcherImNui (true, false, false)
+    inherit Entity3dDispatcherImSim (true, false, false)
 
     static member Facets =
         [typeof<RigidBodyFacet>]

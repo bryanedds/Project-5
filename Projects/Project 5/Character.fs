@@ -45,7 +45,7 @@ module CharacterExtensions =
         member this.DeathEvent = Events.DeathEvent --> this
 
 type CharacterDispatcher () =
-    inherit Entity3dDispatcherImNui (true, false, false)
+    inherit Entity3dDispatcherImSim (true, false, false)
 
     static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =

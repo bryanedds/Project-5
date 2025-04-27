@@ -37,7 +37,7 @@ module GameplayExtensions =
 
 // this is the dispatcher that defines the behavior of the screen where gameplay takes place.
 type GameplayDispatcher () =
-    inherit ScreenDispatcherImNui ()
+    inherit ScreenDispatcherImSim ()
 
     static let processPlayerHidingSpot (hidingSpot : Entity) (doorSpotCollisionOpt : Entity option) (player : Entity) world =
         match player.GetActionState world with
