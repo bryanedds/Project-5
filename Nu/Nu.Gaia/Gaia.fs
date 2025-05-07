@@ -2490,7 +2490,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
 
     let private imGuiFullScreenWindow world =
         if not CaptureMode then
-            if ImGui.Begin ("Full Screen Enabled", ImGuiWindowFlags.NoNav) then
+            if ImGui.Begin ("Full Screen Enabled", ImGuiWindowFlags.NoNav ||| ImGuiWindowFlags.AlwaysAutoResize) then
                 ImGui.Text "Capture Mode (F10)"
                 ImGui.SameLine ()
                 let mutable captureMode = CaptureMode
@@ -3635,9 +3635,10 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     for assetEntry in packageEntry.Value |> Array.sortWith (fun a b -> String.Compare (a.Key, b.Key, true)) do
                         let assetName = assetEntry.Key
                         if (assetName.ToLowerInvariant ()).Contains (AssetViewerSearchStr.ToLowerInvariant ()) then
+                            let assetImageSize = v2Dup (ImGui.GetFontSize () + 3.0f)
                             match World.imGuiTryGetTextureId (asset packageEntry.Key assetName) world with
                             | ValueSome textureId ->
-                                ImGui.Image (nativeint textureId, v2Dup 16.0f)
+                                ImGui.Image (nativeint textureId, assetImageSize)
                                 if ImGui.IsItemHovered ImGuiHoveredFlags.DelayShort then
                                     let zoom = ImGui.IsShiftDown ()
                                     let size = if zoom then v2Dup 256.0f else v2Dup 128.0f
@@ -3647,7 +3648,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                                     if ImGui.BeginTooltip () then
                                         ImGui.Image (nativeint textureId, size)
                                         ImGui.EndTooltip ()
-                            | ValueNone -> ImGui.Dummy (v2Dup 16.0f)
+                            | ValueNone -> ImGui.Dummy assetImageSize
                             ImGui.SameLine ()
                             ImGui.TreeNodeEx (assetName, flags ||| ImGuiTreeNodeFlags.Leaf) |> ignore<bool>
                             if ImGui.BeginDragDropSource () then // NOTE: it appears that drag-dropping only works from nodes in Dear ImGui.
@@ -3673,6 +3674,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let programDir = PathF.GetDirectoryName (Assembly.GetEntryAssembly().Location)
         let title = "Create Nu Project... *EDITOR RESTART REQUIRED!*"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
+        ImGui.SetNextWindowSize (v2 900.0f 0.0f) // HACK: this is needed since auto-resizing windows don't work with ImGui.TextWrapped (https://github.com/ocornut/imgui/issues/778)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
         if ImGui.BeginPopupModal (title, &ShowNewProjectDialog) then
             ImGui.Text "Project Name"
@@ -3812,7 +3814,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Choose a project .dll... *EDITOR RESTART REQUIRED!*"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal (title, &ShowOpenProjectDialog) then
+        if ImGui.BeginPopupModal (title, &ShowOpenProjectDialog, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Game Assembly Path:"
             ImGui.SameLine ()
             ImGui.InputTextWithHint ("##openProjectFilePath", "[enter game .dll path]", &OpenProjectFilePath, 4096u) |> ignore<bool>
@@ -3851,7 +3853,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Close project... *EDITOR RESTART REQUIRED!*"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal (title, &ShowCloseProjectDialog) then
+        if ImGui.BeginPopupModal (title, &ShowCloseProjectDialog, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Close the project and use Gaia in its default state?"
             ImGui.Checkbox ("Proceed w/ Imperative Execution (faster, but no Undo / Redo)", &CloseProjectImperativeExecution) |> ignore<bool>
             if ImGui.Button "Okay" || ImGui.IsKeyReleased ImGuiKey.Enter then
@@ -3875,7 +3877,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let opening = not (ImGui.IsPopupOpen title)
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if opening then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal (title, &ShowNewGroupDialog) then
+        if ImGui.BeginPopupModal (title, &ShowNewGroupDialog, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Group Name:"
             ImGui.SameLine ()
             if opening then ImGui.SetKeyboardFocusHere ()
@@ -3938,7 +3940,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
             let opening = not (ImGui.IsPopupOpen title)
             if opening then ImGui.OpenPopup title
-            if ImGui.BeginPopupModal (title, &ShowRenameGroupDialog) then
+            if ImGui.BeginPopupModal (title, &ShowRenameGroupDialog, ImGuiWindowFlags.AlwaysAutoResize) then
                 ImGui.Text "Group Name:"
                 ImGui.SameLine ()
                 if opening then
@@ -3988,7 +3990,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
             let opening = not (ImGui.IsPopupOpen title)
             if opening then ImGui.OpenPopup title
-            if ImGui.BeginPopupModal (title, &ShowRenameEntityDialog) then
+            if ImGui.BeginPopupModal (title, &ShowRenameEntityDialog, ImGuiWindowFlags.AlwaysAutoResize) then
                 ImGui.Text "Entity Name:"
                 ImGui.SameLine ()
                 if opening then
@@ -4017,7 +4019,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
             let opening = not (ImGui.IsPopupOpen title)
             if opening then ImGui.OpenPopup title
-            if ImGui.BeginPopupModal (title, &ShowDeleteEntityDialog) then
+            if ImGui.BeginPopupModal (title, &ShowDeleteEntityDialog, ImGuiWindowFlags.AlwaysAutoResize) then
                 ImGui.Text "Selected entity is an entity propagation source."
                 ImGui.Text "Select a deletion option:"
                 let world =
@@ -4051,7 +4053,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
             let opening = not (ImGui.IsPopupOpen title)
             if opening then ImGui.OpenPopup title
-            if ImGui.BeginPopupModal (title, &ShowCutEntityDialog) then
+            if ImGui.BeginPopupModal (title, &ShowCutEntityDialog, ImGuiWindowFlags.AlwaysAutoResize) then
                 ImGui.Text "Selected entity is an entity propagation source."
                 ImGui.Text "Select a cut option:"
                 let world =
@@ -4082,7 +4084,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Are you okay with exiting Gaia?"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal (title, &ShowConfirmExitDialog) then
+        if ImGui.BeginPopupModal (title, &ShowConfirmExitDialog, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Any unsaved changes will be lost."
             let world =
                 if ImGui.Button "Okay" || ImGui.IsKeyReleased ImGuiKey.Enter then
@@ -4104,7 +4106,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Editor restart required."
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal title then
+        if ImGui.BeginPopupModal (title, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Gaia will apply your configuration changes and exit. Restart Gaia after exiting."
             let world =
                 if ImGui.Button "Okay" || ImGui.IsKeyPressed ImGuiKey.Enter then // HACK: checking key pressed event so that previous gui's key release won't bypass this.
@@ -4118,6 +4120,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Message!"
         let mutable showing = true
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
+        ImGui.SetNextWindowSize (v2 900.0f 0.0f) // HACK: this is needed since auto-resizing windows don't work with ImGui.TextWrapped (https://github.com/ocornut/imgui/issues/778)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
         if ImGui.BeginPopupModal (title, &showing) then
             ImGui.TextWrapped message
@@ -4128,9 +4131,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
 
     let private imGuiViewportContext world =
         ImGui.SetNextWindowPos RightClickPosition
-        ImGui.SetNextWindowSize (v2 290.0f (if SelectedEntityOpt.IsSome then 369.0f else 323.0f))
+        ImGui.SetNextWindowSize (v2 290.0f -1.0f)
         let world =
-            if ImGui.Begin ("Context Menu", ImGuiWindowFlags.NoTitleBar ||| ImGuiWindowFlags.NoResize ||| ImGuiWindowFlags.NoNav) then
+            if ImGui.Begin ("Context Menu", ImGuiWindowFlags.NoTitleBar ||| ImGuiWindowFlags.NoNav) then
                 let world =
                     if ImGui.Button "Create" then
                         let world = createEntity true false world
@@ -4288,7 +4291,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Reloading assets..."
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal title then
+        if ImGui.BeginPopupModal (title, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Gaia is processing your request. Please wait for processing to complete."
             ImGui.EndPopup ()
         ReloadAssetsRequested <- inc ReloadAssetsRequested
@@ -4302,7 +4305,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Reloading code..."
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal title then
+        if ImGui.BeginPopupModal (title, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Gaia is processing your request. Please wait for processing to complete."
             ImGui.EndPopup ()
         ReloadCodeRequested <- inc ReloadCodeRequested
@@ -4316,7 +4319,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let title = "Reloading assets and code..."
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal title then
+        if ImGui.BeginPopupModal (title, ImGuiWindowFlags.AlwaysAutoResize) then
             ImGui.Text "Gaia is processing your request. Please wait for processing to complete."
             ImGui.EndPopup ()
         ReloadAllRequested <- inc ReloadAllRequested
@@ -4337,8 +4340,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
     let private imGuiExceptionDialog exn worldOld world =
         let title = "Unhandled Exception!"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
+        ImGui.SetNextWindowSize (v2 900.0f 0.0f) // HACK: this is needed since auto-resizing windows don't work with ImGui.TextWrapped (https://github.com/ocornut/imgui/issues/778)
         if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
-        if ImGui.BeginPopupModal title then
+        if ImGui.BeginPopupModal (title) then
             ImGui.Text "Exception text:"
             ImGui.TextWrapped (scstring exn)
             ImGui.Text "How would you like to handle this exception?"
