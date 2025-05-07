@@ -187,9 +187,12 @@ module Hl =
 
     /// End an OpenGL frame.
     let EndFrame () =
-        match OpenGL.Gl.GetGraphicsResetStatus () with
-        | OpenGL.GraphicsResetStatus.NoError -> ()
-        | status -> Log.fail ("Unexpected OpenGL graphics reset (GraphicResetStatus = " + string status + ").")
+        // NOTE: on some deployments, this API call appears to not be available, so this is dummied out until we can
+        // figure out why.
+        //match OpenGL.Gl.GetGraphicsResetStatus () with
+        //| OpenGL.GraphicsResetStatus.NoError -> ()
+        //| status -> Log.fail ("Unexpected OpenGL graphics reset (GraphicResetStatus = " + string status + ").")
+        ()
 
     /// Save the current bound RGBA framebuffer to an image file.
     /// Only works on Windows platforms for now.
