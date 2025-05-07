@@ -76,14 +76,9 @@ module Hl =
         Gl.BindAPI ()
         let versionStr = Gl.GetString StringName.Version
         Log.info ("Initialized OpenGL " + versionStr + ".")
-        if  not (versionStr.StartsWith "4.1") &&
-            not (versionStr.StartsWith "4.2") &&
-            not (versionStr.StartsWith "4.3") &&
-            not (versionStr.StartsWith "4.4") &&
-            not (versionStr.StartsWith "4.5") &&
-            not (versionStr.StartsWith "4.6") &&
+        if  not (versionStr.StartsWith "4.6") &&
             not (versionStr.StartsWith "5.0") (* heaven forbid... *) then
-            Log.fail "Failed to create OpenGL version 4.1 or higher. Install your system's latest graphics drivers and try again."
+            Log.fail "Failed to create OpenGL version 4.6 or higher. Install your system's latest graphics drivers and try again."
         let vendorName = Gl.GetString StringName.Vendor
         let glFinishRequired =
             Constants.Render.VendorNamesExceptedFromSwapGlFinishRequirement |>
@@ -187,13 +182,13 @@ module Hl =
 
     /// End an OpenGL frame.
     let EndFrame () =
-        // NOTE: on some deployments, this API call appears to not be available, so this is dummied out. Apparently,
-        // this call requires the KHR_robustness extension -
-        // https://github.com/KhronosGroup/OpenGL-Registry/blob/main/extensions/KHR/KHR_robustness.txt
-        //match OpenGL.Gl.GetGraphicsResetStatus () with
-        //| OpenGL.GraphicsResetStatus.NoError -> ()
-        //| status -> Log.fail ("Unexpected OpenGL graphics reset (GraphicResetStatus = " + string status + ").")
+#if DEBUG
+        match OpenGL.Gl.GetGraphicsResetStatus () with
+        | OpenGL.GraphicsResetStatus.NoError -> ()
+        | status -> Log.fail ("Unexpected OpenGL graphics reset (GraphicResetStatus = " + string status + ").")
+#else
         ()
+#endif
 
     /// Save the current bound RGBA framebuffer to an image file.
     /// Only works on Windows platforms for now.
