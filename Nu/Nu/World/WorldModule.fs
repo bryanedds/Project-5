@@ -107,6 +107,10 @@ module WorldModule =
 
     type World with // Caching
 
+        /// Get the optional cached entity.
+        static member internal getEntityCachedOpt world =
+            world.EntityCachedOpt
+
         /// Get the simulants.
         static member internal getSimulants world =
             world.Simulants
@@ -115,12 +119,12 @@ module WorldModule =
 
         /// Enqueue a job for threaded execution.
         static member enqueueJob priority job world =
-            world.JobGraph.Enqueue (priority, job)
+            world.WorldExtension.JobGraph.Enqueue (priority, job)
 
         /// Await a job from threaded execution.
         /// Order of jobs with the same key is not guaranteed.
         static member tryAwaitJob deadline (jobId : obj) world =
-            world.JobGraph.TryAwait (deadline, jobId)
+            world.WorldExtension.JobGraph.TryAwait (deadline, jobId)
 
     type World with // Destruction
 

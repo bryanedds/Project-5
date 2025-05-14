@@ -3,6 +3,7 @@
 
 namespace Nu
 open System
+open System.Collections.Generic
 open System.Diagnostics
 open System.Reflection
 open System.Threading
@@ -296,16 +297,18 @@ module WorldModule3 =
                   DeclaredImSim = Address.empty
                   SimulantsImSim = SUMap.makeEmpty HashIdentity.Structural config
                   SubscriptionsImSim = SUMap.makeEmpty HashIdentity.Structural config
-                  DestructionListRev = []
+                  JobGraph = jobGraph
                   GeometryViewport = geometryViewport
                   RasterViewport = rasterViewport
                   OuterViewport = outerViewport
+                  DestructionListRev = []
                   Dispatchers = dispatchers
                   Plugin = plugin
                   PropagationTargets = UMap.makeEmpty HashIdentity.Structural config }
             let world =
                 { ChooseCount = 0
                   EventGraph = eventGraph
+                  EntityCachedOpt = KeyedCache.make (KeyValuePair (Unchecked.defaultof<Entity>, entityStates)) Unchecked.defaultof<EntityState>
                   EntityStates = entityStates
                   GroupStates = groupStates
                   ScreenStates = screenStates
@@ -316,7 +319,6 @@ module WorldModule3 =
                   AmbientState = ambientState
                   Subsystems = subsystems
                   Simulants = simulants
-                  JobGraph = jobGraph
                   WorldExtension = worldExtension }
             let world = { world with GameState = Reflection.attachProperties GameState.copy gameState.Dispatcher gameState world }
             World.choose world

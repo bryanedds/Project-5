@@ -1854,7 +1854,7 @@ module WorldModule2 =
 
         /// Clean-up the resources held by the world.
         static member cleanUp world =
-            world.JobGraph.CleanUp ()
+            world.WorldExtension.JobGraph.CleanUp ()
             let world = World.unregisterGame Nu.Game.Handle world
             World.cleanUpSubsystems world |> ignore
             world.WorldExtension.Plugin.CleanUp ()
@@ -3214,7 +3214,7 @@ module WorldModule2' =
                         let presenceInPlayOld = entityState.PresenceInPlay
                         let boundsOld = entityState.Bounds
                         let world =
-                            if entityState.Imperative
+                            if world.Imperative
                             then entityState.Facets.[index] <- facet; world
                             else
                                 let facets = entityState.Facets.Clone () :?> Facet array
@@ -3236,7 +3236,7 @@ module WorldModule2' =
                         let boundsOld = entityState.Bounds
                         let intrinsicFacetNamesOld = World.getEntityIntrinsicFacetNames entityState
                         let world =
-                            if entityState.Imperative
+                            if world.Imperative
                             then entityState.Dispatcher <- entityDispatcher; world
                             else
                                 let entityState = { entityState with Dispatcher = entityDispatcher }
