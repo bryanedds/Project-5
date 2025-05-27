@@ -15,7 +15,7 @@ This repository hosts several projects, including -
 - the 2D puzzle game tutorial, ['Twenty 48'](https://github.com/bryanedds/Nu/tree/master/Projects/Twenty%2048).
 - the 2D action game tutorial, ['Blaze Vector'](https://github.com/bryanedds/Nu/tree/master/Projects/Blaze%20Vector).
 - the 3D third-person game sample, ['Terra Firma'](https://github.com/bryanedds/Nu/tree/master/Projects/Terra%20Firma).
-- the WIP prototype game sample for ['Project 5 (Tentative Title)'](https://github.com/bryanedds/Nu/releases/download/v18.15.0/Project.5.Prototype.Sample.v0.1.1.zip).
+- the WIP prototype game sample for ['Project 5 (Tentative Title)'](https://github.com/bryanedds/Nu/releases/download/v18.15.0/Project.5.Prototype.Sample.v0.1.2.zip).
 - the commercial game demo for ['Omni Blade'](https://github.com/bryanedds/Nu/tree/omni-blade/Projects/Omni%20Blade), full game available now here - https://store.steampowered.com/app/3089800/Omni_Blade/
 
 Getting Started with Nu
@@ -28,7 +28,7 @@ Look here to get started with your own project in Nu -
 Some Media on the Nu Game Engine
 ================================
 
-![image](https://github.com/user-attachments/assets/22ae1562-e316-4709-8bf2-ef5f5cd95d49)
+![image](https://github.com/user-attachments/assets/77d6dfac-13ad-48e4-89e2-824a12cbe509)
 Our new soft-shadow, screen-space reflection, and volumetric fog systems.
 
 ![image](https://github.com/user-attachments/assets/44ec5233-3ed3-4038-9cc4-646bc4ddc96d)
@@ -60,6 +60,9 @@ Screenshot from our current game in early development.
 
 ![image](https://github.com/user-attachments/assets/048e8933-41cc-4a39-b3b6-4ad87b616779)
 Another screenshot from same.
+
+![image](https://github.com/user-attachments/assets/f45aa11d-4131-4011-9755-2c6599eabd36)
+A racing game we're prototyping with Nu and Jolt Physics.
 
 ![image](https://github.com/bryanedds/Nu/assets/1625560/69cd30f1-06fe-450e-a83f-8a7a9fd504d0)
 Algebraic terrain rendering thanks to contributions from **[@deanjl](https://github.com/deanjl)**.

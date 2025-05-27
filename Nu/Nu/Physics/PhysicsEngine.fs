@@ -14,7 +14,12 @@ type [<Struct>] Endianness =
     | BigEndian
 
 /// The format of a raw asset.
-type [<Struct>] RawFormat =
+/// NOTE: [<Struct>] attribute was removed in order to work around an F# regression where calling GetUnionFields on this
+/// type's cases can result in an InvalidOperationException "Multiple CompilationMappingAttributes, expected at most
+/// one".
+/// TODO: apparently, one work-around for this regression is to update to the latest FSharp.Core as of the regression,
+/// version 9.0.3 (or higher), so let's do this when it makes sense then restore the Struct attribute.
+type RawFormat =
     | RawUInt8
     | RawUInt16 of Endianness : Endianness
     | RawUInt32 of Endianness : Endianness
@@ -754,8 +759,8 @@ module Physics =
         | Constants.Physics.CollisionWildcard -> -1
         | _ -> Convert.ToInt32 (categoryMask, 2)
 
-    /// Localize a body shape to a specific size.
-    let rec localizeBodyShape (size : Vector3) bodyShape =
+    /// Localize a primitive body shape to a specific size; non-primitive shapes are unaffected.
+    let rec localizePrimitiveBodyShape (size : Vector3) bodyShape =
         let scaleTranslation (scalar : Vector3) (transformOpt : Affine option) =
             match transformOpt with
             | Some transform -> Some { transform with Translation = transform.Translation * scalar }
@@ -771,4 +776,4 @@ module Physics =
         | StaticModelShape _ as staticModelShape -> staticModelShape
         | StaticModelSurfaceShape _ as staticModelSurfaceShape -> staticModelSurfaceShape
         | TerrainShape _ as terrainShape -> terrainShape
-        | BodyShapes bodyShapes -> BodyShapes (List.map (localizeBodyShape size) bodyShapes)
+        | BodyShapes bodyShapes -> BodyShapes (List.map (localizePrimitiveBodyShape size) bodyShapes)

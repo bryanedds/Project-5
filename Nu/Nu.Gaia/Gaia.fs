@@ -86,6 +86,7 @@ module Gaia =
     let mutable private EyeChangedElsewhere = false
     let mutable private FpsStartDateTime = DateTimeOffset.Now
     let mutable private FpsStartUpdateTime = 0L
+    let mutable private InteractiveNeedsInitialization = true
     let mutable private InteractiveInputFocusRequested = false
     let mutable private InteractiveInputStr = ""
     let mutable private InteractiveOutputStr = ""
@@ -1275,6 +1276,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                     // notify user fsi session has been reset
                     InteractiveOutputStr <- "(fsi session reset)"
 
+                    // mark interactive as needing initialization
+                    InteractiveNeedsInitialization <- true
+
                     // create a new session for code reload
                     Log.info ("Compiling code via generated F# script:\n" + fsxFileString)
                     let fsiArgs =
@@ -1300,7 +1304,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                             World.switch worldOld
                     FsiErrorStream.GetStringBuilder().Clear() |> ignore<StringBuilder>
                     FsiOutStream.GetStringBuilder().Clear() |> ignore<StringBuilder>
-                    
+
                     // issue code reload event
                     World.publishPlus () Nu.Game.Handle.CodeReloadEvent (EventTrace.debug "Gaia" "tryReloadCode" "" EventTrace.empty) Nu.Game.Handle false false world
 
@@ -1683,7 +1687,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
             elif ImGui.IsKeyPressed ImGuiKey.P && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltUp () then NewEntityParentOpt <- SelectedEntityOpt; world
             elif ImGui.IsKeyPressed ImGuiKey.P && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then NewEntityParentOpt <- None; world
             elif ImGui.IsKeyPressed ImGuiKey.O && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltDown () then ShowOpenEntityDialog <- true; world
-            elif ImGui.IsKeyPressed ImGuiKey.S && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltDown () then ShowSaveEntityDialog <- true; world
+            elif ImGui.IsKeyPressed ImGuiKey.S && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltDown () then (match SelectedEntityOpt with Some entity when entity.GetExists world -> ShowSaveEntityDialog <- true | _ -> ()); world
             elif ImGui.IsKeyPressed ImGuiKey.R && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltUp () then ReloadAllRequested <- 1; world
             elif ImGui.IsKeyPressed ImGuiKey.F && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltUp () then searchEntityHierarchy (); world
             elif ImGui.IsKeyPressed ImGuiKey.O && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then ShowOpenProjectDialog <- true; world
@@ -3344,8 +3348,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                 let world =
                     if eval || enter then
                         let world = snapshot (Evaluate InteractiveInputStr) world
-                        let initialEntry = FsiSession.DynamicAssemblies.Length = 0
-                        if initialEntry then
+                        let initialEval = InteractiveNeedsInitialization
+                        if InteractiveNeedsInitialization then
 
                             // run initialization script
                             let projectDllPathValid = File.Exists ProjectDllPath
@@ -3386,6 +3390,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                                 let namespaceName = PathF.GetFileNameWithoutExtension (ProjectDllPath.Replace (" ", ""))
                                 FsiSession.EvalInteractionNonThrowing ("open " + namespaceName) |> ignore<Choice<_, _> * _>
 
+                            // eval initialization finished
+                            InteractiveNeedsInitialization <- false
+
                         let world =
                             if InteractiveInputStr.Contains (nameof TargetDir) then FsiSession.AddBoundValue (nameof TargetDir, TargetDir)
                             if InteractiveInputStr.Contains (nameof ProjectDllPath) then FsiSession.AddBoundValue (nameof ProjectDllPath, ProjectDllPath)
@@ -3402,7 +3409,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                                 let errorStr = string FsiErrorStream
                                 let outStr = string FsiOutStream
                                 let outStr =
-                                    if initialEntry then
+                                    if initialEval then
                                         let outStr = outStr.Replace ("\r\n> ", "") // TODO: ensure the use of \r\n also works on linux.
                                         let outStrLines = outStr.Split "\r\n"
                                         let outStrLines = Array.filter (fun (line : string) -> not (line.Contains "--> Referenced '")) outStrLines
@@ -3973,15 +3980,18 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
         else world
 
     let private imGuiSaveEntityDialog world =
-        EntityFileDialogState.Title <- "Save a nuentity file..."
-        EntityFileDialogState.FilePattern <- "*.nuentity"
-        EntityFileDialogState.FileDialogType <- ImGuiFileDialogType.Save
-        if ImGui.FileDialog (&ShowSaveEntityDialog, EntityFileDialogState) then
-            if not (PathF.HasExtension EntityFileDialogState.FilePath) then EntityFileDialogState.FilePath <- EntityFileDialogState.FilePath + ".nuentity"
-            let saved = trySaveSelectedEntity EntityFileDialogState.FilePath world
-            ShowSaveEntityDialog <- not saved
-            world
-        else world
+        match SelectedEntityOpt with
+        | Some entity when entity.GetExists world ->
+            EntityFileDialogState.Title <- "Save a nuentity file..."
+            EntityFileDialogState.FilePattern <- "*.nuentity"
+            EntityFileDialogState.FileDialogType <- ImGuiFileDialogType.Save
+            if ImGui.FileDialog (&ShowSaveEntityDialog, EntityFileDialogState) then
+                if not (PathF.HasExtension EntityFileDialogState.FilePath) then EntityFileDialogState.FilePath <- EntityFileDialogState.FilePath + ".nuentity"
+                let saved = trySaveSelectedEntity EntityFileDialogState.FilePath world
+                ShowSaveEntityDialog <- not saved
+                world
+            else world
+        | Some _ | None -> ShowSaveEntityDialog <- false; world
 
     let private imGuiRenameEntityDialog world =
         match SelectedEntityOpt with
