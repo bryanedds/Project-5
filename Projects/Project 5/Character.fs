@@ -699,7 +699,7 @@ type CharacterDispatcher () =
             match entity.GetActionState world with
             | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
                 let world = World.publish entity entity.DeathEvent entity world
-                let wound = { wound with WoundEventPublished = true}
+                let wound = { wound with WoundEventPublished = true }
                 entity.SetActionState (WoundState wound) world
             | _ -> world
 
