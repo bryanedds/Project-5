@@ -224,23 +224,18 @@ type CharacterDispatcher () =
             processHunterWayPointNavigation state entity world
             false
         | AwareOfTargetTraversing startTime ->
-            let awareProgress = GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration
-            if awareProgress = 1.0f then
-                let state = { state with HunterAwareness = UnawareOfTarget }
-                entity.SetCharacterState (HunterState state) world
+            if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0f then
+                entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
                 false
             else
                 processEnemyAggression targetPosition targetBodyIds entity world
                 false
         | AwareOfTargetHiding startTime ->
-            let awareProgress = GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration
-            if awareProgress = 1.0f then
-                let state = { state with HunterAwareness = UnawareOfTarget }
-                entity.SetCharacterState (HunterState state) world
+            if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
+                entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
                 false
             elif processEnemyUncovering targetPosition entity world then
-                let state = { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-                entity.SetCharacterState (HunterState state) world
+                entity.SetCharacterState (HunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }) world
                 true
             else false
 
