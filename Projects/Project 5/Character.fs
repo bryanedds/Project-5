@@ -240,12 +240,11 @@ type CharacterDispatcher () =
                 let state = { state with HunterAwareness = UnawareOfTarget }
                 entity.SetCharacterState (HunterState state) world
                 false
-            else
-                if processEnemyUncovering targetPosition entity world then
-                    let state = { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-                    entity.SetCharacterState (HunterState state) world
-                    true
-                else false
+            elif processEnemyUncovering targetPosition entity world then
+                let state = { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
+                entity.SetCharacterState (HunterState state) world
+                true
+            else false
 
     static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
         match state with
