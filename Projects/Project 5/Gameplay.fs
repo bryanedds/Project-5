@@ -69,30 +69,22 @@ type GameplayDispatcher () =
                  Entity.Color .= Color.White.WithA 0.25f
                  Entity.Layout .= Flow (FlowRightward, FlowUnlimited)
                  Entity.LayoutMargin .= v2Dup 4.0f] world
-            let inserting =
-                Map.fold (fun inserting itemType itemCount ->
-                    let itemName = scstringMemo itemType
-                    let clicked =
-                        World.doButton itemName
-                            [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
-                             Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
-                             Entity.Size .= v3 32.0f 32.0f 0.0f] world
-                    if clicked && itemType = insertionKey then
-                        player.SetActionState (InsertionState { InsertionSpot = insertionSpot }) world
-                        true
-                    else inserting)
-                    false (screen.GetInventory world)
+            for (itemType, itemCount) in (screen.GetInventory world).Pairs do
+                let itemName = scstringMemo itemType
+                let clicked =
+                    World.doButton itemName
+                        [Entity.UpImage @= asset Assets.Gameplay.PackageName (itemName + "Up")
+                         Entity.DownImage @= asset Assets.Gameplay.PackageName (itemName + "Down")
+                         Entity.Size .= v3 32.0f 32.0f 0.0f] world
+                if clicked && itemType = insertionKey then
+                    player.SetActionState (InsertionState { InsertionSpot = insertionSpot }) world
+                    insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
+                    screen.Inventory.Map (fun inv ->
+                        match inv.TryGetValue insertionKey with
+                        | (true, count) -> if count > 1 then Map.add insertionKey (dec count) inv else Map.remove insertionKey inv
+                        | (false, _) -> Log.error "Unexpected match error."; inv)
+                        world
             World.endPanel world
-            if inserting then
-                insertionSpot.SetInsertionPhase (InsertionStarted world.GameTime) world
-                screen.Inventory.Map (fun inv ->
-                    match inv.TryGetValue insertionKey with
-                    | (true, count) ->
-                        if count > 1
-                        then Map.add insertionKey (dec count) inv
-                        else Map.remove insertionKey inv
-                    | (false, _) -> Log.error "Unexpected match error."; inv)
-                    world
         | InsertionState insertion ->
             match insertionSpot.GetInsertionPhase world with
             | InsertionNotStarted ->
@@ -142,9 +134,9 @@ type GameplayDispatcher () =
                 if World.doButton "OpenDoor" [Entity.Text .= "Open"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
                     doorSpot.SetDoorState (DoorOpening world.GameTime) world
             | DoorOpened ->
-                if doorSpot.GetClosable world then
-                    if World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
-                        doorSpot.SetDoorState (DoorClosing world.GameTime) world
+                if  doorSpot.GetClosable world &&
+                    World.doButton "CloseDoor" [Entity.Text .= "Close"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
+                    doorSpot.SetDoorState (DoorClosing world.GameTime) world
             | DoorClosing _ | DoorOpening _ -> ()
         | _ -> ()
 
@@ -160,9 +152,9 @@ type GameplayDispatcher () =
                 player.SetActionState NormalState world
             | InvestigationStarted startTime ->
                 let localTime = world.GameTime - startTime
-                if localTime < 8.0f then
-                    if World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
-                        investigationSpot.SetInvestigationPhase InvestigationNotStarted world
+                if  localTime < 8.0f &&
+                    World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
+                    investigationSpot.SetInvestigationPhase InvestigationNotStarted world
                 else investigationSpot.SetInvestigationPhase (InvestigationFinished world.GameTime) world
             | InvestigationFinished startTime ->
                 let localTime = world.GameTime - startTime
@@ -299,27 +291,20 @@ type GameplayDispatcher () =
             // process stalker spawn state
             if screen.GetStalkerSpawnAllowed world then
                 match screen.GetStalkerSpawnState world with
-                | StalkerUnspawned unspawnTime as state ->
+                | StalkerUnspawned unspawnTime ->
                     let unspawnDuration = world.GameTime - unspawnTime
-                    let state =
-                        if unspawnDuration >= Constants.Gameplay.StalkDelay && spawnPoints.Length > 0 then
-                            let spawnPoint = Gen.randomItem spawnPoints
-                            StalkerStalking (false, spawnPoint, world.GameTime)
-                        else state
-                    screen.SetStalkerSpawnState state world
-                | StalkerStalking (caughtTargetHiding, spawnPoint, spawnTime) as state ->
+                    if unspawnDuration >= Constants.Gameplay.StalkDelay && spawnPoints.Length > 0 then
+                        let spawnPoint = Gen.randomItem spawnPoints
+                        screen.SetStalkerSpawnState (StalkerStalking (false, spawnPoint, world.GameTime)) world
+                | StalkerStalking (caughtTargetHiding, spawnPoint, spawnTime) ->
                     let spawnDuration = world.GameTime - spawnTime
-                    let state =
-                        if spawnDuration >= Constants.Gameplay.StalkDuration && not caughtTargetHiding
-                        then StalkerLeaving (spawnPoint, spawnTime)
-                        else state
-                    screen.SetStalkerSpawnState state world
+                    if spawnDuration >= Constants.Gameplay.StalkDuration && not caughtTargetHiding then
+                        screen.SetStalkerSpawnState (StalkerLeaving (spawnPoint, spawnTime)) world
                 | StalkerLeaving (_, _) -> ()
             else
                 match screen.GetStalkerSpawnState world with
                 | StalkerStalking (_, spawnPoint, spawnTime) ->
-                    let state = StalkerLeaving (spawnPoint, spawnTime)
-                    screen.SetStalkerSpawnState state world
+                    screen.SetStalkerSpawnState (StalkerLeaving (spawnPoint, spawnTime)) world
                 | StalkerUnspawned _ | StalkerLeaving (_, _) -> ()
 
             // declare stalker
@@ -426,14 +411,10 @@ type GameplayDispatcher () =
             let fillLightColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world)
             Simulants.GameplayFillLight.SetColor fillLightColor world
 
-            // collect attacks
-            let attacks =
-                Seq.fold (fun attacks (character : Entity) ->
-                    let attacks' = World.doSubscription "Attacks" character.AttackEvent world
-                    FQueue.append attacks attacks')
-                    FQueue.empty characters
-
             // process attacks
+            let attacks =
+                [for character in characters do
+                    yield! World.doSubscription "Attacks" character.AttackEvent world]
             for attack in attacks do
                 match attack.GetActionState world with
                 | HideState hide when hide.HidePhase.IsHideUncovered -> attack.SetHitPoints 0 world
@@ -452,14 +433,10 @@ type GameplayDispatcher () =
                     attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                     World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
 
-            // collect deaths
-            let deaths =
-                Seq.fold (fun attacks (character : Entity) ->
-                    let attacks'= World.doSubscription "Deaths" character.DeathEvent world
-                    FQueue.append attacks attacks')
-                    FQueue.empty characters
-
             // process deaths
+            let deaths =
+                [for character in characters do
+                    yield! World.doSubscription "Deaths" character.DeathEvent world]
             for death in deaths do
                 if (death.GetCharacterType world).IsEnemy
                 then World.destroyEntity death world
