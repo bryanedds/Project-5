@@ -147,12 +147,10 @@ type CharacterDispatcher () =
         uncovered
 
     static let processHunterWayPointNavigation (state : HunterState) (entity : Entity) world =
-        match state.HunterWayPoints with
-        | [||] -> ()
-        | wayPoints ->
+        if Array.notEmpty state.HunterWayPoints then
             match state.HunterWayPointIndexOpt with
-            | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
-                let wayPoint = wayPoints.[wayPointIndex]
+            | Some wayPointIndex when wayPointIndex < state.HunterWayPoints.Length ->
+                let wayPoint = state.HunterWayPoints.[wayPointIndex]
                 match tryResolve entity wayPoint.WayPoint with
                 | Some wayPointEntity ->
                     let wayPointPosition = wayPointEntity.GetPosition world
@@ -169,16 +167,16 @@ type CharacterDispatcher () =
                                     match state.HunterWayPointPlayback with
                                     | Once ->
                                         let wayPointIndex = inc wayPointIndex
-                                        if wayPointIndex < wayPoints.Length
+                                        if wayPointIndex < state.HunterWayPoints.Length
                                         then (Some wayPointIndex, false)
                                         else (None, false)
                                     | Loop ->
-                                        let wayPointIndex = inc wayPointIndex % wayPoints.Length
+                                        let wayPointIndex = inc wayPointIndex % state.HunterWayPoints.Length
                                         (Some wayPointIndex, false)
                                     | Bounce ->
                                         if not state.HunterWayPointBouncing then
                                             let wayPointIndex = inc wayPointIndex
-                                            if wayPointIndex = wayPoints.Length
+                                            if wayPointIndex = state.HunterWayPoints.Length
                                             then (Some (dec wayPointIndex), true)
                                             else (Some wayPointIndex, false)
                                         else
