@@ -34,7 +34,7 @@ type DoorSpotDispatcher () =
     override this.Register (entity, world) =
         match entity.Parent with
         | :? Entity as parent -> entity.SetRotationInitial (parent.GetRotation world) world
-        | _ -> Log.warn "Door parent not an entity as intended."; world
+        | _ -> Log.warn "Door parent not an entity as intended."
 
     override this.Process (entity, world) =
         match entity.Parent with
@@ -46,16 +46,16 @@ type DoorSpotDispatcher () =
             | DoorOpening startTime ->
                 let progress = GameTime.progress startTime world.GameTime 1.25f
                 let openness = progress * 2.0f
-                let world = parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
-                if progress = 1.0f then entity.SetDoorState DoorOpened world else world
+                parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                if progress = 1.0f then entity.SetDoorState DoorOpened world
             | DoorOpened ->
                 parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, 2.0f) * rotationInitial) world
             | DoorClosing startTime ->
                 let progress = GameTime.progress startTime world.GameTime 1.25f
                 let openness = (1.0f - progress) * 2.0f
-                let world = parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
-                if progress = 1.0f then entity.SetDoorState DoorClosed world else world
-        | _ -> world
+                parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
+                if progress = 1.0f then entity.SetDoorState DoorClosed world
+        | _ -> ()
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 1.0f) v3Zero

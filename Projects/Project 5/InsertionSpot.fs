@@ -33,13 +33,11 @@ type InsertionSpotDispatcher () =
 
     override this.Process (entity, world) =
         match entity.GetInsertionPhase world with
-        | InsertionNotStarted -> world
+        | InsertionNotStarted -> ()
         | InsertionStarted startTime ->
             let localTime = world.GameTime - startTime
-            if localTime > 4.0f
-            then entity.SetInsertionPhase InsertionFinished world
-            else world
-        | InsertionFinished -> world
+            if localTime > 4.0f then entity.SetInsertionPhase InsertionFinished world
+        | InsertionFinished -> ()
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 1.0f) v3Zero

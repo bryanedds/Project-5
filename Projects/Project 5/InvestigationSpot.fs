@@ -31,73 +31,67 @@ type InvestigationSpotDispatcher () =
     override this.Process (entity, world) =
 
         // declare multi-layer icon
-        let world =
-            let phase = entity.GetInvestigationPhase world
-            let viewDistance = entity.GetViewDistance world
-            let distanceScalar =
-                if Simulants.GameplayPlayer.GetExists world then
-                    let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
-                    let playerDistance = playerPosition.Distance (entity.GetPosition world)
-                    if playerDistance < dec viewDistance then 1.0f
-                    elif playerDistance > viewDistance then 0.0f
-                    else (viewDistance - playerDistance) / viewDistance
-                else 0.0f
-            let visibility = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
-            let albedoImage =
-                match phase with
-                | InvestigationNotStarted -> Assets.Gameplay.InvestigationPendingIconAlbedoImage
-                | InvestigationStarted _ -> Assets.Gameplay.InvestigationProcedingIconAlbedoImage
-                | InvestigationFinished _ -> Assets.Gameplay.InvestigationConcludedIconAlbedoImage
-            let emissionImage = Assets.Gameplay.IconEmissionImage
-            let material = { Material.defaultMaterial with AlbedoImageOpt = ValueSome albedoImage; EmissionImageOpt = ValueSome emissionImage }
-            let albedoColor = colorOne.WithA visibility
-            let cels = if phase.IsInvestigationStarted then 8 else 1
-            List.fold (fun (world : World) layer ->
-                let albedoColor = albedoColor.MapA (fun a -> if layer = 0 then a * 0.8f else a * 0.2f)
-                let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome albedoColor }
-                World.doAnimatedBillboard ("InvestigationIcon+" + string layer)
-                    [Entity.Rotation @= quatIdentity
-                     Entity.ScaleLocal .= v3Dup 0.1f
-                     Entity.CastShadow .= false
-                     Entity.MaterialProperties @= materialProperties
-                     Entity.Material @= material
-                     Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
-                     Entity.DepthTest .= if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
-                     Entity.AnimationDelay .= 1.0f
-                     Entity.CelCount @= cels
-                     Entity.CelRun @= cels] world)
-                world [0 .. dec 2]
+        let phase = entity.GetInvestigationPhase world
+        let viewDistance = entity.GetViewDistance world
+        let distanceScalar =
+            if Simulants.GameplayPlayer.GetExists world then
+                let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
+                let playerDistance = playerPosition.Distance (entity.GetPosition world)
+                if playerDistance < dec viewDistance then 1.0f
+                elif playerDistance > viewDistance then 0.0f
+                else (viewDistance - playerDistance) / viewDistance
+            else 0.0f
+        let visibility = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
+        let albedoImage =
+            match phase with
+            | InvestigationNotStarted -> Assets.Gameplay.InvestigationPendingIconAlbedoImage
+            | InvestigationStarted _ -> Assets.Gameplay.InvestigationProcedingIconAlbedoImage
+            | InvestigationFinished _ -> Assets.Gameplay.InvestigationConcludedIconAlbedoImage
+        let emissionImage = Assets.Gameplay.IconEmissionImage
+        let material = { Material.defaultMaterial with AlbedoImageOpt = ValueSome albedoImage; EmissionImageOpt = ValueSome emissionImage }
+        let albedoColor = colorOne.WithA visibility
+        let cels = if phase.IsInvestigationStarted then 8 else 1
+        for layer in 0 .. dec 2 do
+            let albedoColor = albedoColor.MapA (fun a -> if layer = 0 then a * 0.8f else a * 0.2f)
+            let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome albedoColor }
+            World.doAnimatedBillboard ("InvestigationIcon+" + string layer)
+                [Entity.Rotation @= quatIdentity
+                 Entity.ScaleLocal .= v3Dup 0.1f
+                 Entity.CastShadow .= false
+                 Entity.MaterialProperties @= materialProperties
+                 Entity.Material @= material
+                 Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
+                 Entity.DepthTest .= if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
+                 Entity.AnimationDelay .= 1.0f
+                 Entity.CelCount @= cels
+                 Entity.CelRun @= cels] world
 
         // toggle based on result and advents
-        let world =
-            match entity.GetInteractionResult world with
-            | Description _ -> world
-            | Narration narration ->
-                let advents = Simulants.Gameplay.Get "Advents" world
-                let visible = not (Set.contains (Narrated narration) advents)
-                let world = entity.SetBodyEnabled visible world
-                match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisibleLocal visible world
-                | None -> world
-            | Find itemType ->
-                let advents = Simulants.Gameplay.Get "Advents" world
-                let visible = not (Set.contains (Found itemType) advents)
-                let world = entity.SetBodyEnabled visible world
-                match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisibleLocal visible world
-                | None -> world
-            | FindNonUnique (_, advent) ->
-                let advents = Simulants.Gameplay.Get "Advents" world
-                let visible = not (Set.contains advent advents)
-                let world = entity.SetBodyEnabled visible world
-                match entity.TryGetMountee world with
-                | Some mountee -> mountee.SetVisibleLocal visible world
-                | None -> world
-            | EndGame -> world
-            | Nothing -> world
-
-        // fin
-        world
+        match entity.GetInteractionResult world with
+        | Description _ -> ()
+        | Narration narration ->
+            let advents = Simulants.Gameplay.Get "Advents" world
+            let visible = not (Set.contains (Narrated narration) advents)
+            entity.SetBodyEnabled visible world
+            match entity.TryGetMountee world with
+            | Some mountee -> mountee.SetVisibleLocal visible world
+            | None -> ()
+        | Find itemType ->
+            let advents = Simulants.Gameplay.Get "Advents" world
+            let visible = not (Set.contains (Found itemType) advents)
+            entity.SetBodyEnabled visible world
+            match entity.TryGetMountee world with
+            | Some mountee -> mountee.SetVisibleLocal visible world
+            | None -> ()
+        | FindNonUnique (_, advent) ->
+            let advents = Simulants.Gameplay.Get "Advents" world
+            let visible = not (Set.contains advent advents)
+            entity.SetBodyEnabled visible world
+            match entity.TryGetMountee world with
+            | Some mountee -> mountee.SetVisibleLocal visible world
+            | None -> ()
+        | EndGame -> ()
+        | Nothing -> ()
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important (v3Dup 1.0f) v3Zero
