@@ -84,7 +84,7 @@ type CharacterDispatcher () =
             if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
                 let rotationForwardFlat = rotation.Forward.WithY(0.0f).Normalized
                 let playerPositionFlat = targetPosition.WithY 0.0f
-                if  Vector3.Distance (playerPositionFlat, positionFlat) < 1.0f &&
+                if  playerPositionFlat.Distance positionFlat < 1.0f &&
                     rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
                     entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
                     entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
@@ -163,7 +163,7 @@ type CharacterDispatcher () =
                 match tryResolve entity wayPoint.WayPoint with
                 | Some wayPointEntity ->
                     let wayPointPosition = wayPointEntity.GetPosition world
-                    let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
+                    let wayPointDistance = wayPointPosition.Distance (entity.GetPosition world)
                     if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
                         match state.HunterWayPointTimeOpt with
                         | Some wayPointTime ->
