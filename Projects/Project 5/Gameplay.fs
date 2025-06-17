@@ -468,7 +468,7 @@ type GameplayDispatcher () =
                 let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position eyeRotation actionState player world
                 let eyeOrigin = position + v3Up * Constants.Gameplay.PlayerEyeLevel
                 let eyeDistancing = eyeRotation.Forward * Constants.Gameplay.PlayerEyeDistance * eyeDistanceScalar
-                let eyeFlipping = match player.GetCharacterState world with PlayerState state -> (if state.ViewFlip then -1.0f else 1.0f) | _ -> failwithumf ()
+                let eyeFlipping = if (player.GetPlayerState world).ViewFlip then -1.0f else 1.0f
                 let eyeShifting = eyeRotation.Right * Constants.Gameplay.PlayerEyeShift * eyeDistanceScalar * eyeFlipping
                 let eyeCenter = eyeOrigin - eyeDistancing + eyeShifting
                 World.setEye3dCenter eyeCenter world

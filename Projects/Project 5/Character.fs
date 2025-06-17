@@ -11,6 +11,15 @@ module CharacterExtensions =
         member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
+        member this.GetHunterState world : HunterState = match this.GetCharacterState world with HunterState value -> value | _ -> failwithumf ()
+        member this.SetHunterState (value : HunterState) world = match this.GetCharacterState world with HunterState _ -> this.SetHunterState value world | _ -> failwithumf ()
+        member this.HunterState = lens (nameof this.HunterState) this this.GetHunterState this.SetHunterState
+        member this.GetStalkerState world : StalkerState = match this.GetCharacterState world with StalkerState value -> value | _ -> failwithumf ()
+        member this.SetStalkerState (value : StalkerState) world = match this.GetCharacterState world with StalkerState _ -> this.SetStalkerState value world | _ -> failwithumf ()
+        member this.StalkerState = lens (nameof this.StalkerState) this this.GetStalkerState this.SetStalkerState
+        member this.GetPlayerState world : PlayerState = match this.GetCharacterState world with PlayerState value -> value | _ -> failwithumf ()
+        member this.SetPlayerState (value : PlayerState) world = match this.GetCharacterState world with PlayerState _ -> this.SetPlayerState value world | _ -> failwithumf ()
+        member this.PlayerState = lens (nameof this.PlayerState) this this.GetPlayerState this.SetPlayerState
         member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
         member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
         member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
@@ -107,7 +116,7 @@ type CharacterDispatcher () =
     static let processEnemyUncovering (targetPosition : Vector3) (entity : Entity) world =
 
         // opening door
-        let uncovered =
+        let uncoveredPlayer =
             match entity.GetActionState world with
             | NormalState ->
                 let doorSpotCollisions = entity.GetDoorSpotCollisions world
@@ -144,9 +153,10 @@ type CharacterDispatcher () =
         | None -> ()
 
         // fin
-        uncovered
+        uncoveredPlayer
 
-    static let processHunterWayPointNavigation (state : HunterState) (entity : Entity) world =
+    static let processHunterWayPointNavigation (entity : Entity) world =
+        let state = entity.GetHunterState world
         if Array.notEmpty state.HunterWayPoints then
             match state.HunterWayPointIndexOpt with
             | Some wayPointIndex when wayPointIndex < state.HunterWayPoints.Length ->
@@ -157,9 +167,6 @@ type CharacterDispatcher () =
                     let wayPointDistance = Vector3.Distance (entity.GetPosition world, wayPointPosition)
                     if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
                         match state.HunterWayPointTimeOpt with
-                        | None ->
-                            let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
-                            entity.SetCharacterState (HunterState state) world
                         | Some wayPointTime ->
                             let waitTime = world.GameTime - wayPointTime
                             if waitTime >= wayPoint.WayPointWaitTime then
@@ -189,24 +196,28 @@ type CharacterDispatcher () =
                                         HunterWayPointBouncing = wayPointBouncing
                                         HunterWayPointIndexOpt = wayPointIndexOpt
                                         HunterWayPointTimeOpt = None }
-                                entity.SetCharacterState (HunterState state) world
+                                entity.SetHunterState state world
                             else
                                 entity.LinearVelocity.Map ((*) 0.5f) world
                                 entity.AngularVelocity.Map ((*) 0.5f) world
+                        | None ->
+                            let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
+                            entity.SetCharacterState (HunterState state) world
                     else processEnemyNavigation wayPointPosition entity world
                 | None -> ()
             | Some _ | None ->
                 entity.LinearVelocity.Map ((*) 0.5f) world
                 entity.AngularVelocity.Map ((*) 0.5f) world
 
-    static let processHunterState targetPosition targetBodyIds targetActionState (state : HunterState) (entity : Entity) (world : World) =
+    static let processHunterState targetPosition targetBodyIds targetActionState (entity : Entity) (world : World) =
 
         // process target sighting
         let position = entity.GetPosition world
         let rotation = entity.GetRotation world
         let bodyId = entity.GetBodyId world
-        let state =
-            if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
+        if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
+            let state = entity.GetHunterState world
+            let state =
                 match targetActionState with
                 | HideState hide ->
                     match hide.HidePhase with
@@ -215,39 +226,43 @@ type CharacterDispatcher () =
                     | HideEmerging -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
                     | HideUncovered -> state
                 | _ -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-            else state
-        entity.SetCharacterState (HunterState state) world
+            entity.SetHunterState state world
 
         // process hunter state
-        match state.HunterAwareness with
-        | UnawareOfTarget ->
-            processHunterWayPointNavigation state entity world
-            false
-        | AwareOfTargetTraversing startTime ->
-            if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0f then
-                entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
+        let uncoveredPlayer =
+            let state = entity.GetHunterState world
+            match state.HunterAwareness with
+            | UnawareOfTarget ->
+                processHunterWayPointNavigation entity world
                 false
-            else
-                processEnemyAggression targetPosition targetBodyIds entity world
-                false
-        | AwareOfTargetHiding startTime ->
-            if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
-                entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
-                false
-            elif processEnemyUncovering targetPosition entity world then
-                entity.SetCharacterState (HunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }) world
-                true
-            else false
+            | AwareOfTargetTraversing startTime ->
+                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0f then
+                    entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
+                    false
+                else
+                    processEnemyAggression targetPosition targetBodyIds entity world
+                    false
+            | AwareOfTargetHiding startTime ->
+                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
+                    entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
+                    false
+                elif processEnemyUncovering targetPosition entity world then
+                    entity.SetCharacterState (HunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }) world
+                    true
+                else false
 
-    static let processStalkerState targetPosition targetBodyIds targetActionState (state : StalkerState) (entity : Entity) world =
-        match state with
+        // fin
+        uncoveredPlayer
+
+    static let processStalkerState targetPosition targetBodyIds targetActionState (entity : Entity) world =
+        match entity.GetStalkerState world with
         | IdlingState -> ()
         | StalkingState stalking ->
             if not stalking.Awareness.IsUnawareOfTarget then
                 processEnemyAggression targetPosition targetBodyIds entity world
         | LeavingState leaving -> processEnemyNavigation leaving.UnspawnPosition entity world
 
-    static let processPlayerInput (state : PlayerState) (entity : Entity) world =
+    static let processPlayerInput (entity : Entity) world =
 
         // attacking
         if World.isKeyboardKeyPressed KeyboardKey.RShift world && false then
@@ -290,16 +305,16 @@ type CharacterDispatcher () =
 
         // toggle view flip
         if World.isKeyboardKeyPressed KeyboardKey.Q world then
-            entity.SetCharacterState (PlayerState { state with ViewFlip = true }) world
+            entity.PlayerState.Map (fun state -> { state with ViewFlip = true }) world
         elif World.isKeyboardKeyPressed KeyboardKey.E world then
-            entity.SetCharacterState (PlayerState { state with ViewFlip = false }) world
+            entity.PlayerState.Map (fun state -> { state with ViewFlip = false }) world
 
         // toggle flash light
         if World.isKeyboardKeyPressed KeyboardKey.Space world then
-            entity.SetCharacterState (PlayerState { state with FlashLightEnabled = not state.FlashLightEnabled }) world
+            entity.PlayerState.Map (fun state -> { state with FlashLightEnabled = not state.FlashLightEnabled }) world
 
-    static let processPlayerState state entity world =
-        processPlayerInput state entity world
+    static let processPlayerState entity world =
+        processPlayerInput entity world
 
     static member Facets =
         [typeof<RigidBodyFacet>
@@ -395,20 +410,20 @@ type CharacterDispatcher () =
                     let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]
                     Right (player.GetPosition world, playerBodyIds, player.GetActionState world)
                 else Left ()
-            match entity.GetCharacterState world with
-            | HunterState state ->
+            match entity.GetCharacterType world with
+            | Hunter ->
                 match enemyTargetingEir with
                 | Right (targetPosition, targetBodyIds, targetActionState) ->
-                    let uncoveredPlayer = processHunterState targetPosition targetBodyIds targetActionState state entity world
+                    let uncoveredPlayer = processHunterState targetPosition targetBodyIds targetActionState entity world
                     if uncoveredPlayer && player.GetExists world then
                         player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
                 | Left () -> ()
-            | StalkerState state ->
+            | Stalker ->
                 match enemyTargetingEir with
                 | Right (targetPosition, targetBodyIds, targetActionState) ->
-                    processStalkerState targetPosition targetBodyIds targetActionState state entity world
+                    processStalkerState targetPosition targetBodyIds targetActionState entity world
                 | Left () -> ()
-            | PlayerState state -> processPlayerState state entity world
+            | Player -> processPlayerState entity world
 
         // process action state
         if world.Advancing then
