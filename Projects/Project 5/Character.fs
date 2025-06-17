@@ -12,17 +12,16 @@ module CharacterExtensions =
         member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
         member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
         member this.GetHunterState world : HunterState = match this.GetCharacterState world with HunterState value -> value | _ -> failwithumf ()
-        member this.SetHunterState (value : HunterState) world = match this.GetCharacterState world with HunterState _ -> this.SetHunterState value world | _ -> failwithumf ()
+        member this.SetHunterState (value : HunterState) world = match this.GetCharacterState world with HunterState _ -> this.SetCharacterState (HunterState value) world | _ -> failwithumf ()
         member this.HunterState = lens (nameof this.HunterState) this this.GetHunterState this.SetHunterState
         member this.GetStalkerState world : StalkerState = match this.GetCharacterState world with StalkerState value -> value | _ -> failwithumf ()
-        member this.SetStalkerState (value : StalkerState) world = match this.GetCharacterState world with StalkerState _ -> this.SetStalkerState value world | _ -> failwithumf ()
+        member this.SetStalkerState (value : StalkerState) world = match this.GetCharacterState world with StalkerState _ -> this.SetCharacterState (StalkerState value) world | _ -> failwithumf ()
         member this.StalkerState = lens (nameof this.StalkerState) this this.GetStalkerState this.SetStalkerState
         member this.GetPlayerState world : PlayerState = match this.GetCharacterState world with PlayerState value -> value | _ -> failwithumf ()
-        member this.SetPlayerState (value : PlayerState) world = match this.GetCharacterState world with PlayerState _ -> this.SetPlayerState value world | _ -> failwithumf ()
+        member this.SetPlayerState (value : PlayerState) world = match this.GetCharacterState world with PlayerState _ -> this.SetCharacterState (PlayerState value) world | _ -> failwithumf ()
         member this.PlayerState = lens (nameof this.PlayerState) this this.GetPlayerState this.SetPlayerState
-        member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
-        member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
-        member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
+        member this.GetCharacterType world : CharacterType = match this.GetCharacterState world with HunterState _ -> Hunter | StalkerState _ -> Stalker | PlayerState _ -> Player
+        member this.CharacterType = lensReadOnly (nameof this.CharacterType) this this.GetCharacterType
         member this.GetActionState world : ActionState = this.Get (nameof this.ActionState) world
         member this.SetActionState (value : ActionState) world = this.Set (nameof this.ActionState) value world
         member this.ActionState = lens (nameof this.ActionState) this this.GetActionState this.SetActionState
@@ -331,7 +330,6 @@ type CharacterDispatcher () =
          define Entity.Substance (Mass 50.0f)
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.CharacterState characterType.InitialState
-         define Entity.CharacterType characterType
          define Entity.ActionState NormalState
          define Entity.MovementState (Standing 0.0f)
          define Entity.HitPoints characterType.HitPointsMax
@@ -669,7 +667,6 @@ type HunterDispatcher () =
         let characterType = Hunter
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
-         define Entity.CharacterType characterType
          define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
@@ -681,7 +678,6 @@ type StalkerDispatcher () =
         let characterType = Stalker
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
-         define Entity.CharacterType characterType
          define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
@@ -693,7 +689,6 @@ type PlayerDispatcher () =
         let characterType = Player
         [define Entity.Persistent characterType.Persistent
          define Entity.CharacterState characterType.InitialState
-         define Entity.CharacterType characterType
          define Entity.BodyShape characterType.BodyShape
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterProperties characterType.CharacterProperties]
