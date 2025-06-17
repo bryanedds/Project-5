@@ -224,7 +224,7 @@ type CharacterState =
         match this with
         | HunterState _ -> Hunter
         | StalkerState _ -> Stalker
-         | PlayerState _ -> Player
+        | PlayerState _ -> Player
 
 and CharacterType =
     | Hunter
