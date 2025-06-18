@@ -412,35 +412,31 @@ type GameplayDispatcher () =
             Simulants.GameplayFillLight.SetColor fillLightColor world
 
             // process attacks
-            let attacks =
-                [for character in characters do
-                    yield! World.doSubscription "Attacks" character.AttackEvent world]
-            for attack in attacks do
-                match attack.GetActionState world with
-                | HideState hide when hide.HidePhase.IsHideUncovered -> attack.SetHitPoints 0 world
-                | _ -> attack.HitPoints.Map (dec >> max 0) world
-                let actionState = attack.GetActionState world
-                if attack.GetHitPoints world > 0 then
-                    if not actionState.IsInjuryState then
-                        match actionState with
-                        | InvestigationState investigation -> investigation.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
-                        | _ -> ()
-                        attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
+            for character in characters do
+                for attack in World.doSubscription "Attacks" character.AttackEvent world do
+                    match attack.GetActionState world with
+                    | HideState hide when hide.HidePhase.IsHideUncovered -> attack.SetHitPoints 0 world
+                    | _ -> attack.HitPoints.Map (dec >> max 0) world
+                    let actionState = attack.GetActionState world
+                    if attack.GetHitPoints world > 0 then
+                        if not actionState.IsInjuryState then
+                            match actionState with
+                            | InvestigationState investigation -> investigation.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
+                            | _ -> ()
+                            attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
+                            attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
+                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                    elif not actionState.IsWoundState then
+                        attack.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
                         attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
                         World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
-                elif not actionState.IsWoundState then
-                    attack.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
-                    attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
-                    World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
 
             // process deaths
-            let deaths =
-                [for character in characters do
-                    yield! World.doSubscription "Deaths" character.DeathEvent world]
-            for death in deaths do
-                if (death.GetCharacterType world).IsEnemy
-                then World.destroyEntity death world
-                else screen.SetGameplayState Quit world
+            for character in characters do
+                for death in World.doSubscription "Deaths" character.DeathEvent world do
+                    match death.GetCharacterType world with
+                    | Hunter | Stalker -> World.destroyEntity death world
+                    | Player -> screen.SetGameplayState Quit world
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
             // in concept to - https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN#moving-the-light-in-texel-sized-increments
