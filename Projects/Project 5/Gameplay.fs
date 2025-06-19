@@ -210,8 +210,10 @@ type GameplayDispatcher () =
             if initializing then
                 screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
 
-            // begin scene declaration
+            // begin scene declaration, processing nav sync at end of frame since optimized representations like frozen
+            //entities won't have their nav info registered until then
             World.beginGroupFromFile "Scene" "Assets/ClassicMansion/ClassicMansion.nugroup" [] world
+            if initializing then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
 
             // collect spawn points
             let entitiesSovereign = World.getSovereignEntities Simulants.GameplayScene world                
@@ -413,29 +415,29 @@ type GameplayDispatcher () =
 
             // process attacks
             for character in characters do
-                for attack in World.doSubscription "Attacks" character.AttackEvent world do
-                    match attack.GetActionState world with
-                    | HideState hide when hide.HidePhase.IsHideUncovered -> attack.SetHitPoints 0 world
-                    | _ -> attack.HitPoints.Map (dec >> max 0) world
-                    let actionState = attack.GetActionState world
-                    if attack.GetHitPoints world > 0 then
+                for attacked in World.doSubscription "Attacks" character.AttackEvent world do
+                    match attacked.GetActionState world with
+                    | HideState hide when hide.HidePhase.IsHideUncovered -> attacked.SetHitPoints 0 world
+                    | _ -> attacked.HitPoints.Map (dec >> max 0) world
+                    let actionState = attacked.GetActionState world
+                    if attacked.GetHitPoints world > 0 then
                         if not actionState.IsInjuryState then
                             match actionState with
                             | InvestigationState investigation -> investigation.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
                             | _ -> ()
-                            attack.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
-                            attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
+                            attacked.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
+                            attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                     elif not actionState.IsWoundState then
-                        attack.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
-                        attack.SetLinearVelocity (v3Up * attack.GetLinearVelocity world) world
+                        attacked.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
+                        attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
                         World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
 
             // process deaths
             for character in characters do
-                for death in World.doSubscription "Deaths" character.DeathEvent world do
-                    match death.GetCharacterType world with
-                    | Hunter | Stalker -> World.destroyEntity death world
+                for dead in World.doSubscription "Deaths" character.DeathEvent world do
+                    match dead.GetCharacterType world with
+                    | Hunter | Stalker -> World.destroyEntity dead world
                     | Player -> screen.SetGameplayState Quit world
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar
@@ -469,11 +471,6 @@ type GameplayDispatcher () =
                 let eyeCenter = eyeOrigin - eyeDistancing + eyeShifting
                 World.setEye3dCenter eyeCenter world
                 World.setEye3dRotation eyeRotation world
-
-            // process nav sync at end of frame since optimized representations like frozen entities won't have their
-            // nav info registered until then
-            if initializing then
-                World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
 
             // declare quit button
             if World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world then

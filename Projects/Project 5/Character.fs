@@ -606,22 +606,17 @@ type CharacterDispatcher () =
             | BodyTransformData _ -> ()
 
         // process attacks
-        let attacks =
-            match entity.GetActionState world with
-            | AttackState attack ->
-                let localTime = world.GameTime - attack.AttackTime
-                if localTime >= 0.2f && localTime < 0.8f then
-                    let weaponCollisions = entity.GetWeaponCollisions world
-                    let attacks = Set.difference weaponCollisions attack.AttackedCharacters
-                    let attack = { attack with AttackedCharacters = Set.union attack.AttackedCharacters weaponCollisions }
-                    entity.SetActionState (AttackState attack) world
-                    attacks
-                else
-                    entity.SetActionState (AttackState attack) world
-                    Set.empty
-            | _ -> Set.empty
-        for attack in attacks do
-            World.publish attack entity.AttackEvent entity world
+        match entity.GetActionState world with
+        | AttackState attack ->
+            let localTime = world.GameTime - attack.AttackTime
+            if localTime >= 0.2f && localTime < 0.8f then
+                let weaponCollisions = entity.GetWeaponCollisions world
+                let attackedCharacters = Set.difference weaponCollisions attack.AttackedCharacters
+                entity.SetActionState (AttackState { attack with AttackedCharacters = Set.union attack.AttackedCharacters weaponCollisions }) world
+                for character in attackedCharacters do
+                    World.publish character entity.AttackEvent entity world
+            else entity.SetActionState (AttackState attack) world
+        | _ -> ()
 
         // declare player hearts
         if characterType.IsPlayer then
