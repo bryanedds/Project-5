@@ -103,7 +103,7 @@ and [<ReferenceEquality>] Lens<'a, 's when 's :> Simulant> =
         | ValueSome setter -> setter value world
         | ValueNone -> failwith ("Lens for '" + lens.Name + "' is readonly.")
 
-    /// Attempt to transform the lensed property's value using the given updater function that also receives the world as input.
+    /// Attempt to transform the lensed property's value using the given mapper function that also receives the world as input.
     member lens.TryMapPlus (mapper : 'a -> World -> 'a) world =
         match lens.SetOpt with
         | ValueSome setter ->
@@ -111,7 +111,7 @@ and [<ReferenceEquality>] Lens<'a, 's when 's :> Simulant> =
             true
         | ValueNone -> false
 
-    /// Attempt to transform the lensed property's value using the given updater function.
+    /// Attempt to transform the lensed property's value using the given mapper function.
     member lens.TryMap (mapper : 'a -> 'a) world =
         match lens.SetOpt with
         | ValueSome setter ->
@@ -119,24 +119,19 @@ and [<ReferenceEquality>] Lens<'a, 's when 's :> Simulant> =
             true
         | ValueNone -> false
 
-    /// Update the lensed property's value using the given updater function that also receives the world as input.
+    /// Update the lensed property's value using the given mapper function that also receives the world as input.
     /// Throws an exception if the lens is readonly.
     member lens.MapPlus mapper world =
         match lens.SetOpt with
         | ValueSome setter -> setter (mapper (lens.Get world) world) world
         | ValueNone -> failwithumf ()
 
-    /// Update the lensed property's value using the given updater function.
+    /// Update the lensed property's value using the given mapper function.
     /// Throws an exception if the lens is readonly.
     member lens.Map mapper world =
         match lens.SetOpt with
         | ValueSome setter -> setter (mapper (lens.Get world)) world
         | ValueNone -> failwithumf ()
-
-    /// Update the lensed property's value using the given updater function.
-    /// Throws an exception if the lens is readonly.
-    member lens.Update updater world : unit =
-        updater (lens.Get world)
 
     /// The change event associated with the lensed property.
     member lens.ChangeEvent : ChangeData Address =
@@ -1184,8 +1179,6 @@ and [<ReferenceEquality; CLIMutable>] EntityState =
     member this.PerimeterUnscaled with get () = this.Transform.PerimeterUnscaled and set value = this.Transform.PerimeterUnscaled <- value
     member this.Perimeter with get () = this.Transform.Perimeter and set value = this.Transform.Perimeter <- value
     member this.Bounds = if this.Is2d then this.Transform.Bounds2d else this.Transform.Bounds3d
-    member this.Presence with get () = this.Transform.Presence and set value = this.Transform.Presence <- value
-    member this.PresenceOverride with get () = this.Transform.PresenceOverride and set value = this.Transform.PresenceOverride <- value
     member internal this.Active with get () = this.Transform.Active and set value = this.Transform.Active <- value
     member internal this.Dirty with get () = this.Transform.Dirty and set value = this.Transform.Dirty <- value
     member internal this.Invalidated with get () = this.Transform.Invalidated and set value = this.Transform.Invalidated <- value
@@ -1212,7 +1205,19 @@ and [<ReferenceEquality; CLIMutable>] EntityState =
     member this.Optimized imperative = this.Transform.Optimized imperative
     member internal this.VisibleInView = this.Visible || this.AlwaysRender
     member internal this.StaticInPlay = this.Static && not this.AlwaysUpdate
-    member internal this.PresenceInPlay = match this.PresenceOverride with ValueSome presence -> presence | ValueNone -> this.Presence
+
+    member this.Presence
+        with get () = if this.Absolute then Omnipresent else this.Transform.Presence
+        and set value = this.Transform.Presence <- value
+
+    member this.PresenceOverride
+        with get () = this.Transform.PresenceOverride
+        and set value = this.Transform.PresenceOverride <- value
+
+    member internal this.PresenceInPlay =
+        match this.PresenceOverride with
+        | ValueSome presence -> if this.Absolute then Omnipresent else presence
+        | ValueNone -> this.Presence
 
     /// Copy an entity state, invalidating the incoming reference.
     /// This is used when we want to retain an old version of an entity state in face of mutation.
