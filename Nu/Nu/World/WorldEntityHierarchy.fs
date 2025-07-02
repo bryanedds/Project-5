@@ -326,6 +326,7 @@ module Freezer3dFacetModule =
                       Substance = Mass 0.0f
                       GravityOverride = None
                       CharacterProperties = CharacterProperties.defaultProperties
+                      VehicleProperties = VehiclePropertiesAbsent
                       CollisionDetection = Discontinuous
                       CollisionCategories = 1
                       CollisionMask = -1
@@ -377,9 +378,9 @@ module Freezer3dFacetModule =
         member this.Permafreeze world =
             this.SetFrozen true world
             let descendents =
-                this.GetDescendants world |>
-                Array.ofSeq |>
-                Array.sortBy (fun descendant -> descendant.Names.Length)
+                this.GetDescendants world
+                |> Array.ofSeq
+                |> Array.sortBy (fun descendant -> descendant.Names.Length)
             for descendent in descendents do
                 if descendent.GetExists world && descendent.GetSurfaceFreezable world then
                     World.destroyEntityImmediate descendent world
@@ -392,9 +393,9 @@ module Freezer3dFacetModule =
                 | :? Entity as entity -> entity / (this.Name + "Split")
                 | _ -> failwithumf ()
             let descendents =
-                this.GetDescendants world |>
-                Array.ofSeq |>
-                Array.sortByDescending (fun descendant -> descendant.Names.Length)
+                this.GetDescendants world
+                |> Array.ofSeq
+                |> Array.sortByDescending (fun descendant -> descendant.Names.Length)
             if splitParent.GetExists world then
                 Log.error ("Failed to permasplit due to already existing entity '" + scstring splitParent + ".")
             elif Array.exists (fun (descendent : Entity) -> descendent.GetProtected world) descendents then

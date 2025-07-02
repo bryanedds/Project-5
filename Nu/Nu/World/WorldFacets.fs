@@ -15,7 +15,7 @@ open Nu.Particles
 [<AutoOpen>]
 module Declarative =
 
-    /// The global Game simulant.
+    /// The ubiquitous Game simulant.
     let Game = Game.Handle
 
     /// Declaratively exposes Screen lenses and events.
@@ -205,8 +205,8 @@ type BasicStaticSpriteEmitterFacet () =
             (entity.GetParticleRate world)
             (entity.GetParticleMax world)
             (entity.GetEmitterStyle world)
-            world |>
-        Option.map cast<Particles.BasicStaticSpriteEmitter>
+            world
+        |> Option.map cast<Particles.BasicStaticSpriteEmitter>
 
     static let makeEmitter entity world =
         match tryMakeEmitter entity world with
@@ -379,9 +379,9 @@ type BasicStaticSpriteEmitterFacet () =
         let time = world.GameTime
         let particleSystem = entity.GetParticleSystem world
         let particlesMessages =
-            particleSystem |>
-            Particles.ParticleSystem.toParticlesDescriptors time |>
-            List.map (fun descriptor ->
+            particleSystem
+            |> Particles.ParticleSystem.toParticlesDescriptors time
+            |> List.map (fun descriptor ->
                 match descriptor with
                 | Particles.SpriteParticlesDescriptor descriptor ->
                     Some
@@ -389,8 +389,8 @@ type BasicStaticSpriteEmitterFacet () =
                           Horizon = descriptor.Horizon
                           AssetTag = descriptor.Image
                           RenderOperation2d = RenderSpriteParticles descriptor }
-                | _ -> None) |>
-            List.definitize
+                | _ -> None)
+            |> List.definitize
         World.enqueueLayeredOperations2d particlesMessages world
 
 [<AutoOpen>]
@@ -1339,6 +1339,9 @@ module RigidBodyFacetExtensions =
         member this.GetCharacterProperties world : CharacterProperties = this.Get (nameof this.CharacterProperties) world
         member this.SetCharacterProperties (value : CharacterProperties) world = this.Set (nameof this.CharacterProperties) value world
         member this.CharacterProperties = lens (nameof this.CharacterProperties) this this.GetCharacterProperties this.SetCharacterProperties
+        member this.GetVehicleProperties world : VehicleProperties = this.Get (nameof this.VehicleProperties) world
+        member this.SetVehicleProperties (value : VehicleProperties) world = this.Set (nameof this.VehicleProperties) value world
+        member this.VehicleProperties = lens (nameof this.VehicleProperties) this this.GetVehicleProperties this.SetVehicleProperties
         member this.GetCollisionDetection world : CollisionDetection = this.Get (nameof this.CollisionDetection) world
         member this.SetCollisionDetection (value : CollisionDetection) world = this.Set (nameof this.CollisionDetection) value world
         member this.CollisionDetection = lens (nameof this.CollisionDetection) this this.GetCollisionDetection this.SetCollisionDetection
@@ -1410,6 +1413,44 @@ type RigidBodyFacet () =
         entity.PropagatePhysics world
         Cascade
 
+    static let createWheelSettingsWV front position =
+        let settings = new JoltPhysicsSharp.WheelSettingsWV ()
+        settings.Position <- position
+        settings.WheelForward <- v3Forward
+        if not front then
+            settings.MaxSteerAngle <- 0.0f
+            settings.MaxHandBrakeTorque <- 0.0f
+        settings
+
+    static let createVehiclePropertiesJolt () =
+
+        // vehicle controller config
+        let mutable differential = JoltPhysicsSharp.VehicleDifferentialSettings (LeftWheel = 0, RightWheel = 1)
+        let wheeledVehicleControllerSettings = new JoltPhysicsSharp.WheeledVehicleControllerSettings ()
+        wheeledVehicleControllerSettings.DifferentialsCount <- 1
+        wheeledVehicleControllerSettings.SetDifferential (0, differential)
+
+        // vehicle wheels config
+        let wheelSettings =
+            [|for i in 0 .. dec 4 do
+                let position =
+                    match i with
+                    | 0 -> v3 -0.8f -0.3f -3.0f // front left
+                    | 1 -> v3 0.8f -0.3f -3.0f // front right
+                    | 2 -> v3 -0.8f -0.3f 1.5f // back left
+                    | 3 -> v3 0.8f -0.3f 1.5f // back right
+                    | _ -> failwithumf ()
+                createWheelSettingsWV (i < 2) position :> JoltPhysicsSharp.WheelSettings|]
+
+        // vehicle constraint config
+        let vehicleConstraintSettings = new JoltPhysicsSharp.VehicleConstraintSettings ()
+        vehicleConstraintSettings.Forward <- v3Forward
+        vehicleConstraintSettings.Wheels <- wheelSettings
+        vehicleConstraintSettings.Controller <- wheeledVehicleControllerSettings
+
+        // fin
+        VehiclePropertiesJolt vehicleConstraintSettings
+
     static member Properties =
         [define Entity.BodyEnabled true
          define Entity.BodyType Static
@@ -1425,6 +1466,7 @@ type RigidBodyFacet () =
          define Entity.Substance (Mass 1.0f)
          define Entity.GravityOverride None
          define Entity.CharacterProperties CharacterProperties.defaultProperties
+         nonPersistent Entity.VehicleProperties VehiclePropertiesAbsent
          define Entity.CollisionDetection Discontinuous
          define Entity.CollisionCategories "1"
          define Entity.CollisionMask Constants.Physics.CollisionWildcard
@@ -1462,7 +1504,13 @@ type RigidBodyFacet () =
         entity.SetAwakeTimeStamp world.UpdateTime world
 
     override this.RegisterPhysics (entity, world) =
+        let is2d = entity.GetIs2d world
+        let bodyId = entity.GetBodyId world
         let mutable transform = entity.GetTransform world
+        let vehicleProperties =
+            match entity.GetBodyType world with
+            | Vehicle -> if is2d then VehiclePropertiesAether else createVehiclePropertiesJolt ()
+            | _ -> VehiclePropertiesAbsent
         let bodyProperties =
             { Enabled = entity.GetBodyEnabled world
               Center = if entity.GetIs2d world then transform.PerimeterCenter else transform.Position
@@ -1481,13 +1529,14 @@ type RigidBodyFacet () =
               Substance = entity.GetSubstance world
               GravityOverride = entity.GetGravityOverride world
               CharacterProperties = entity.GetCharacterProperties world
+              VehicleProperties = vehicleProperties
               CollisionDetection = entity.GetCollisionDetection world
               CollisionCategories = Physics.categorizeCollisionMask (entity.GetCollisionCategories world)
               CollisionMask = Physics.categorizeCollisionMask (entity.GetCollisionMask world)
               Sensor = entity.GetSensor world
               Awake = entity.GetAwake world
-              BodyIndex = (entity.GetBodyId world).BodyIndex }
-        World.createBody (entity.GetIs2d world) (entity.GetBodyId world) bodyProperties world
+              BodyIndex = bodyId.BodyIndex }
+        World.createBody is2d bodyId bodyProperties world
 
     override this.UnregisterPhysics (entity, world) =
         World.destroyBody (entity.GetIs2d world) (entity.GetBodyId world) world
@@ -2127,17 +2176,17 @@ type LayoutFacet () =
         | Manual -> () // OPTIMIZATION: early exit.
         | layout ->
             let children =
-                World.getEntityMounters entity world |>
-                Array.ofSeq |> // array for sorting
-                Array.map (fun child ->
+                World.getEntityMounters entity world
+                |> Array.ofSeq // array for sorting
+                |> Array.map (fun child ->
                     let layoutOrder =
                         if child.Has<LayoutFacet> world
                         then child.GetLayoutOrder world
                         else 0
                     let order = child.GetOrder world
-                    (layoutOrder, order, child)) |>
-                Array.sortBy ab_ |>
-                Array.map __c
+                    (layoutOrder, order, child))
+                |> Array.sortBy ab_
+                |> Array.map __c
             let perimeter = (entity.GetPerimeter world).Box2 // gui currently ignores rotation
             let margin = entity.GetLayoutMargin world
             match layout with
@@ -2624,8 +2673,8 @@ type BasicStaticBillboardEmitterFacet () =
             (entity.GetParticleRate world)
             (entity.GetParticleMax world)
             (entity.GetEmitterStyle world)
-            world |>
-        Option.map cast<Particles.BasicStaticBillboardEmitter>
+            world
+        |> Option.map cast<Particles.BasicStaticBillboardEmitter>
 
     static let makeEmitter entity world =
         match tryMakeEmitter entity world with
@@ -2817,9 +2866,9 @@ type BasicStaticBillboardEmitterFacet () =
             let presence = entity.GetPresence world
             let particleSystem = entity.GetParticleSystem world
             let particlesMessages =
-                particleSystem |>
-                Particles.ParticleSystem.toParticlesDescriptors time |>
-                List.map (fun descriptor ->
+                particleSystem
+                |> Particles.ParticleSystem.toParticlesDescriptors time
+                |> List.map (fun descriptor ->
                     match descriptor with
                     | Particles.BillboardParticlesDescriptor descriptor ->
                         let emitterProperties = entity.GetEmitterMaterialProperties world
@@ -2858,8 +2907,8 @@ type BasicStaticBillboardEmitterFacet () =
                                   DepthTest =  LessThanOrEqualTest
                                   RenderType = descriptor.RenderType
                                   RenderPass = renderPass })
-                    | _ -> None) |>
-                List.definitize
+                    | _ -> None)
+                |> List.definitize
             World.enqueueRenderMessages3d particlesMessages world
 
     override this.RayCast (ray, entity, world) =
@@ -2923,12 +2972,12 @@ type StaticModelFacet () =
                     if boundsIntersectionOpt.HasValue then
                         let intersections = raySurface.Intersects (geometry.Indices, geometry.Vertices)
                         if Seq.notEmpty intersections then
-                            intersections |>
-                            Seq.map snd' |>
-                            Seq.map (fun intersectionEntity -> rayEntity.Origin + rayEntity.Direction * intersectionEntity) |>
-                            Seq.map (fun pointEntity -> pointEntity.Transform affineMatrix) |>
-                            Seq.map (fun point -> Hit (point - ray.Origin).Magnitude) |>
-                            Seq.toArray
+                            intersections
+                            |> Seq.map snd'
+                            |> Seq.map (fun intersectionEntity -> rayEntity.Origin + rayEntity.Direction * intersectionEntity)
+                            |> Seq.map (fun pointEntity -> pointEntity.Transform affineMatrix)
+                            |> Seq.map (fun point -> Hit (point - ray.Origin).Magnitude)
+                            |> Seq.toArray
                         else [|Miss|]
                     else [|Miss|])
                     staticModelMetadata.Surfaces
@@ -3180,12 +3229,12 @@ type AnimatedModelFacet () =
                     if boundsIntersectionOpt.HasValue then
                         let intersections = raySurface.Intersects (geometry.Indices, geometry.Vertices)
                         if Seq.notEmpty intersections then
-                            intersections |>
-                            Seq.map snd' |>
-                            Seq.map (fun intersectionEntity -> rayEntity.Origin + rayEntity.Direction * intersectionEntity) |>
-                            Seq.map (fun pointEntity -> pointEntity.Transform affineMatrix) |>
-                            Seq.map (fun point -> Hit (point - ray.Origin).Magnitude) |>
-                            Seq.toArray
+                            intersections
+                            |> Seq.map snd'
+                            |> Seq.map (fun intersectionEntity -> rayEntity.Origin + rayEntity.Direction * intersectionEntity)
+                            |> Seq.map (fun pointEntity -> pointEntity.Transform affineMatrix)
+                            |> Seq.map (fun point -> Hit (point - ray.Origin).Magnitude)
+                            |> Seq.toArray
                         else [|Miss|]
                     else [|Miss|])
                     animatedModelMetadata.Surfaces
@@ -3302,6 +3351,7 @@ type TerrainFacet () =
     override this.RegisterPhysics (entity, world) =
         match entity.TryGetTerrainResolution world with
         | Some resolution ->
+            let bodyId = entity.GetBodyId world
             let mutable transform = entity.GetTransform world
             let terrainShape =
                 { Resolution = resolution
@@ -3327,13 +3377,14 @@ type TerrainFacet () =
                   Substance = Mass 0.0f
                   GravityOverride = None
                   CharacterProperties = CharacterProperties.defaultProperties
+                  VehicleProperties = VehiclePropertiesAbsent
                   CollisionDetection = Discontinuous
                   CollisionCategories = Physics.categorizeCollisionMask (entity.GetCollisionCategories world)
                   CollisionMask = Physics.categorizeCollisionMask (entity.GetCollisionMask world)
                   Sensor = false
                   Awake = entity.GetAwake world
-                  BodyIndex = (entity.GetBodyId world).BodyIndex }
-            World.createBody false (entity.GetBodyId world) bodyProperties world
+                  BodyIndex = bodyId.BodyIndex }
+            World.createBody false bodyId bodyProperties world
         | None -> ()
 
     override this.UnregisterPhysics (entity, world) =
@@ -3384,10 +3435,10 @@ type EditVolumeFacet () =
 
     static let getIntersectedEntities (entity : Entity) world =
         let bounds = entity.GetBounds world
-        World.getEntities3dInBounds bounds (hashSetPlus HashIdentity.Structural []) world |>
-        Seq.filter (fun intersected -> getEntityParentable intersected entity world) |>
-        Seq.toArray |>
-        Array.sortBy _.Names.Length
+        World.getEntities3dInBounds bounds (hashSetPlus HashIdentity.Structural []) world
+        |> Seq.filter (fun intersected -> getEntityParentable intersected entity world)
+        |> Seq.toArray
+        |> Array.sortBy _.Names.Length
 
     override this.Edit (op, entity, world) =
 
@@ -3419,9 +3470,9 @@ type EditVolumeFacet () =
                 append.EditContext.Snapshot (VolumeEdit "Unparent Intersected") world
                 let bounds = entity.GetBounds world
                 let children =
-                    entity.GetChildren world |>
-                    Seq.filter (fun child -> bounds.Intersects (child.GetBounds world)) |>
-                    Array.ofSeq
+                    entity.GetChildren world
+                    |> Seq.filter (fun child -> bounds.Intersects (child.GetBounds world))
+                    |> Array.ofSeq
                 for child in children do
                     if child.GetExists world then
                         let child' = child.Names |> Array.take (entity.Names.Length - 1) |> Array.add child.Name |> rtoa |> Nu.Entity

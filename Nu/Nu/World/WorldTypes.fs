@@ -662,8 +662,8 @@ and EntityDispatcher (is2d, physical, lightProbe, light) =
     default this.Render (_, _, _) = ()
 
     /// Apply physics changes from a physics engine to an entity.
-    abstract ApplyPhysics : center : Vector3 * rotation : Quaternion * linearVelocity : Vector3 * angularVelocity : Vector3 * entity : Entity * world : World -> unit
-    default this.ApplyPhysics (_, _, _, _, _, _) = ()
+    abstract Physics : center : Vector3 * rotation : Quaternion * linearVelocity : Vector3 * angularVelocity : Vector3 * entity : Entity * world : World -> unit
+    default this.Physics (_, _, _, _, _, _) = ()
 
     /// Send a signal to an entity.
     abstract Signal : signalObj : obj * entity : Entity * world : World -> unit
@@ -1728,9 +1728,9 @@ and EntityDescriptor =
 
     /// Derive a name from the descriptor.
     static member getNameOpt descriptor =
-        descriptor.EntityProperties |>
-        Map.tryFind Constants.Engine.NamePropertyName |>
-        Option.map symbolToValue<string>
+        descriptor.EntityProperties
+        |> Map.tryFind Constants.Engine.NamePropertyName
+        |> Option.map symbolToValue<string>
 
     /// Set a name for the descriptor.
     static member setNameOpt nameOpt descriptor =
@@ -1753,9 +1753,9 @@ and GroupDescriptor =
 
     /// Derive a name from the dispatcher.
     static member getNameOpt dispatcher =
-        dispatcher.GroupProperties |>
-        Map.tryFind Constants.Engine.NamePropertyName |>
-        Option.map symbolToValue<string>
+        dispatcher.GroupProperties
+        |> Map.tryFind Constants.Engine.NamePropertyName
+        |> Option.map symbolToValue<string>
 
     /// The empty group descriptor.
     static member empty =
@@ -1772,9 +1772,9 @@ and ScreenDescriptor =
 
     /// Derive a name from the dispatcher.
     static member getNameOpt dispatcher =
-        dispatcher.ScreenProperties |>
-        Map.tryFind Constants.Engine.NamePropertyName |>
-        Option.map symbolToValue<string>
+        dispatcher.ScreenProperties
+        |> Map.tryFind Constants.Engine.NamePropertyName
+        |> Option.map symbolToValue<string>
 
     /// The empty screen descriptor.
     static member empty =
@@ -1869,9 +1869,6 @@ and [<ReferenceEquality>] WorldState =
           Subsystems : Subsystems
           Simulants : UMap<Simulant, Simulant USet option> // OPTIMIZATION: using None instead of empty USet to descrease number of USet instances.
           WorldExtension : WorldExtension }
-
-    override this.ToString () =
-        ""
 
 /// The world, in a functional programming sense. Hosts the simulation state, the dependencies needed to implement a
 /// game, messages to by consumed by the various engine subsystems, and general configuration data. For better
@@ -2152,9 +2149,6 @@ and [<NoEquality; NoComparison>] World =
         let eyeFieldOfView = this.Eye3dFieldOfView
         Viewport.getFrustum eyeCenter eyeRotation eyeFieldOfView this.RasterViewport
 
-    override this.ToString () =
-        ""
-
 /// Provides a way to make user-defined dispatchers, facets, and various other sorts of game-
 /// specific values and configurations.
 and [<AbstractClass>] NuPlugin () =
@@ -2214,15 +2208,14 @@ and [<AbstractClass>] NuPlugin () =
 
     /// Birth facets / dispatchers of type 'a from plugin.
     member internal this.Birth<'a> assemblies =
-        Array.map (fun (assembly : Assembly) ->
-            let types =
-                assembly.GetTypes () |>
-                Array.filter (fun ty -> ty.IsSubclassOf typeof<'a>) |>
-                Array.filter (fun ty -> not ty.IsAbstract) |>
-                Array.filter (fun ty -> ty.GetConstructors () |> Seq.exists (fun ctor -> ctor.GetParameters().Length = 0))
-            Array.map (fun (ty : Type) -> (ty.Name, Activator.CreateInstance ty :?> 'a)) types)
-            assemblies |>
-        Array.concat
+        assemblies
+        |> Array.map (fun (assembly : Assembly) ->
+            assembly.GetTypes ()
+            |> Array.filter (fun ty -> ty.IsSubclassOf typeof<'a>)
+            |> Array.filter (fun ty -> not ty.IsAbstract)
+            |> Array.filter (fun ty -> ty.GetConstructors () |> Seq.exists (fun ctor -> ctor.GetParameters().Length = 0))
+            |> Array.map (fun (ty : Type) -> (ty.Name, Activator.CreateInstance ty :?> 'a)))
+        |> Array.concat
 
     interface LateBindings
 
