@@ -1413,16 +1413,19 @@ type RigidBodyFacet () =
         entity.PropagatePhysics world
         Cascade
 
-    static let createWheelSettingsWV front position =
-        let settings = new JoltPhysicsSharp.WheelSettingsWV ()
-        settings.Position <- position
-        settings.WheelForward <- v3Forward
-        if not front then
-            settings.MaxSteerAngle <- 0.0f
-            settings.MaxHandBrakeTorque <- 0.0f
-        settings
+    static let createVehiclePropertiesAether () =
+        VehiclePropertiesAether
 
     static let createVehiclePropertiesJolt () =
+
+        let createWheelSettingsWV front position =
+            let settings = new JoltPhysicsSharp.WheelSettingsWV ()
+            settings.Position <- position
+            settings.WheelForward <- v3Forward
+            if not front then
+                settings.MaxSteerAngle <- 0.0f
+                settings.MaxHandBrakeTorque <- 0.0f
+            settings
 
         // vehicle controller config
         let mutable differential = JoltPhysicsSharp.VehicleDifferentialSettings (LeftWheel = 0, RightWheel = 1)
@@ -1509,7 +1512,10 @@ type RigidBodyFacet () =
         let mutable transform = entity.GetTransform world
         let vehicleProperties =
             match entity.GetBodyType world with
-            | Vehicle -> if is2d then VehiclePropertiesAether else createVehiclePropertiesJolt ()
+            | Vehicle ->
+                match entity.GetVehicleProperties world with
+                | VehiclePropertiesAbsent -> if is2d then createVehiclePropertiesAether () else createVehiclePropertiesJolt ()
+                | _ as properties -> properties
             | _ -> VehiclePropertiesAbsent
         let bodyProperties =
             { Enabled = entity.GetBodyEnabled world
@@ -1540,6 +1546,15 @@ type RigidBodyFacet () =
 
     override this.UnregisterPhysics (entity, world) =
         World.destroyBody (entity.GetIs2d world) (entity.GetBodyId world) world
+
+    override this.Edit (op, entity, world) =
+        match (op, entity.GetBodyType world) with
+        | (ViewportOverlay _, Vehicle) ->
+            let bodyId = entity.GetBodyId world
+            for i in 0 .. dec 4 do
+                let wheelModelMatrix = World.getBodyWheelModelMatrix v3Right v3Up i bodyId world
+                World.imGuiCircle3d wheelModelMatrix.Translation 5.0f false Color.Yellow world
+        | (_, _) -> ()
 
 [<AutoOpen>]
 module BodyJointFacetExtensions =
@@ -2538,6 +2553,12 @@ module StaticBillboardFacetExtensions =
         member this.GetShadowOffset world : single = this.Get (nameof this.ShadowOffset) world
         member this.SetShadowOffset (value : single) world = this.Set (nameof this.ShadowOffset) value world
         member this.ShadowOffset = lens (nameof this.ShadowOffset) this this.GetShadowOffset this.SetShadowOffset
+        member this.GetOrientUp world : bool = this.Get(nameof this.OrientUp) world
+        member this.SetOrientUp (value : bool) world = this.Set(nameof this.OrientUp) value world
+        member this.OrientUp = lens (nameof this.OrientUp) this this.GetOrientUp this.SetOrientUp
+        member this.GetPlanar world : bool = this.Get(nameof this.Planar) world
+        member this.SetPlanar (value : bool) world = this.Set(nameof this.Planar) value world
+        member this.Planar = lens (nameof this.Planar) this this.GetPlanar this.SetPlanar
 
 /// Augments an entity with a static billboard.
 type StaticBillboardFacet () =
@@ -2549,7 +2570,9 @@ type StaticBillboardFacet () =
          define Entity.Material Material.defaultMaterial
          define Entity.DepthTest LessThanOrEqualTest
          define Entity.RenderStyle Deferred
-         define Entity.ShadowOffset Constants.Engine.BillboardShadowOffsetDefault]
+         define Entity.ShadowOffset Constants.Engine.BillboardShadowOffsetDefault
+         define Entity.OrientUp true
+         define Entity.Planar true]
 
     override this.Render (renderPass, entity, world) =
         let mutable transform = entity.GetTransform world
@@ -2562,13 +2585,15 @@ type StaticBillboardFacet () =
             let material = entity.GetMaterial world
             let shadowOffset = entity.GetShadowOffset world
             let depthTest = entity.GetDepthTest world
+            let orientUp = entity.GetOrientUp world
+            let planar = entity.GetPlanar world
             let renderType =
                 match entity.GetRenderStyle world with
                 | Deferred -> DeferredRenderType
                 | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
             World.enqueueRenderMessage3d
                 (RenderBillboard
-                    { CastShadow = castShadow; Presence = presence; ModelMatrix = affineMatrix; InsetOpt = insetOpt
+                    { CastShadow = castShadow; Presence = presence; ModelMatrix = affineMatrix; InsetOpt = insetOpt; OrientUp = orientUp; Planar = planar;
                       MaterialProperties = properties; Material = material; ShadowOffset = shadowOffset; DepthTest = depthTest; RenderType = renderType; RenderPass = renderPass })
                 world
 
@@ -2609,7 +2634,9 @@ type AnimatedBillboardFacet () =
          define Entity.Material Material.defaultMaterial
          define Entity.DepthTest LessThanOrEqualTest
          define Entity.RenderStyle Deferred
-         define Entity.ShadowOffset Constants.Engine.BillboardShadowOffsetDefault]
+         define Entity.ShadowOffset Constants.Engine.BillboardShadowOffsetDefault
+         define Entity.OrientUp true
+         define Entity.Planar true]
 
     override this.Update (entity, world) =
         if not (entity.GetEnabled world) then
@@ -2626,13 +2653,15 @@ type AnimatedBillboardFacet () =
             let material = entity.GetMaterial world
             let shadowOffset = entity.GetShadowOffset world
             let depthTest = entity.GetDepthTest world
+            let orientUp = entity.GetOrientUp world
+            let planar = entity.GetPlanar world
             let renderType =
                 match entity.GetRenderStyle world with
                 | Deferred -> DeferredRenderType
                 | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
             World.enqueueRenderMessage3d
                 (RenderBillboard
-                    { CastShadow = castShadow; Presence = presence; ModelMatrix = affineMatrix; InsetOpt = insetOpt
+                    { CastShadow = castShadow; Presence = presence; ModelMatrix = affineMatrix; InsetOpt = insetOpt; OrientUp = orientUp; Planar = planar;
                       MaterialProperties = properties; Material = material; ShadowOffset = shadowOffset; DepthTest = depthTest; RenderType = renderType; RenderPass = renderPass })
                 world
 
