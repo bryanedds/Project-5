@@ -1857,8 +1857,8 @@ type [<ReferenceEquality>] GlRenderer3d =
                     let direction = lightMatrix.Rotation.Down
                     let unculled =
                         match renderPass with
-                        | NormalPass -> Presence.intersects3d (ValueSome frustumInterior) frustumExterior frustumImposter (ValueSome lightBox) false true presence lightBounds
                         | LightMapPass (_, _) -> true // TODO: see if we have enough context to cull here.
+                        | NormalPass -> Presence.intersects3d (ValueSome frustumInterior) frustumExterior frustumImposter (ValueSome lightBox) false true presence lightBounds
                         | _ -> false
                     if unculled then
                         let coneOuter = match light.LightType with SpotLight (_, coneOuter) -> min coneOuter MathF.PI_MINUS_EPSILON | _ -> MathF.TWO_PI
@@ -1895,10 +1895,10 @@ type [<ReferenceEquality>] GlRenderer3d =
                     let properties = if scatterType <> properties.ScatterType then { properties with ScatterTypeOpt = ValueSome scatterType } else properties
                     let unculled =
                         match renderPass with
-                        | NormalPass -> Presence.intersects3d (ValueSome frustumInterior) frustumExterior frustumImposter (ValueSome lightBox) false false presence surfaceBounds
                         | LightMapPass (_, _) -> true // TODO: see if we have enough context to cull here.
                         | ShadowPass (_, _, shadowLightType, _, shadowFrustum) -> Presence.intersects3d (if shadowLightType <> DirectionalLight then ValueSome shadowFrustum else ValueNone) shadowFrustum shadowFrustum ValueNone false false presence surfaceBounds
                         | ReflectionPass (_, reflFrustum) -> Presence.intersects3d ValueNone reflFrustum reflFrustum ValueNone false false presence surfaceBounds
+                        | NormalPass -> Presence.intersects3d (ValueSome frustumInterior) frustumExterior frustumImposter (ValueSome lightBox) false false presence surfaceBounds
                     if unculled then
                         GlRenderer3d.categorizeStaticModelSurface (&surfaceMatrix, castShadow, presence, &insetOpt, &properties, surface, depthTest, renderType, renderPass, ValueSome renderTasks, renderer)
             | _ -> Log.infoOnce ("Cannot render static model with a non-static model asset for '" + scstring staticModel + "'.")
@@ -3156,7 +3156,7 @@ type [<ReferenceEquality>] GlRenderer3d =
             | RenderLightProbe3d rlp ->
                 let renderTasks = GlRenderer3d.getRenderTasks rlp.RenderPass renderer
                 if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
-                    Log.infoOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
+                    Log.warnOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
                     renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
                 renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
             | RenderLightMap3d rlm ->
@@ -3248,7 +3248,7 @@ type [<ReferenceEquality>] GlRenderer3d =
             | ReloadRenderAssets3d ->
                 renderer.ReloadAssetsRequested <- true
 
-        // light map pre-passes and shadow pass accumulation
+        // light map pre-passes
         for (renderPass, renderTasks) in renderer.RenderPasses.Pairs do
 
             // fallback light map pre-pass
@@ -3473,8 +3473,8 @@ type [<ReferenceEquality>] GlRenderer3d =
                             renderTasks.ShadowBufferIndexOpt <- Some (shadowMapBufferIndex + Constants.Render.ShadowTexturesMax)
 
                             // update renderer values or next shadow
-                            // NOTE: this behavior completely DEPENDS on shadow face messages for a shadow map
-                            // being received and processed in numerical order.
+                            // NOTE: this behavior completely DEPENDS on shadow face messages for a shadow map being
+                            // received and processed in numerical order.
                             if shadowFace = 0 then
                                 renderer.LightShadowIndices.[lightId] <- shadowMapBufferIndex + Constants.Render.ShadowTexturesMax
                             elif shadowFace = dec 6 then
