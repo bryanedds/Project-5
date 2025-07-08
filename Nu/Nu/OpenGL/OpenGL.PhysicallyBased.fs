@@ -74,7 +74,8 @@ module PhysicallyBased =
           SubdermalTexture : Texture.Texture
           FinenessTexture : Texture.Texture
           ScatterTexture : Texture.Texture
-          TwoSided : bool }
+          TwoSided : bool
+          Names : string }
 
         /// The empty material.
         static member empty =
@@ -88,7 +89,8 @@ module PhysicallyBased =
               SubdermalTexture = Texture.EmptyTexture
               FinenessTexture = Texture.EmptyTexture
               ScatterTexture = Texture.EmptyTexture
-              TwoSided = false }
+              TwoSided = false
+              Names = "" }
 
     /// Describes some physically-based geometry that's loaded into VRAM.
     type PhysicallyBasedGeometry =
@@ -216,8 +218,8 @@ module PhysicallyBased =
             left.SurfaceMaterial.FinenessTexture = right.SurfaceMaterial.FinenessTexture &&
             left.SurfaceMaterial.ScatterTexture = right.SurfaceMaterial.ScatterTexture &&
             left.SurfaceMaterial.TwoSided = right.SurfaceMaterial.TwoSided &&
-            left.PhysicallyBasedGeometry.PrimitiveType = right.PhysicallyBasedGeometry.PrimitiveType &&
-            left.PhysicallyBasedGeometry.VertexBuffer = right.PhysicallyBasedGeometry.VertexBuffer
+            left.SurfaceMaterial.Names = right.SurfaceMaterial.Names &&
+            refEq left.PhysicallyBasedGeometry right.PhysicallyBasedGeometry
 
         static member comparer =
             HashIdentity.FromFunctions PhysicallyBasedSurface.hash PhysicallyBasedSurface.equals
@@ -235,8 +237,8 @@ module PhysicallyBased =
                 (hash material.FinenessTexture <<< 16) ^^^
                 (hash material.ScatterTexture <<< 18) ^^^
                 (hash material.TwoSided <<< 20) ^^^
-                (int geometry.PrimitiveType <<< 22) ^^^
-                (int geometry.VertexBuffer <<< 24)
+                (hash material.Names <<< 22) ^^^
+                Runtime.CompilerServices.RuntimeHelpers.GetHashCode geometry <<< 24
             { HashCode = hashCode
               SurfaceNames = names
               SurfaceMatrixIsIdentity = surfaceMatrix.IsIdentity
@@ -270,6 +272,7 @@ module PhysicallyBased =
         let hash = PhysicallyBasedSurface.hash
         let equals = PhysicallyBasedSurface.equals
         let comparer = PhysicallyBasedSurface.comparer
+        let make = PhysicallyBasedSurface.make
 
     /// A light probe inside a physically-based static model.
     type PhysicallyBasedLightProbe =
@@ -1012,6 +1015,19 @@ module PhysicallyBased =
             | ValueSome twoSided -> twoSided
             | ValueNone -> material.IsTwoSided
 
+        // compose names when not rendering so that surfaces can be correlated without textures
+        let names =
+            if not renderable then
+                albedoTextureSlotFilePath + "/" +
+                roughnessTextureSlot.FilePath + "/" +
+                metallicTextureSlot.FilePath + "/" +
+                ambientOcclusionTextureSlotA.FilePath + "/" +
+                ambientOcclusionTextureSlotB.FilePath + "/" +
+                emissionTextureSlot.FilePath + "/" +
+                normalTextureSlot.FilePath + "/" +
+                heightTextureSlot.FilePath
+            else ""
+
         // make properties
         let properties =
             { Albedo = color albedo.R albedo.G albedo.B albedo.A
@@ -1037,7 +1053,8 @@ module PhysicallyBased =
               SubdermalTexture = subdermalTexture
               FinenessTexture = finenessTexture
               ScatterTexture = scatterTexture
-              TwoSided = twoSided }
+              TwoSided = twoSided
+              Names = names }
 
         // fin
         (properties, material)
@@ -1739,7 +1756,7 @@ module PhysicallyBased =
         | None -> Right propertiesAndMaterials
 
     /// Create physically-based static geometries from an assimp scene.
-    /// OPTIMIZATION: duplicate geometry is detected and de-duplicated here, which does have some run-time cost.
+    /// OPTIMIZATION: duplicate geometry is detected and deduplicated here, which does have some run-time cost.
     let CreatePhysicallyBasedStaticGeometries (renderable, scene : Assimp.Scene) =
         let meshAndGeometryLists = Dictionary<int * int * Assimp.BoundingBox, (Assimp.Mesh * PhysicallyBasedGeometry) List> HashIdentity.Structural
         let geometries = SList.make ()
