@@ -485,7 +485,7 @@ type CharacterDispatcher () =
                  Entity.Static .= false
                  Entity.LightType .= SpotLight (0.8f, 1.2f)
                  Entity.LightCutoff .= 11.0f
-                 Entity.Brightness .= 1.25f
+                 Entity.Brightness .= 0.8f
                  Entity.DesireShadows .= true
                  Entity.VisibleLocal @= state.FlashLightEnabled] world
         | _ -> ()
