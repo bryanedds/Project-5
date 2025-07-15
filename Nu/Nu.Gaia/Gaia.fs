@@ -1978,7 +1978,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                         | nameof Entity.Overflow -> "!12"
                         | name -> name)
                 for propertyDescriptor in propertyDescriptors do
-                    if containsProperty propertyDescriptor.PropertyName simulant world then
+                    if containsProperty propertyDescriptor.PropertyName simulant world then // NOTE: this check is necessary because interaction with a property rollout can cause properties to be removed.
                         if propertyDescriptor.PropertyName = Constants.Engine.NamePropertyName then // NOTE: name edit properties can't be replaced.
                             match simulant with
                             | :? Screen as screen ->
@@ -3359,9 +3359,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                 ImGui.EndCombo ()
             let projectTypeDescription =
                 match NewProjectType with
-                | "MMCC Empty" -> "Create an empty MMCC project. This contains the minimum code needed to experiment with the MMCC API."
+                | "MMCC Empty" -> "Create an empty MMCC project. This contains the minimum code needed to initially learn or experiment with the MMCC API."
                 | "MMCC Game" -> "Create a full MMCC game project. This contains the structures and pieces that embody the best practices of MMCC usage."
-                | "ImSim Empty" -> "Create an empty ImSim project. This contains the minimum code needed to experiment with ImSim in a sandbox environment."
+                | "ImSim Empty" -> "Create an empty ImSim project. This contains the minimum code needed to initially learn or experiment with the ImSim API."
                 | "ImSim Game" -> "Create a full ImSim game project. This contains the structures and pieces that embody the best practices of ImSim usage."
                 | _ -> failwithumf ()
             ImGui.Separator ()
@@ -3403,9 +3403,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                         Directory.CreateDirectory NewProjectName |> ignore<DirectoryInfo>
                         Directory.SetCurrentDirectory newProjectDir
                         Process.Start("dotnet", "new " + shortName + " --force").WaitForExit()
-
-                        // TODO: consider also changing the profile name in the launchSettings.json file to match the
-                        // user-defined project name.
 
                         // rename project file
                         File.Copy (templateFileName, newFileName, true)

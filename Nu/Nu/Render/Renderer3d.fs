@@ -1531,6 +1531,39 @@ type [<ReferenceEquality>] GlRenderer3d =
         // attempted to replace a loaded asset
         else Log.info ("Cannot replace a loaded asset '" + scstring assetTag + "' with a user-created static model.")
 
+    static member private getRenderTasks renderPass renderer =
+        let mutable renderTasks = Unchecked.defaultof<RenderTasks> // OPTIMIZATION: seems like TryGetValue allocates here if we use the tupling idiom (this may only be the case in Debug builds tho).
+        if renderer.RenderPasses.TryGetValue (renderPass, &renderTasks)
+        then renderTasks
+        else
+            let renderTasks = RenderTasks.make ()
+            let displacedPasses =
+                [for kvp in renderer.RenderPasses do
+                    if RenderPass.displaces renderPass kvp.Key then
+                        kvp.Key]
+            for displacedPass in displacedPasses do
+                renderer.RenderPasses.Remove displacedPass |> ignore<bool>
+            renderer.RenderPasses.Add (renderPass, renderTasks)
+            renderTasks
+
+    static member private getLastSkyBoxOpt renderPass renderer =
+        let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
+        match Seq.tryLast renderTasks.SkyBoxes with
+        | Some (lightAmbientColor, lightAmbientBrightness, cubeMapColor, cubeMapBrightness, cubeMapAsset) ->
+            match GlRenderer3d.tryGetRenderAsset cubeMapAsset renderer with
+            | ValueSome asset ->
+                match asset with
+                | CubeMapAsset (_, cubeMap, cubeMapIrradianceAndEnvironmentMapOptRef) ->
+                    let cubeMapOpt = Some (cubeMapColor, cubeMapBrightness, cubeMap, cubeMapIrradianceAndEnvironmentMapOptRef)
+                    (lightAmbientColor, lightAmbientBrightness, cubeMapOpt)
+                | _ ->
+                    Log.info "Could not utilize sky box due to mismatched cube map asset."
+                    (lightAmbientColor, lightAmbientBrightness, None)
+            | ValueNone ->
+                Log.info "Could not utilize sky box due to non-existent cube map asset."
+                (lightAmbientColor, lightAmbientBrightness, None)
+        | None -> (Color.White, 1.0f, None)
+
     static member private createPhysicallyBasedTerrainNormals (resolution : Vector2i) (positionsAndTexCoordses : struct (Vector3 * Vector2) array) =
         [|for y in 0 .. dec resolution.Y do
             for x in 0 .. dec resolution.X do
@@ -1716,20 +1749,16 @@ type [<ReferenceEquality>] GlRenderer3d =
         for packageName in packageNames do
             GlRenderer3d.tryLoadRenderPackage packageName renderer
 
-    static member private getRenderTasks renderPass renderer =
-        let mutable renderTasks = Unchecked.defaultof<RenderTasks> // OPTIMIZATION: seems like TryGetValue allocates here if we use the tupling idiom (this may only be the case in Debug builds tho).
-        if renderer.RenderPasses.TryGetValue (renderPass, &renderTasks)
-        then renderTasks
-        else
-            let renderTasks = RenderTasks.make ()
-            let displacedPasses =
-                [for kvp in renderer.RenderPasses do
-                    if RenderPass.displaces renderPass kvp.Key then
-                        kvp.Key]
-            for displacedPass in displacedPasses do
-                renderer.RenderPasses.Remove displacedPass |> ignore<bool>
-            renderer.RenderPasses.Add (renderPass, renderTasks)
-            renderTasks
+    static member private sortForwardSurfaces
+        eyeCenter
+        (surfaces : struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest) List)
+        (forwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int)>)
+        (forwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int) List) =
+        for i in 0 .. dec surfaces.Count do
+            let struct (subsort, sort, model, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) = surfaces.[i]
+            forwardSurfacesSortBuffer.Add struct (subsort, sort, model, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest, (model.Translation - eyeCenter).MagnitudeSquared, i)
+        forwardSurfacesSortBuffer.Sort forwardSurfacesComparer
+        forwardSurfacesSortBuffer
 
     static member private categorizeBillboardSurface
         (eyeCenter : Vector3,
@@ -2175,34 +2204,132 @@ type [<ReferenceEquality>] GlRenderer3d =
         // mark terrain geometry as utilized regardless of visibility (to keep it from being destroyed).
         renderer.PhysicallyBasedTerrainGeometriesUtilized.Add geometryDescriptor |> ignore<bool>
 
-    static member private getLastSkyBoxOpt renderPass renderer =
-        let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
-        match Seq.tryLast renderTasks.SkyBoxes with
-        | Some (lightAmbientColor, lightAmbientBrightness, cubeMapColor, cubeMapBrightness, cubeMapAsset) ->
-            match GlRenderer3d.tryGetRenderAsset cubeMapAsset renderer with
-            | ValueSome asset ->
-                match asset with
-                | CubeMapAsset (_, cubeMap, cubeMapIrradianceAndEnvironmentMapOptRef) ->
-                    let cubeMapOpt = Some (cubeMapColor, cubeMapBrightness, cubeMap, cubeMapIrradianceAndEnvironmentMapOptRef)
-                    (lightAmbientColor, lightAmbientBrightness, cubeMapOpt)
-                | _ ->
-                    Log.info "Could not utilize sky box due to mismatched cube map asset."
-                    (lightAmbientColor, lightAmbientBrightness, None)
-            | ValueNone ->
-                Log.info "Could not utilize sky box due to non-existent cube map asset."
-                (lightAmbientColor, lightAmbientBrightness, None)
-        | None -> (Color.White, 1.0f, None)
-
-    static member private sortForwardSurfaces
-        eyeCenter
-        (surfaces : struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest) List)
-        (forwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int)>)
-        (forwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int) List) =
-        for i in 0 .. dec surfaces.Count do
-            let struct (subsort, sort, model, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) = surfaces.[i]
-            forwardSurfacesSortBuffer.Add struct (subsort, sort, model, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest, (model.Translation - eyeCenter).MagnitudeSquared, i)
-        forwardSurfacesSortBuffer.Sort forwardSurfacesComparer
-        forwardSurfacesSortBuffer
+    static member private categorize frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation renderMessages renderer =
+        let userDefinedStaticModelsToDestroy = SList.make ()
+        for message in renderMessages do
+            match message with
+            | CreateUserDefinedStaticModel cudsm ->
+                GlRenderer3d.tryCreateUserDefinedStaticModel cudsm.StaticModelSurfaceDescriptors cudsm.Bounds cudsm.StaticModel renderer
+            | DestroyUserDefinedStaticModel dudsm ->
+                userDefinedStaticModelsToDestroy.Add dudsm.StaticModel 
+            | RenderSkyBox rsb ->
+                let renderTasks = GlRenderer3d.getRenderTasks rsb.RenderPass renderer
+                renderTasks.SkyBoxes.Add (rsb.AmbientColor, rsb.AmbientBrightness, rsb.CubeMapColor, rsb.CubeMapBrightness, rsb.CubeMap)
+            | RenderLightProbe3d rlp ->
+                let renderTasks = GlRenderer3d.getRenderTasks rlp.RenderPass renderer
+                if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
+                    Log.warnOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
+                    renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
+                renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
+            | RenderLightMap3d rlm ->
+                let renderTasks = GlRenderer3d.getRenderTasks rlm.RenderPass renderer
+                renderTasks.LightMapRenders.Add rlm.LightProbeId |> ignore<bool>
+            | RenderLight3d rl ->
+                let direction = rl.Rotation.Down
+                let renderTasks = GlRenderer3d.getRenderTasks rl.RenderPass renderer
+                let coneOuter = match rl.LightType with SpotLight (_, coneOuter) -> min coneOuter MathF.PI_MINUS_EPSILON | _ -> MathF.TWO_PI
+                let coneInner = match rl.LightType with SpotLight (coneInner, _) -> min coneInner coneOuter | _ -> MathF.TWO_PI
+                let light =
+                    { SortableLightId = rl.LightId
+                      SortableLightOrigin = rl.Origin
+                      SortableLightRotation = rl.Rotation
+                      SortableLightDirection = direction
+                      SortableLightColor = rl.Color
+                      SortableLightBrightness = rl.Brightness
+                      SortableLightAttenuationLinear = rl.AttenuationLinear
+                      SortableLightAttenuationQuadratic = rl.AttenuationQuadratic
+                      SortableLightCutoff = rl.LightCutoff
+                      SortableLightType = rl.LightType.Enumerate
+                      SortableLightConeInner = coneInner
+                      SortableLightConeOuter = coneOuter
+                      SortableLightDesireShadows = if rl.DesireShadows then 1 else 0
+                      SortableLightDesireFog = if rl.DesireFog then 1 else 0
+                      SortableLightBounds = rl.Bounds
+                      SortableLightDistance = Single.MaxValue }
+                renderTasks.Lights.Add light
+                if rl.DesireShadows then
+                    renderer.LightsDesiringShadows.[rl.LightId] <- light
+            | RenderBillboard rb ->
+                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rb.MaterialProperties, &rb.Material, renderer)
+                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f 0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
+                let renderTasks = GlRenderer3d.getRenderTasks rb.RenderPass renderer
+                GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.DepthTest, rb.RenderType, rb.RenderPass, renderTasks, renderer)
+            | RenderBillboards rbs ->
+                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbs.MaterialProperties, &rbs.Material, renderer)
+                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f -0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
+                let renderTasks = GlRenderer3d.getRenderTasks rbs.RenderPass renderer
+                for (model, castShadow, presence, insetOpt, orientUp, planar) in rbs.Billboards do
+                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.DepthTest, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
+            | RenderBillboardParticles rbps ->
+                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbps.MaterialProperties, &rbps.Material, renderer)
+                let renderTasks = GlRenderer3d.getRenderTasks rbps.RenderPass renderer
+                for particle in rbps.Particles do
+                    let billboardMatrix =
+                        Matrix4x4.CreateAffine
+                            (particle.Transform.Position,
+                             particle.Transform.Rotation,
+                             particle.Transform.Size * particle.Transform.Scale)
+                    let billboardProperties = { billboardProperties with Albedo = billboardProperties.Albedo * particle.Color; Emission = particle.Emission.R }
+                    let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3Zero, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
+                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.DepthTest, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
+            | RenderStaticModelSurface rsms ->
+                let insetOpt = Option.toValueOption rsms.InsetOpt
+                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, &rsms.MaterialProperties, &rsms.Material, rsms.StaticModel, rsms.SurfaceIndex, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderer)
+            | RenderStaticModelSurfaceBundle rsmsb ->
+                let renderPass = rsmsb.RenderPass
+                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
+                GlRenderer3d.categorizeStaticModelSurfaceBundle (rsmsb.StaticModelSurfaceBundle.BundleId, rsmsb.StaticModelSurfaceBundle.StaticModelSurfaces, rsmsb.StaticModelSurfaceBundle.Material, rsmsb.StaticModelSurfaceBundle.StaticModel, rsmsb.StaticModelSurfaceBundle.SurfaceIndex, rsmsb.StaticModelSurfaceBundle.DepthTest, rsmsb.StaticModelSurfaceBundle.RenderType, frustumInterior, frustumExterior, frustumImposter, lightBox, renderPass, renderTasks, renderer)
+            | RenderStaticModelSurfaceBundles rsmsbs ->
+                let renderPass = rsmsbs.RenderPass
+                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
+                for bundle in rsmsbs.StaticModelSurfaceBundles do
+                    GlRenderer3d.categorizeStaticModelSurfaceBundle (bundle.BundleId, bundle.StaticModelSurfaces, bundle.Material, bundle.StaticModel, bundle.SurfaceIndex, bundle.DepthTest, bundle.RenderType, frustumInterior, frustumExterior, frustumImposter, lightBox, renderPass, renderTasks, renderer)
+            | RenderStaticModel rsm ->
+                let insetOpt = Option.toValueOption rsm.InsetOpt
+                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
+                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.StaticModel, rsm.DepthTest, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
+            | RenderStaticModels rsms ->
+                let renderTasks = GlRenderer3d.getRenderTasks rsms.RenderPass renderer
+                for (model, castShadow, presence, insetOpt, properties) in rsms.StaticModels do // TODO: see if these should be struct tuples.
+                    let insetOpt = Option.toValueOption insetOpt
+                    GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &model, castShadow, presence, &insetOpt, &properties, rsms.StaticModel, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderTasks, renderer)
+            | RenderCachedStaticModel csmm ->
+                let renderTasks = GlRenderer3d.getRenderTasks csmm.CachedStaticModelRenderPass renderer
+                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, &csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModel, csmm.CachedStaticModelDepthTest, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
+            | RenderCachedStaticModelSurface csmsm ->
+                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, &csmsm.CachedStaticModelSurfaceMaterialProperties, &csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceDepthTest, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
+            | RenderUserDefinedStaticModel rudsm ->
+                let insetOpt = Option.toValueOption rudsm.InsetOpt
+                let assetTag = asset Assets.Default.PackageName Gen.name // TODO: see if we should instead use a specialized package for temporary assets like these.
+                GlRenderer3d.tryCreateUserDefinedStaticModel rudsm.StaticModelSurfaceDescriptors rudsm.Bounds assetTag renderer
+                let renderTasks = GlRenderer3d.getRenderTasks rudsm.RenderPass renderer
+                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, &rudsm.MaterialProperties, assetTag, rudsm.DepthTest, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
+                userDefinedStaticModelsToDestroy.Add assetTag
+            | RenderAnimatedModel rsm ->
+                let insetOpt = Option.toValueOption rsm.InsetOpt
+                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
+                GlRenderer3d.categorizeAnimatedModel (&rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.BoneTransforms, rsm.AnimatedModel, rsm.SubsortOffsets, rsm.DualRenderedSurfaceIndices, rsm.DepthTest, rsm.RenderType, renderTasks, renderer)
+            | RenderAnimatedModels rams ->
+                let renderTasks = GlRenderer3d.getRenderTasks rams.RenderPass renderer
+                GlRenderer3d.categorizeAnimatedModels (rams.AnimatedModels, rams.BoneTransforms, rams.AnimatedModel, rams.SubsortOffsets, rams.DualRenderedSurfaceIndices, rams.DepthTest, rams.RenderType, renderTasks, renderer)
+            | RenderCachedAnimatedModel camm ->
+                let renderTasks = GlRenderer3d.getRenderTasks camm.CachedAnimatedModelRenderPass renderer
+                GlRenderer3d.categorizeAnimatedModel (&camm.CachedAnimatedModelMatrix, camm.CachedAnimatedModelCastShadow, camm.CachedAnimatedModelPresence, &camm.CachedAnimatedModelInsetOpt, &camm.CachedAnimatedModelMaterialProperties, camm.CachedAnimatedModelBoneTransforms, camm.CachedAnimatedModel, camm.CachedAnimatedModelSubsortOffsets, camm.CachedAnimatedModelDualRenderedSurfaceIndices, camm.CachedAnimatedModelDepthTest, camm.CachedAnimatedModelRenderType, renderTasks, renderer)
+            | RenderTerrain rt ->
+                let renderTasks = GlRenderer3d.getRenderTasks rt.RenderPass renderer
+                GlRenderer3d.categorizeTerrain (rt.Visible, rt.TerrainDescriptor, renderTasks, renderer)
+            | ConfigureLighting3d l3c ->
+                if renderer.LightingConfig <> l3c then renderer.LightingConfigChanged <- true
+                renderer.LightingConfig <- l3c
+            | ConfigureRenderer3d r3c ->
+                renderer.RendererConfig <- r3c
+            | LoadRenderPackage3d packageName ->
+                GlRenderer3d.handleLoadRenderPackage packageName renderer
+            | UnloadRenderPackage3d packageName ->
+                GlRenderer3d.handleUnloadRenderPackage packageName renderer
+            | ReloadRenderAssets3d ->
+                renderer.ReloadAssetsRequested <- true
+        userDefinedStaticModelsToDestroy
 
     static member private renderPhysicallyBasedDepthSurfaces
         batchPhase eyeCenter viewArray projectionArray viewProjectionArray bonesArray (parameters : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List)
@@ -3366,15 +3493,8 @@ type [<ReferenceEquality>] GlRenderer3d =
         OpenGL.PhysicallyBased.DrawFilterGaussianSurface (v2 0.0f (1.0f / single geometryResolution.Y), filter1Texture, renderer.PhysicallyBasedQuad, renderer.FilterGaussian4dShader, renderer.PhysicallyBasedStaticVao)
         OpenGL.Hl.Assert ()
 
-        // destroy cached geometries that weren't rendered this frame
-        if topLevelRender then
-            for geometry in renderer.PhysicallyBasedTerrainGeometries do
-                if not (renderer.PhysicallyBasedTerrainGeometriesUtilized.Contains geometry.Key) then
-                    OpenGL.PhysicallyBased.DestroyPhysicallyBasedGeometry geometry.Value
-                    renderer.PhysicallyBasedTerrainGeometries.Remove geometry.Key |> ignore<bool>
-
     /// Render 3d surfaces.
-    static member render frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation eyeFieldOfView geometryViewport rasterViewport renderbuffer framebuffer renderMessages renderer =
+    static member render frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation eyeFieldOfView geometryViewport rasterViewport renderbuffer framebuffer (renderMessages : _ List) renderer =
 
         // updates viewports, recreating buffers as needed
         if renderer.GeometryViewport <> geometryViewport then
@@ -3386,130 +3506,8 @@ type [<ReferenceEquality>] GlRenderer3d =
         renderer.RasterViewport <- rasterViewport
 
         // categorize messages
-        let userDefinedStaticModelsToDestroy = SList.make ()
-        for message in renderMessages do
-            match message with
-            | CreateUserDefinedStaticModel cudsm ->
-                GlRenderer3d.tryCreateUserDefinedStaticModel cudsm.StaticModelSurfaceDescriptors cudsm.Bounds cudsm.StaticModel renderer
-            | DestroyUserDefinedStaticModel dudsm ->
-                userDefinedStaticModelsToDestroy.Add dudsm.StaticModel 
-            | RenderSkyBox rsb ->
-                let renderTasks = GlRenderer3d.getRenderTasks rsb.RenderPass renderer
-                renderTasks.SkyBoxes.Add (rsb.AmbientColor, rsb.AmbientBrightness, rsb.CubeMapColor, rsb.CubeMapBrightness, rsb.CubeMap)
-            | RenderLightProbe3d rlp ->
-                let renderTasks = GlRenderer3d.getRenderTasks rlp.RenderPass renderer
-                if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
-                    Log.warnOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
-                    renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
-                renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
-            | RenderLightMap3d rlm ->
-                let renderTasks = GlRenderer3d.getRenderTasks rlm.RenderPass renderer
-                renderTasks.LightMapRenders.Add rlm.LightProbeId |> ignore<bool>
-            | RenderLight3d rl ->
-                let direction = rl.Rotation.Down
-                let renderTasks = GlRenderer3d.getRenderTasks rl.RenderPass renderer
-                let coneOuter = match rl.LightType with SpotLight (_, coneOuter) -> min coneOuter MathF.PI_MINUS_EPSILON | _ -> MathF.TWO_PI
-                let coneInner = match rl.LightType with SpotLight (coneInner, _) -> min coneInner coneOuter | _ -> MathF.TWO_PI
-                let light =
-                    { SortableLightId = rl.LightId
-                      SortableLightOrigin = rl.Origin
-                      SortableLightRotation = rl.Rotation
-                      SortableLightDirection = direction
-                      SortableLightColor = rl.Color
-                      SortableLightBrightness = rl.Brightness
-                      SortableLightAttenuationLinear = rl.AttenuationLinear
-                      SortableLightAttenuationQuadratic = rl.AttenuationQuadratic
-                      SortableLightCutoff = rl.LightCutoff
-                      SortableLightType = rl.LightType.Enumerate
-                      SortableLightConeInner = coneInner
-                      SortableLightConeOuter = coneOuter
-                      SortableLightDesireShadows = if rl.DesireShadows then 1 else 0
-                      SortableLightDesireFog = if rl.DesireFog then 1 else 0
-                      SortableLightBounds = rl.Bounds
-                      SortableLightDistance = Single.MaxValue }
-                renderTasks.Lights.Add light
-                if rl.DesireShadows then
-                    renderer.LightsDesiringShadows.[rl.LightId] <- light
-            | RenderBillboard rb ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rb.MaterialProperties, &rb.Material, renderer)
-                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f 0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                let renderTasks = GlRenderer3d.getRenderTasks rb.RenderPass renderer
-                GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.DepthTest, rb.RenderType, rb.RenderPass, renderTasks, renderer)
-            | RenderBillboards rbs ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbs.MaterialProperties, &rbs.Material, renderer)
-                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f -0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                let renderTasks = GlRenderer3d.getRenderTasks rbs.RenderPass renderer
-                for (model, castShadow, presence, insetOpt, orientUp, planar) in rbs.Billboards do
-                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.DepthTest, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
-            | RenderBillboardParticles rbps ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbps.MaterialProperties, &rbps.Material, renderer)
-                let renderTasks = GlRenderer3d.getRenderTasks rbps.RenderPass renderer
-                for particle in rbps.Particles do
-                    let billboardMatrix =
-                        Matrix4x4.CreateAffine
-                            (particle.Transform.Position,
-                             particle.Transform.Rotation,
-                             particle.Transform.Size * particle.Transform.Scale)
-                    let billboardProperties = { billboardProperties with Albedo = billboardProperties.Albedo * particle.Color; Emission = particle.Emission.R }
-                    let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3Zero, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.DepthTest, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
-            | RenderStaticModelSurface rsms ->
-                let insetOpt = Option.toValueOption rsms.InsetOpt
-                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, &rsms.MaterialProperties, &rsms.Material, rsms.StaticModel, rsms.SurfaceIndex, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderer)
-            | RenderStaticModelSurfaceBundle rsmsb ->
-                let renderPass = rsmsb.RenderPass
-                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
-                GlRenderer3d.categorizeStaticModelSurfaceBundle (rsmsb.StaticModelSurfaceBundle.BundleId, rsmsb.StaticModelSurfaceBundle.StaticModelSurfaces, rsmsb.StaticModelSurfaceBundle.Material, rsmsb.StaticModelSurfaceBundle.StaticModel, rsmsb.StaticModelSurfaceBundle.SurfaceIndex, rsmsb.StaticModelSurfaceBundle.DepthTest, rsmsb.StaticModelSurfaceBundle.RenderType, frustumInterior, frustumExterior, frustumImposter, lightBox, renderPass, renderTasks, renderer)
-            | RenderStaticModelSurfaceBundles rsmsbs ->
-                let renderPass = rsmsbs.RenderPass
-                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
-                for bundle in rsmsbs.StaticModelSurfaceBundles do
-                    GlRenderer3d.categorizeStaticModelSurfaceBundle (bundle.BundleId, bundle.StaticModelSurfaces, bundle.Material, bundle.StaticModel, bundle.SurfaceIndex, bundle.DepthTest, bundle.RenderType, frustumInterior, frustumExterior, frustumImposter, lightBox, renderPass, renderTasks, renderer)
-            | RenderStaticModel rsm ->
-                let insetOpt = Option.toValueOption rsm.InsetOpt
-                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.StaticModel, rsm.DepthTest, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
-            | RenderStaticModels rsms ->
-                let renderTasks = GlRenderer3d.getRenderTasks rsms.RenderPass renderer
-                for (model, castShadow, presence, insetOpt, properties) in rsms.StaticModels do // TODO: see if these should be struct tuples.
-                    let insetOpt = Option.toValueOption insetOpt
-                    GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &model, castShadow, presence, &insetOpt, &properties, rsms.StaticModel, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderTasks, renderer)
-            | RenderCachedStaticModel csmm ->
-                let renderTasks = GlRenderer3d.getRenderTasks csmm.CachedStaticModelRenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, &csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModel, csmm.CachedStaticModelDepthTest, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
-            | RenderCachedStaticModelSurface csmsm ->
-                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, &csmsm.CachedStaticModelSurfaceMaterialProperties, &csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceDepthTest, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
-            | RenderUserDefinedStaticModel rudsm ->
-                let insetOpt = Option.toValueOption rudsm.InsetOpt
-                let assetTag = asset Assets.Default.PackageName Gen.name // TODO: see if we should instead use a specialized package for temporary assets like these.
-                GlRenderer3d.tryCreateUserDefinedStaticModel rudsm.StaticModelSurfaceDescriptors rudsm.Bounds assetTag renderer
-                let renderTasks = GlRenderer3d.getRenderTasks rudsm.RenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, lightBox, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, &rudsm.MaterialProperties, assetTag, rudsm.DepthTest, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
-                userDefinedStaticModelsToDestroy.Add assetTag
-            | RenderAnimatedModel rsm ->
-                let insetOpt = Option.toValueOption rsm.InsetOpt
-                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
-                GlRenderer3d.categorizeAnimatedModel (&rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.BoneTransforms, rsm.AnimatedModel, rsm.SubsortOffsets, rsm.DualRenderedSurfaceIndices, rsm.DepthTest, rsm.RenderType, renderTasks, renderer)
-            | RenderAnimatedModels rams ->
-                let renderTasks = GlRenderer3d.getRenderTasks rams.RenderPass renderer
-                GlRenderer3d.categorizeAnimatedModels (rams.AnimatedModels, rams.BoneTransforms, rams.AnimatedModel, rams.SubsortOffsets, rams.DualRenderedSurfaceIndices, rams.DepthTest, rams.RenderType, renderTasks, renderer)
-            | RenderCachedAnimatedModel camm ->
-                let renderTasks = GlRenderer3d.getRenderTasks camm.CachedAnimatedModelRenderPass renderer
-                GlRenderer3d.categorizeAnimatedModel (&camm.CachedAnimatedModelMatrix, camm.CachedAnimatedModelCastShadow, camm.CachedAnimatedModelPresence, &camm.CachedAnimatedModelInsetOpt, &camm.CachedAnimatedModelMaterialProperties, camm.CachedAnimatedModelBoneTransforms, camm.CachedAnimatedModel, camm.CachedAnimatedModelSubsortOffsets, camm.CachedAnimatedModelDualRenderedSurfaceIndices, camm.CachedAnimatedModelDepthTest, camm.CachedAnimatedModelRenderType, renderTasks, renderer)
-            | RenderTerrain rt ->
-                let renderTasks = GlRenderer3d.getRenderTasks rt.RenderPass renderer
-                GlRenderer3d.categorizeTerrain (rt.Visible, rt.TerrainDescriptor, renderTasks, renderer)
-            | ConfigureLighting3d l3c ->
-                if renderer.LightingConfig <> l3c then renderer.LightingConfigChanged <- true
-                renderer.LightingConfig <- l3c
-            | ConfigureRenderer3d r3c ->
-                renderer.RendererConfig <- r3c
-            | LoadRenderPackage3d packageName ->
-                GlRenderer3d.handleLoadRenderPackage packageName renderer
-            | UnloadRenderPackage3d packageName ->
-                GlRenderer3d.handleUnloadRenderPackage packageName renderer
-            | ReloadRenderAssets3d ->
-                renderer.ReloadAssetsRequested <- true
+        let userDefinedStaticModelsToDestroy =
+            GlRenderer3d.categorize frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation renderMessages renderer
 
         // light map pre-passes
         for (renderPass, renderTasks) in renderer.RenderPasses.Pairs do
@@ -3525,21 +3523,21 @@ type [<ReferenceEquality>] GlRenderer3d =
                     let irradianceMap =
                         OpenGL.LightMap.CreateIrradianceMap
                             (Constants.Render.IrradianceMapResolution,
-                             OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
-                             renderer.IrradianceShader,
-                             renderer.CubeMapVao,
-                             renderer.IrradianceMapRenderbuffer,
-                             renderer.IrradianceMapFramebuffer)
+                                OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
+                                renderer.IrradianceShader,
+                                renderer.CubeMapVao,
+                                renderer.IrradianceMapRenderbuffer,
+                                renderer.IrradianceMapFramebuffer)
 
                     // render fallback env filter map
                     let environmentFilterMap =
                         OpenGL.LightMap.CreateEnvironmentFilterMap
                             (Constants.Render.EnvironmentFilterResolution,
-                             OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
-                             renderer.EnvironmentFilterShader,
-                             renderer.CubeMapVao,
-                             renderer.EnvironmentFilterRenderbuffer,
-                             renderer.EnvironmentFilterFramebuffer)
+                                OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
+                                renderer.EnvironmentFilterShader,
+                                renderer.CubeMapVao,
+                                renderer.EnvironmentFilterRenderbuffer,
+                                renderer.EnvironmentFilterFramebuffer)
 
                     // add to cache and create light map
                     irradianceAndEnvironmentMapsOptRef.Value <- Some (irradianceMap, environmentFilterMap)
@@ -3567,32 +3565,32 @@ type [<ReferenceEquality>] GlRenderer3d =
                         let reflectionMap =
                             OpenGL.LightMap.CreateReflectionMap
                                 (GlRenderer3d.renderGeometry frustumInterior frustumExterior frustumImposter lightBox renderPass (GlRenderer3d.getRenderTasks renderPass renderer) renderer,
-                                 Constants.Render.ReflectionMapResolution,
-                                 lightProbeOrigin,
-                                 lightProbeAmbientColor,
-                                 lightProbeAmbientBrightness,
-                                 renderer.ReflectionRenderbuffer,
-                                 renderer.ReflectionFramebuffer)
+                                    Constants.Render.ReflectionMapResolution,
+                                    lightProbeOrigin,
+                                    lightProbeAmbientColor,
+                                    lightProbeAmbientBrightness,
+                                    renderer.ReflectionRenderbuffer,
+                                    renderer.ReflectionFramebuffer)
 
                         // create irradiance map
                         let irradianceMap =
                             OpenGL.LightMap.CreateIrradianceMap
                                 (Constants.Render.IrradianceMapResolution,
-                                 OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
-                                 renderer.IrradianceShader,
-                                 renderer.CubeMapVao,
-                                 renderer.IrradianceMapRenderbuffer,
-                                 renderer.IrradianceMapFramebuffer)
+                                    OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
+                                    renderer.IrradianceShader,
+                                    renderer.CubeMapVao,
+                                    renderer.IrradianceMapRenderbuffer,
+                                    renderer.IrradianceMapFramebuffer)
 
                         // create env filter map
                         let environmentFilterMap =
                             OpenGL.LightMap.CreateEnvironmentFilterMap
                                 (Constants.Render.EnvironmentFilterResolution,
-                                 OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
-                                 renderer.EnvironmentFilterShader,
-                                 renderer.CubeMapVao,
-                                 renderer.EnvironmentFilterRenderbuffer,
-                                 renderer.EnvironmentFilterFramebuffer)
+                                    OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
+                                    renderer.EnvironmentFilterShader,
+                                    renderer.CubeMapVao,
+                                    renderer.EnvironmentFilterRenderbuffer,
+                                    renderer.EnvironmentFilterFramebuffer)
 
                         // destroy reflection map
                         reflectionMap.Destroy ()
@@ -3746,27 +3744,19 @@ type [<ReferenceEquality>] GlRenderer3d =
                         | SpotLight (_, _) | DirectionalLight -> failwithumf ()
                     | _ -> ()
 
-        // top-level geometry pass
-        let view = Viewport.getView3d eyeCenter eyeRotation
-        let viewSkyBox = Matrix4x4.CreateFromQuaternion eyeRotation.Inverted
-        let frustum = Viewport.getFrustum eyeCenter eyeRotation eyeFieldOfView geometryViewport
-        let geometryProjection = Viewport.getProjection3d eyeFieldOfView geometryViewport
-        let geometryViewProjection = view * geometryProjection
-        let rasterProjection = Viewport.getProjection3d eyeFieldOfView rasterViewport
-        GlRenderer3d.renderGeometry
-            frustumInterior frustumExterior frustumImposter lightBox normalPass normalTasks renderer
-            true None eyeCenter view viewSkyBox frustum geometryProjection geometryViewProjection rasterViewport.Bounds rasterProjection
-            renderbuffer framebuffer
-
-        // reset terrain geometry book-keeping
-        renderer.PhysicallyBasedTerrainGeometriesUtilized.Clear ()
-
-        // swap render passes
-        for renderTasks in renderer.RenderPasses.Values do if renderTasks.ShadowBufferIndexOpt.IsNone then RenderTasks.clear renderTasks
-        for renderTasks in renderer.RenderPasses2.Values do RenderTasks.clear renderTasks
-        let renderPasses = renderer.RenderPasses
-        renderer.RenderPasses <- renderer.RenderPasses2
-        renderer.RenderPasses2 <- renderPasses
+        // process top-level geometry pass
+        // OPTIMIZATION: we don't process rendering tasks if there are no render messages.
+        if renderMessages.Count > 0 then
+            let view = Viewport.getView3d eyeCenter eyeRotation
+            let viewSkyBox = Matrix4x4.CreateFromQuaternion eyeRotation.Inverted
+            let frustum = Viewport.getFrustum eyeCenter eyeRotation eyeFieldOfView geometryViewport
+            let geometryProjection = Viewport.getProjection3d eyeFieldOfView geometryViewport
+            let geometryViewProjection = view * geometryProjection
+            let rasterProjection = Viewport.getProjection3d eyeFieldOfView rasterViewport
+            GlRenderer3d.renderGeometry
+                frustumInterior frustumExterior frustumImposter lightBox normalPass normalTasks renderer
+                true None eyeCenter view viewSkyBox frustum geometryProjection geometryViewProjection rasterViewport.Bounds rasterProjection
+                renderbuffer framebuffer
 
         // clear light shadow indices
         renderer.LightShadowIndices.Clear ()
@@ -3778,14 +3768,30 @@ type [<ReferenceEquality>] GlRenderer3d =
         for staticModel in userDefinedStaticModelsToDestroy do
             GlRenderer3d.tryDestroyUserDefinedStaticModel staticModel renderer
 
+        // destroy cached terrain geometries that weren't rendered this frame
+        for geometry in renderer.PhysicallyBasedTerrainGeometries do
+            if not (renderer.PhysicallyBasedTerrainGeometriesUtilized.Contains geometry.Key) then
+                OpenGL.PhysicallyBased.DestroyPhysicallyBasedGeometry geometry.Value
+                renderer.PhysicallyBasedTerrainGeometries.Remove geometry.Key |> ignore<bool>
+
+        // reset terrain geometry book-keeping
+        renderer.PhysicallyBasedTerrainGeometriesUtilized.Clear ()
+
+        // clear lighting config dirty flag
+        renderer.LightingConfigChanged <- false
+
         // reload render assets upon request
         if renderer.ReloadAssetsRequested then
             GlRenderer3d.handleReloadRenderAssets renderer
             OpenGL.Hl.Assert ()
             renderer.ReloadAssetsRequested <- false
 
-        // clear lighting config dirty flag
-        renderer.LightingConfigChanged <- false
+        // swap render passes
+        for renderTasks in renderer.RenderPasses.Values do if renderTasks.ShadowBufferIndexOpt.IsNone then RenderTasks.clear renderTasks
+        for renderTasks in renderer.RenderPasses2.Values do RenderTasks.clear renderTasks
+        let renderPasses = renderer.RenderPasses
+        renderer.RenderPasses <- renderer.RenderPasses2
+        renderer.RenderPasses2 <- renderPasses
 
     /// Make a GlRenderer3d.
     static member make glContext window geometryViewport rasterViewport =
@@ -4124,8 +4130,7 @@ type [<ReferenceEquality>] GlRenderer3d =
             renderer.RendererConfig
 
         member renderer.Render frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation eyeFieldOfView geometryViewport rasterViewport renderMessages =
-            if renderMessages.Count > 0 then
-                GlRenderer3d.render frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation eyeFieldOfView geometryViewport rasterViewport 0u 0u renderMessages renderer
+            GlRenderer3d.render frustumInterior frustumExterior frustumImposter lightBox eyeCenter eyeRotation eyeFieldOfView geometryViewport rasterViewport 0u 0u renderMessages renderer
 
         member renderer.CleanUp () =
             OpenGL.Gl.DeleteVertexArrays [|renderer.CubeMapVao|]
