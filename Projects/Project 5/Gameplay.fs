@@ -212,7 +212,7 @@ type GameplayDispatcher () =
                 screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
 
             // begin scene declaration, processing nav sync at end of frame since optimized representations like frozen
-            //entities won't have their nav info registered until then
+            // entities won't have their nav info registered until then
             World.beginGroupFromFile "Scene" "Assets/ClassicMansion/ClassicMansion.nugroup" [] world
             if initializing then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
 
