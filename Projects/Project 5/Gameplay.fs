@@ -217,24 +217,10 @@ type GameplayDispatcher () =
             if initializing then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
 
             // collect spawn points
-            let entitiesSovereign = World.getSovereignEntities Simulants.GameplayScene world                
-            let spawnPoints =
-                entitiesSovereign |>
-                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "SpawnPoints")) |>
-                Seq.concat |>
-                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<SpawnPointDispatcher> world)) |>
-                Seq.concat |>
-                Seq.toArray
+            let spawnPoints = World.getEntitiesAs<SpawnPointDispatcher> Simulants.GameplayScene world
 
             // collect characters
-            let characters =
-                entitiesSovereign |>
-                Seq.map (fun room -> room.GetChildren world |> Seq.filter (fun container -> container.Name = "Enemies")) |>
-                Seq.concat |>
-                Seq.map (fun node -> node.GetChildren world |> Seq.filter (fun child -> child.Is<CharacterDispatcher> world)) |>
-                Seq.concat |>
-                Seq.append (entitiesSovereign |> Seq.filter (fun entity -> entity.Is<CharacterDispatcher> world)) |>
-                Seq.toArray
+            let characters = World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene world
 
             // declare player
             World.doEntity<PlayerDispatcher> "Player"
@@ -296,7 +282,7 @@ type GameplayDispatcher () =
                 match screen.GetStalkerSpawnState world with
                 | StalkerUnspawned unspawnTime ->
                     let unspawnDuration = world.GameTime - unspawnTime
-                    if unspawnDuration >= Constants.Gameplay.StalkDelay && spawnPoints.Length > 0 then
+                    if unspawnDuration >= Constants.Gameplay.StalkDelay && USet.notEmpty spawnPoints then
                         let spawnPoint = Gen.randomItem spawnPoints
                         screen.SetStalkerSpawnState (StalkerStalking (false, spawnPoint, world.GameTime)) world
                 | StalkerStalking (caughtTargetHiding, spawnPoint, spawnTime) ->
@@ -365,7 +351,7 @@ type GameplayDispatcher () =
             // process hunted time
             let hunted =
                 characters |>
-                Array.exists (fun character ->
+                Seq.exists (fun character ->
                     match character.GetCharacterState world with
                     | HunterState state -> not state.HunterAwareness.IsUnawareOfTarget
                     | _ -> false)
