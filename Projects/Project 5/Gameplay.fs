@@ -216,12 +216,6 @@ type GameplayDispatcher () =
             World.beginGroupFromFile "Scene" "Assets/ClassicMansion/ClassicMansion.nugroup" [] world
             if initializing then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
 
-            // collect spawn points
-            let spawnPoints = World.getEntitiesAs<SpawnPointDispatcher> Simulants.GameplayScene world
-
-            // collect characters
-            let characters = World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene world
-
             // declare player
             World.doEntity<PlayerDispatcher> "Player"
                 [if initializing then
@@ -278,6 +272,7 @@ type GameplayDispatcher () =
                     player.SetActionState InventoryState world
 
             // process stalker spawn state
+            let spawnPoints = World.getEntitiesAs<SpawnPointDispatcher> Simulants.GameplayScene world
             if screen.GetStalkerSpawnAllowed world then
                 match screen.GetStalkerSpawnState world with
                 | StalkerUnspawned unspawnTime ->
@@ -349,12 +344,13 @@ type GameplayDispatcher () =
             | StalkerUnspawned _ -> ()
 
             // process hunted time
+            let characters = World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene world
             let hunted =
-                characters |>
-                Seq.exists (fun character ->
+                Seq.exists (fun (character : Entity) ->
                     match character.GetCharacterState world with
                     | HunterState state -> not state.HunterAwareness.IsUnawareOfTarget
                     | _ -> false)
+                    characters
             match (hunted, screen.GetHuntedTimeOpt world) with
             | (true, None) -> screen.SetHuntedTimeOpt (Some world.GameTime) world
             | (false, _) -> screen.SetHuntedTimeOpt None world
