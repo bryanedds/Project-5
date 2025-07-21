@@ -445,15 +445,18 @@ type GameplayDispatcher () =
 
             // update eye to look at player
             if world.Advancing then
-                let actionState = player.GetActionState world
                 let position = player.GetPositionInterpolated world
-                let eyeRotation = Simulants.GameplayPlayer.GetRotationInterpolated world * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
-                let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position eyeRotation actionState player world
+                let rotation = player.GetRotationInterpolated world
+                let actionState = player.GetActionState world
+                let eyeRotation = rotation * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
+                let eyeDistanceRotation =
+                    rotation *
+                    Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if (player.GetPlayerState world).ViewFlip then -1.0f else 1.0f) *
+                    Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
+                let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position eyeDistanceRotation actionState player world
                 let eyeOrigin = position + v3Up * Constants.Gameplay.PlayerEyeLevel
-                let eyeDistancing = eyeRotation.Forward * Constants.Gameplay.PlayerEyeDistance * eyeDistanceScalar
-                let eyeFlipping = if (player.GetPlayerState world).ViewFlip then -1.0f else 1.0f
-                let eyeShifting = eyeRotation.Right * Constants.Gameplay.PlayerEyeShift * eyeDistanceScalar * eyeFlipping
-                let eyeCenter = eyeOrigin - eyeDistancing + eyeShifting
+                let eyeDistancing = eyeDistanceRotation.Forward * Constants.Gameplay.PlayerEyeDistance * eyeDistanceScalar
+                let eyeCenter = eyeOrigin - eyeDistancing
                 World.setEye3dCenter eyeCenter world
                 World.setEye3dRotation eyeRotation world
 

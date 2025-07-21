@@ -34,7 +34,7 @@ module Algorithm =
     let computeEyeDistanceScalar position (rotation : Quaternion) actionState (entity : Entity) (world : World) =
         let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.GameTime actionState
         let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
-        let ray = Ray3 (positionEyeLevel, rotation.Back)
+        let ray = Ray3 (positionEyeLevel, rotation.Back * Constants.Gameplay.PlayerEyeDistance)
         let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName
         let eyeDistanceScalarBOpt =
             if entity = Simulants.GameplayPlayer then
@@ -46,16 +46,15 @@ module Algorithm =
                 Seq.map fst |>
                 Seq.tryHead
             else None
-        let eyeDistanceScalarMin =
-            match eyeDistanceScalarBOpt with
-            | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
-            | None -> eyeDistanceScalarA
-        max 0.0f (eyeDistanceScalarMin - 0.1f)
+        match eyeDistanceScalarBOpt with
+        | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
+        | None -> eyeDistanceScalarA
 
     let computePlayerVisibilityScalar position rotation actionState entity world =
-        let eyeDistanceScalar = computeEyeDistanceScalar position rotation actionState entity world * (1.0f / 0.9f)
-        let eyeDistanceScalar =
-            if eyeDistanceScalar > Constants.Gameplay.PlayerVisibilityDistanceMin
-            then (eyeDistanceScalar - Constants.Gameplay.PlayerVisibilityDistanceMin) * (1.0f / Constants.Gameplay.PlayerVisibilityDistanceMin) + 0.0001f
-            else 0.0f
-        saturate eyeDistanceScalar
+        let eyeDistanceScalar = computeEyeDistanceScalar position rotation actionState entity world
+        let eyeDistance = eyeDistanceScalar * Constants.Gameplay.PlayerEyeDistance
+        if eyeDistance > Constants.Gameplay.PlayerVisibilityDistanceMin then
+            (eyeDistance - Constants.Gameplay.PlayerVisibilityDistanceMin) /
+            (Constants.Gameplay.PlayerEyeDistance - Constants.Gameplay.PlayerVisibilityDistanceMin) +
+            0.0001f |> saturate
+        else 0.0f

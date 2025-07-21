@@ -456,10 +456,15 @@ type CharacterDispatcher () =
         // begin animated model
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
-        let actionState = entity.GetActionState world
         let visibilityScalar =
-            if characterType.IsPlayer
-            then Algorithm.computePlayerVisibilityScalar positionInterpolated rotationInterpolated actionState entity world
+            if characterType.IsPlayer then
+                let playerState = entity.GetPlayerState world
+                let actionState = entity.GetActionState world
+                let eyeDistanceRotation =
+                    rotationInterpolated *
+                    Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if playerState.ViewFlip then -1.0f else 1.0f) *
+                    Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
+                Algorithm.computePlayerVisibilityScalar positionInterpolated eyeDistanceRotation actionState entity world
             else 1.0f
         World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
             [Entity.Position @= positionInterpolated
