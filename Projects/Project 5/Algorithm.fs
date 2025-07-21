@@ -22,10 +22,10 @@ module Algorithm =
             seq {
                 for sightRay in computeSightRays sightDistance position rotation do
                     let sightedOpt =
-                        World.rayCast3dBodies sightRay Int32.MaxValue false world |>
-                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId <> bodyId) |>
-                        Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource.Name <> Constants.Gameplay.CharacterWeaponName) |>
-                        Seq.tryHead
+                        World.rayCast3dBodies sightRay Int32.MaxValue false world
+                        |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId <> bodyId)
+                        |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource.Name <> Constants.Gameplay.CharacterWeaponName)
+                        |> Seq.tryHead
                     match sightedOpt with
                     | Some scanned when Set.contains scanned.BodyShapeIntersected.BodyId targetIds -> true
                     | Some _ | None -> () }
@@ -38,13 +38,13 @@ module Algorithm =
         let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName
         let eyeDistanceScalarBOpt =
             if entity = Simulants.GameplayPlayer then
-                World.rayCast3dBodies ray Int32.MaxValue false world |>
-                Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world)) |>
-                Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entity) |>
-                Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entityEhs) |>
-                Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None) |>
-                Seq.map fst |>
-                Seq.tryHead
+                World.rayCast3dBodies ray Int32.MaxValue false world
+                |> Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world))
+                |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entity)
+                |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entityEhs)
+                |> Seq.choose (fun intersection -> match tryCast<Entity> intersection.BodyShapeIntersected.BodyId.BodySource with Some entity -> Some (intersection.Progress, entity) | None -> None)
+                |> Seq.map fst
+                |> Seq.tryHead
             else None
         match eyeDistanceScalarBOpt with
         | Some eyeDistanceScalarB -> min eyeDistanceScalarA eyeDistanceScalarB
