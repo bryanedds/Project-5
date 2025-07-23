@@ -53,7 +53,7 @@ type InvestigationSpotDispatcher () =
         let cels = if phase.IsInvestigationStarted then 8 else 1
         for layer in 0 .. dec 2 do
             let albedoColor = albedoColor.MapA (fun a -> if layer = 0 then a * 0.8f else a * 0.2f)
-            let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome albedoColor }
+            let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome albedoColor; SpecularScalarOpt = ValueSome 0.0f }
             World.doAnimatedBillboard ("InvestigationIcon+" + string layer)
                 [Entity.Rotation @= quatIdentity
                  Entity.ScaleLocal .= v3Dup 0.1f
