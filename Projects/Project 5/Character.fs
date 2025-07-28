@@ -264,7 +264,7 @@ type CharacterDispatcher () =
     static let processPlayerInput (entity : Entity) world =
 
         // attacking
-        if World.isKeyboardKeyPressed KeyboardKey.RShift world && false then
+        if World.isKeyboardKeyPressed KeyboardKey.Enter world && false then
             match entity.GetActionState world with
             | NormalState ->
                 entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
@@ -302,11 +302,8 @@ type CharacterDispatcher () =
             entity.SetRotation rotation world
         | AttackState _ | InjuryState _ | WoundState _ -> ()
 
-        // toggle view flip
-        if World.isKeyboardKeyPressed KeyboardKey.Q world then
-            entity.PlayerState.Map (fun state -> { state with ViewFlip = true }) world
-        elif World.isKeyboardKeyPressed KeyboardKey.E world then
-            entity.PlayerState.Map (fun state -> { state with ViewFlip = false }) world
+        // process view flip
+        entity.PlayerState.Map (fun state -> { state with ViewFlip = World.isKeyboardShiftDown world }) world
 
         // toggle flash light
         if World.isKeyboardKeyPressed KeyboardKey.Space world then
