@@ -8,20 +8,9 @@ open MyGame
 [<AutoOpen>]
 module CharacterExtensions =
     type Entity with
-        member this.GetCharacterState world : CharacterState = this.Get (nameof this.CharacterState) world
-        member this.SetCharacterState (value : CharacterState) world = this.Set (nameof this.CharacterState) value world
-        member this.CharacterState = lens (nameof this.CharacterState) this this.GetCharacterState this.SetCharacterState
-        member this.GetHunterState world : HunterState = match this.GetCharacterState world with HunterState value -> value | _ -> failwithumf ()
-        member this.SetHunterState (value : HunterState) world = match this.GetCharacterState world with HunterState _ -> this.SetCharacterState (HunterState value) world | _ -> failwithumf ()
-        member this.HunterState = lens (nameof this.HunterState) this this.GetHunterState this.SetHunterState
-        member this.GetStalkerState world : StalkerState = match this.GetCharacterState world with StalkerState value -> value | _ -> failwithumf ()
-        member this.SetStalkerState (value : StalkerState) world = match this.GetCharacterState world with StalkerState _ -> this.SetCharacterState (StalkerState value) world | _ -> failwithumf ()
-        member this.StalkerState = lens (nameof this.StalkerState) this this.GetStalkerState this.SetStalkerState
-        member this.GetPlayerState world : PlayerState = match this.GetCharacterState world with PlayerState value -> value | _ -> failwithumf ()
-        member this.SetPlayerState (value : PlayerState) world = match this.GetCharacterState world with PlayerState _ -> this.SetCharacterState (PlayerState value) world | _ -> failwithumf ()
-        member this.PlayerState = lens (nameof this.PlayerState) this this.GetPlayerState this.SetPlayerState
-        member this.GetCharacterType world : CharacterType = (this.GetCharacterState world).CharacterType
-        member this.CharacterType = lensReadOnly (nameof this.CharacterType) this this.GetCharacterType
+        member this.GetCharacterType world : CharacterType = this.Get (nameof this.CharacterType) world
+        member this.SetCharacterType (value : CharacterType) world = this.Set (nameof this.CharacterType) value world
+        member this.CharacterType = lens (nameof this.CharacterType) this this.GetCharacterType this.SetCharacterType
         member this.GetActionState world : ActionState = this.Get (nameof this.ActionState) world
         member this.SetActionState (value : ActionState) world = this.Set (nameof this.ActionState) value world
         member this.ActionState = lens (nameof this.ActionState) this this.GetActionState this.SetActionState
@@ -52,15 +41,33 @@ module CharacterExtensions =
         member this.AttackEvent = Events.AttackEvent --> this
         member this.DeathEvent = Events.DeathEvent --> this
 
-type CharacterDispatcher () =
+type [<AbstractClass>] CharacterDispatcher () =
     inherit Entity3dDispatcherImSim (true, false, false)
 
-    static let processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
+    static member Facets =
+        [typeof<RigidBodyFacet>
+         typeof<TraversalInterpoledFacet>]
+
+    static member Properties =
+        [define Entity.Size (v3Dup 2.0f)
+         define Entity.Offset (v3 0.0f 1.0f 0.0f)
+         define Entity.Static false
+         define Entity.BodyType KinematicCharacter
+         define Entity.Substance (Mass 50.0f)
+         define Entity.ActionState NormalState
+         define Entity.MovementState (Standing 0.0f)
+         define Entity.HitPoints 1
+         define Entity.InsertionSpotCollisions Set.empty
+         define Entity.DoorSpotCollisions Set.empty
+         define Entity.InvestigationSpotCollisions Set.empty
+         define Entity.HidingSpotCollisions Set.empty
+         define Entity.WeaponCollisions Set.empty
+         define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
+
+    static member processEnemyNavigation walkSpeed turnSpeed (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState ->
-                let characterType = entity.GetCharacterType world
-                Some (characterType.WalkSpeed, characterType.TurnSpeed)
+            | NormalState -> Some (walkSpeed, turnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
@@ -72,7 +79,7 @@ type CharacterDispatcher () =
             entity.SetRotation followOutput.NavRotation world
         | None -> ()
 
-    static let processEnemyAggression (targetPosition : Vector3) targetBodyIds (entity : Entity) world =
+    static member processEnemyAggression walkSpeed turnSpeed (targetPosition : Vector3) (targetBodyIds : BodyId Set) (entity : Entity) world =
 
         // attacking
         match entity.GetActionState world with
@@ -93,9 +100,7 @@ type CharacterDispatcher () =
         // navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState ->
-                let characterType = entity.GetCharacterType world
-                Some (characterType.WalkSpeed, characterType.TurnSpeed)
+            | NormalState -> Some (walkSpeed, turnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
@@ -112,7 +117,7 @@ type CharacterDispatcher () =
             entity.SetRotation followOutput.NavRotation world
         | None -> ()
 
-    static let processEnemyUncovering (targetPosition : Vector3) (entity : Entity) world =
+    static member processEnemyUncovering walkSpeed turnSpeed (targetPosition : Vector3) (entity : Entity) world =
 
         // opening door
         let uncoveredPlayer =
@@ -132,9 +137,7 @@ type CharacterDispatcher () =
         // navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState ->
-                let characterType = entity.GetCharacterType world
-                Some (characterType.WalkSpeed, characterType.TurnSpeed)
+            | NormalState -> Some (walkSpeed, turnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
@@ -154,193 +157,9 @@ type CharacterDispatcher () =
         // fin
         uncoveredPlayer
 
-    static let processHunterWayPointNavigation (entity : Entity) world =
-        let state = entity.GetHunterState world
-        if Array.notEmpty state.HunterWayPoints then
-            match state.HunterWayPointIndexOpt with
-            | Some wayPointIndex when wayPointIndex < state.HunterWayPoints.Length ->
-                let wayPoint = state.HunterWayPoints.[wayPointIndex]
-                match tryResolve entity wayPoint.WayPoint with
-                | Some wayPointEntity ->
-                    let wayPointPosition = wayPointEntity.GetPosition world
-                    let wayPointDistance = wayPointPosition.Distance (entity.GetPosition world)
-                    if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
-                        match state.HunterWayPointTimeOpt with
-                        | Some wayPointTime ->
-                            let waitTime = world.GameTime - wayPointTime
-                            if waitTime >= wayPoint.WayPointWaitTime then
-                                let (wayPointIndexOpt, wayPointBouncing) =
-                                    match state.HunterWayPointPlayback with
-                                    | Once ->
-                                        let wayPointIndex = inc wayPointIndex
-                                        if wayPointIndex < state.HunterWayPoints.Length
-                                        then (Some wayPointIndex, false)
-                                        else (None, false)
-                                    | Loop ->
-                                        let wayPointIndex = inc wayPointIndex % state.HunterWayPoints.Length
-                                        (Some wayPointIndex, false)
-                                    | Bounce ->
-                                        if not state.HunterWayPointBouncing then
-                                            let wayPointIndex = inc wayPointIndex
-                                            if wayPointIndex = state.HunterWayPoints.Length
-                                            then (Some (dec wayPointIndex), true)
-                                            else (Some wayPointIndex, false)
-                                        else
-                                            let wayPointIndex = dec wayPointIndex
-                                            if wayPointIndex < 0
-                                            then (Some (inc wayPointIndex), false)
-                                            else (Some wayPointIndex, true)
-                                let state =
-                                    { state with
-                                        HunterWayPointBouncing = wayPointBouncing
-                                        HunterWayPointIndexOpt = wayPointIndexOpt
-                                        HunterWayPointTimeOpt = None }
-                                entity.SetHunterState state world
-                            else
-                                entity.LinearVelocity.Map ((*) 0.5f) world
-                                entity.AngularVelocity.Map ((*) 0.5f) world
-                        | None ->
-                            let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
-                            entity.SetCharacterState (HunterState state) world
-                    else processEnemyNavigation wayPointPosition entity world
-                | None -> ()
-            | Some _ | None ->
-                entity.LinearVelocity.Map ((*) 0.5f) world
-                entity.AngularVelocity.Map ((*) 0.5f) world
-
-    static let processHunterState targetPosition targetBodyIds targetActionState (entity : Entity) (world : World) =
-
-        // process target sighting
-        let position = entity.GetPosition world
-        let rotation = entity.GetRotation world
-        let bodyId = entity.GetBodyId world
-        if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
-            let state = entity.GetHunterState world
-            let state =
-                match targetActionState with
-                | HideState hide ->
-                    match hide.HidePhase with
-                    | HideEntering -> { state with HunterAwareness = AwareOfTargetHiding world.GameTime }
-                    | HideWaiting -> state
-                    | HideEmerging -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-                    | HideUncovered -> state
-                | _ -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-            entity.SetHunterState state world
-
-        // process hunter state
-        let uncoveredPlayer =
-            let state = entity.GetHunterState world
-            match state.HunterAwareness with
-            | UnawareOfTarget ->
-                processHunterWayPointNavigation entity world
-                false
-            | AwareOfTargetTraversing startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0f then
-                    entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
-                    false
-                else
-                    processEnemyAggression targetPosition targetBodyIds entity world
-                    false
-            | AwareOfTargetHiding startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
-                    entity.SetCharacterState (HunterState { state with HunterAwareness = UnawareOfTarget }) world
-                    false
-                elif processEnemyUncovering targetPosition entity world then
-                    entity.SetCharacterState (HunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }) world
-                    true
-                else false
-
-        // fin
-        uncoveredPlayer
-
-    static let processStalkerState targetPosition targetBodyIds targetActionState (entity : Entity) world =
-        match entity.GetStalkerState world with
-        | IdlingState -> ()
-        | StalkingState stalking ->
-            if not stalking.Awareness.IsUnawareOfTarget then
-                processEnemyAggression targetPosition targetBodyIds entity world
-        | LeavingState leaving -> processEnemyNavigation leaving.UnspawnPosition entity world
-
-    static let processPlayerInput (entity : Entity) world =
-
-        // attacking
-        if World.isKeyboardKeyPressed KeyboardKey.Enter world && false then
-            match entity.GetActionState world with
-            | NormalState ->
-                entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
-                entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-            | _ -> ()
-
-        // movement
-        match entity.GetActionState world with
-        | NormalState ->
-            let rotation = entity.GetRotation world
-            let characterType = entity.GetCharacterType world
-            let walkSpeed = characterType.WalkSpeed
-            let forward = rotation.Forward
-            let right = rotation.Right
-            let walkDirection =
-                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
-            let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * walkSpeed else v3Zero
-            entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
-        | _ -> ()
-
-        // rotation
-        match entity.GetActionState world with
-        | NormalState | InventoryState | InsertionState _  | InvestigationState _ | HideState _ ->
-            let rotation = entity.GetRotation world
-            let characterType = entity.GetCharacterType world
-            let turnSpeed = characterType.TurnSpeed
-            let turnVelocity =
-                (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
-                (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
-            let rotation = if turnVelocity <> 0.0f then rotation * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.Seconds) else rotation
-            entity.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
-            entity.SetRotation rotation world
-        | AttackState _ | InjuryState _ | WoundState _ -> ()
-
-        // process view flip
-        entity.PlayerState.Map (fun state -> { state with ViewFlip = World.isKeyboardShiftDown world }) world
-
-        // toggle flash light
-        if World.isKeyboardKeyPressed KeyboardKey.Space world then
-            entity.PlayerState.Map (fun state -> { state with FlashLightEnabled = not state.FlashLightEnabled }) world
-
-    static let processPlayerState entity world =
-        processPlayerInput entity world
-
-    static member Facets =
-        [typeof<RigidBodyFacet>
-         typeof<TraversalInterpoledFacet>]
-
-    static member Properties =
-        let characterType = Hunter
-        [define Entity.Persistent characterType.Persistent
-         define Entity.Size (v3Dup 2.0f)
-         define Entity.Offset (v3 0.0f 1.0f 0.0f)
-         define Entity.Static false
-         define Entity.BodyType KinematicCharacter
-         define Entity.BodyShape characterType.BodyShape
-         define Entity.Substance (Mass 50.0f)
-         define Entity.CharacterProperties characterType.CharacterProperties
-         define Entity.CharacterState characterType.InitialState
-         define Entity.ActionState NormalState
-         define Entity.MovementState (Standing 0.0f)
-         define Entity.HitPoints characterType.HitPointsMax
-         define Entity.InsertionSpotCollisions Set.empty
-         define Entity.DoorSpotCollisions Set.empty
-         define Entity.InvestigationSpotCollisions Set.empty
-         define Entity.HidingSpotCollisions Set.empty
-         define Entity.WeaponCollisions Set.empty
-         define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
-
     override this.Process (entity, world) =
 
         // process body events
-        let characterType = entity.GetCharacterType world
         let bodyEvents = World.doSubscriptionToBodyEvents "BodyEvents" entity world
         for bodyEvent in bodyEvents do
             match bodyEvent with
@@ -352,8 +171,7 @@ type CharacterDispatcher () =
                     elif penetratee.Is<DoorSpotDispatcher> world then
                         entity.DoorSpotCollisions.Map (Set.add penetratee) world
                     elif penetratee.Is<InvestigationSpotDispatcher> world then
-                        if characterType.IsPlayer then
-                            entity.InvestigationSpotCollisions.Map (Set.add penetratee) world
+                        entity.InvestigationSpotCollisions.Map (Set.add penetratee) world
                     elif penetratee.Is<HidingSpotDispatcher> world then
                         entity.HidingSpotCollisions.Map (Set.add penetratee) world
                 | _ -> ()
@@ -381,6 +199,7 @@ type CharacterDispatcher () =
         else entity.SetMountOptWithAdjustment (Some (Relation.makeParent ())) world
 
         // process expanded hide sensor on state
+        let characterType = entity.GetCharacterType world
         let expandedHideSensorBodyEnabled =
             match entity.GetActionState world with
             | HideState hide -> hide.HidePhase.IsHideEntering
@@ -394,32 +213,7 @@ type CharacterDispatcher () =
                  Entity.MountOpt .= None] world
 
         // process character state
-        if world.Advancing && Simulants.GameplayPlayer.GetExists world then
-            let player = Simulants.GameplayPlayer
-            let enemyTargetingEir =
-                let processEnemies =
-                    match player.GetActionState world with
-                    | InvestigationState investigation -> not (investigation.InvestigationSpot.GetInvestigationPhase world).IsInvestigationFinished
-                    | _ -> true
-                if processEnemies then
-                    let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
-                    let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]
-                    Right (player.GetPosition world, playerBodyIds, player.GetActionState world)
-                else Left ()
-            match entity.GetCharacterType world with
-            | Hunter ->
-                match enemyTargetingEir with
-                | Right (targetPosition, targetBodyIds, targetActionState) ->
-                    let uncoveredPlayer = processHunterState targetPosition targetBodyIds targetActionState entity world
-                    if uncoveredPlayer && player.GetExists world then
-                        player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
-                | Left () -> ()
-            | Stalker ->
-                match enemyTargetingEir with
-                | Right (targetPosition, targetBodyIds, targetActionState) ->
-                    processStalkerState targetPosition targetBodyIds targetActionState entity world
-                | Left () -> ()
-            | Player -> processPlayerState entity world
+        this.ProcessCharacterState (entity, world)
 
         // process action state
         if world.Advancing then
@@ -450,48 +244,8 @@ type CharacterDispatcher () =
                 entity.SetActionState actionState world
             | WoundState _ -> ()
 
-        // begin animated model
-        let positionInterpolated = entity.GetPositionInterpolated world
-        let rotationInterpolated = entity.GetRotationInterpolated world
-        let visibilityScalar =
-            if characterType.IsPlayer then
-                let playerState = entity.GetPlayerState world
-                let actionState = entity.GetActionState world
-                let eyeDistanceRotation =
-                    rotationInterpolated *
-                    Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if playerState.ViewFlip then -1.0f else 1.0f) *
-                    Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
-                Algorithm.computePlayerVisibilityScalar positionInterpolated eyeDistanceRotation actionState entity world
-            else 1.0f
-        World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
-            [Entity.Position @= positionInterpolated
-             Entity.Rotation @= rotationInterpolated
-             Entity.Size .= entity.GetSize world
-             Entity.Offset .= entity.GetOffset world
-             Entity.MountOpt .= None
-             Entity.Pickable .= false
-             Entity.AnimatedModel @= characterType.AnimatedModel
-             Entity.MaterialProperties @= { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar); ScatterTypeOpt = ValueSome SkinScatter }
-             Entity.VisibleLocal @= (visibilityScalar > 0.0f)
-             Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
-             Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
-             Entity.SubsortOffsets @= characterType.SubsortOffsets] world
-        let animatedModel = world.DeclaredEntity
-
-        // declare player light
-        match entity.GetCharacterState world with
-        | PlayerState state ->
-            World.doLight3d Constants.Gameplay.CharacterLightName
-                [Entity.Position @= positionInterpolated + v3Up * 1.2f + rotationInterpolated.Forward * 0.25f
-                 Entity.Rotation @= rotationInterpolated * Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
-                 Entity.MountOpt .= None
-                 Entity.Static .= false
-                 Entity.LightType .= SpotLight (0.8f, 1.2f)
-                 Entity.LightCutoff .= 11.0f
-                 Entity.Brightness .= 0.8f
-                 Entity.DesireShadows .= true
-                 Entity.VisibleLocal @= state.FlashLightEnabled] world
-        | _ -> ()
+        // process character view
+        let animatedModel = this.ProcessCharacterView (entity, world)
 
         // process traversal animations
         match entity.GetActionState world with
@@ -621,16 +375,6 @@ type CharacterDispatcher () =
             else entity.SetActionState (AttackState attack) world
         | _ -> ()
 
-        // declare player hearts
-        if characterType.IsPlayer then
-            let hitPoints = entity.GetHitPoints world
-            for i in 0 .. dec characterType.HitPointsMax do
-                World.doStaticSprite ("Heart+" + string i)
-                    [Entity.Position .= v3 (-284.0f + single i * 32.0f) -144.0f 0.0f
-                     Entity.Size .= v3 32.0f 32.0f 0.0f
-                     Entity.MountOpt .= None
-                     Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty] world
-
         // process death
         match entity.GetActionState world with
         | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
@@ -647,46 +391,8 @@ type CharacterDispatcher () =
             weapon.RayCast ray world
         | intersections -> intersections
 
-    override this.Edit (op, entity, world) =
-        match op with
-        | ViewportOverlay _ ->
-            if (entity.GetCharacterState world).IsEnemyState then
-                let position = entity.GetPosition world
-                let rotation = entity.GetRotation world
-                for sightRay in Algorithm.computeSightRays Constants.Gameplay.EnemySightDistance position rotation do
-                    let segment = Segment3 (sightRay.Origin, sightRay.Origin + sightRay.Direction)
-                    World.imGuiSegment3d segment 1.0f Color.Red world
-        | _ -> ()
+    /// Process the character state.
+    abstract ProcessCharacterState : Entity * World -> unit
 
-type HunterDispatcher () =
-    inherit CharacterDispatcher ()
-
-    static member Properties =
-        let characterType = Hunter
-        [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterState characterType.InitialState
-         define Entity.BodyShape characterType.BodyShape
-         define Entity.HitPoints characterType.HitPointsMax
-         define Entity.CharacterProperties characterType.CharacterProperties]
-
-type StalkerDispatcher () =
-    inherit CharacterDispatcher ()
-
-    static member Properties =
-        let characterType = Stalker
-        [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterState characterType.InitialState
-         define Entity.BodyShape characterType.BodyShape
-         define Entity.HitPoints characterType.HitPointsMax
-         define Entity.CharacterProperties characterType.CharacterProperties]
-
-type PlayerDispatcher () =
-    inherit CharacterDispatcher ()
-
-    static member Properties =
-        let characterType = Player
-        [define Entity.Persistent characterType.Persistent
-         define Entity.CharacterState characterType.InitialState
-         define Entity.BodyShape characterType.BodyShape
-         define Entity.HitPoints characterType.HitPointsMax
-         define Entity.CharacterProperties characterType.CharacterProperties]
+    /// Process the character view, returning its animated model.
+    abstract ProcessCharacterView : Entity * World -> Entity

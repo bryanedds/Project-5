@@ -54,6 +54,9 @@
 		<Compile Include="InvestigationSpot.fs" />
 		<Compile Include="HidingSpot.fs" />
 		<Compile Include="Character.fs" />
+		<Compile Include="Hunter.fs" />
+		<Compile Include="Stalker.fs" />
+		<Compile Include="Player.fs" />
 		<Compile Include="Gameplay.fs" />
 		<Compile Include="MyGame.fs" />
 		<Compile Include="MyGamePlugin.fs" />

@@ -299,16 +299,16 @@ type GameplayDispatcher () =
 
                 // declare stalker in spawned state
                 let spawnPosition = spawnPoint.GetPosition world
-                let characterState =
+                let stalkerState =
                     let awareness =
                         if caughtTargetHiding
                         then AwareOfTargetHiding world.GameTime
                         else AwareOfTargetTraversing world.GameTime
-                    StalkerState (StalkingState { SpawnPosition = spawnPosition; Awareness = awareness })
+                    StalkingState { SpawnPosition = spawnPosition; Awareness = awareness }
                 World.doEntity<StalkerDispatcher> "Stalker"
                     [if spawnTime = world.GameTime then
                         Entity.Position @= spawnPosition
-                        Entity.CharacterState @= characterState] world
+                        Entity.StalkerState @= stalkerState] world
                 let stalker = world.DeclaredEntity
 
                 // process potentially resetting to late spawn state
@@ -327,7 +327,7 @@ type GameplayDispatcher () =
                 // declare stalker in unspawning state
                 let unspawnPosition = unspawnPoint.GetPosition world
                 let stalkerState = LeavingState { UnspawnPosition = unspawnPosition; Awareness = UnawareOfTarget }
-                World.doEntity<StalkerDispatcher> "Stalker" [Entity.CharacterState @= StalkerState stalkerState] world
+                World.doEntity<StalkerDispatcher> "Stalker" [Entity.StalkerState @= stalkerState] world
                 let stalker = world.DeclaredEntity
 
                 // process resetting to late spawn state or unspawning
@@ -353,8 +353,10 @@ type GameplayDispatcher () =
             // process hunted time
             let hunted =
                 Seq.exists (fun (character : Entity) ->
-                    match character.GetCharacterState world with
-                    | HunterState state -> not state.HunterAwareness.IsUnawareOfTarget
+                    match character.GetCharacterType world with
+                    | Hunter ->
+                        let state = character.GetHunterState world
+                        not state.HunterAwareness.IsUnawareOfTarget
                     | _ -> false)
                     characters
             match (hunted, screen.GetHuntedTimeOpt world) with

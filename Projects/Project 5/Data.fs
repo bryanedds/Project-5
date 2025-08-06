@@ -204,20 +204,6 @@ type PlayerState =
 
 (* Character *)
 
-type CharacterState =
-    | HunterState of HunterState
-    | StalkerState of StalkerState
-    | PlayerState of PlayerState
-
-    member this.IsEnemyState =
-        not this.IsPlayerState
-
-    member this.CharacterType =
-        match this with
-        | HunterState _ -> Hunter
-        | StalkerState _ -> Stalker
-        | PlayerState _ -> Player
-
 and CharacterType =
     | Hunter
     | Stalker
@@ -253,21 +239,10 @@ and CharacterType =
         | Stalker -> 0.25f
         | Player -> 0.5f
 
-    member this.AnimatedModel =
-        match this with
-        | Hunter -> Assets.Gameplay.CruciformModel
-        | Stalker -> Assets.Gameplay.RhyoliteModel
-        | Player -> Assets.Gameplay.AvaModel
-
     member this.AnimationRate =
         match this with
         | Hunter | Stalker -> 1.0f
         | Player -> 2.0f
-
-    member this.SubsortOffsets =
-        match this with
-        | Hunter | Stalker -> Map.empty
-        | Player -> Map.ofList [(3, -1.0f); (8, -2.0f); (14, -1.0f)]
 
     member this.BodyShapeTransform =
         match this with
@@ -286,9 +261,3 @@ and CharacterType =
         match this with
         | Hunter | Stalker -> { CharacterProperties.defaultProperties with CollisionTolerance = 0.005f } // NOTE: I think this is to make enemies able to climb stairs, but now I'm not sure I remember...
         | Player -> { CharacterProperties.defaultProperties with StairStepUp = v3 0.0f 0.125f 0.0f; StairStepDownStickToFloor = v3 0.0f -0.125f 0.0f }
-
-    member this.InitialState =
-        match this with
-        | Hunter -> HunterState HunterState.initial
-        | Stalker -> StalkerState StalkerState.initial
-        | Player -> PlayerState PlayerState.initial
