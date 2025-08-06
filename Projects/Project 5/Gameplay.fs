@@ -213,8 +213,9 @@ type GameplayDispatcher () =
 
             // begin scene declaration, processing nav sync at end of frame since optimized representations like frozen
             // entities won't have their nav info registered until then
-            World.beginGroupFromFile "Scene" "Assets/ClassicMansion/ClassicMansion.nugroup" [] world
-            if initializing then World.defer (World.synchronizeNav3d false (Some "Assets/ClassicMansion/ClassicMansion.nav") screen) screen world
+            let sceneFilePath = "Assets/ClassicMansion/ClassicMansion"
+            World.beginGroupFromFile "Scene" (sceneFilePath + ".nugroup") [] world
+            if initializing then World.defer (World.synchronizeNav3d false (Some (sceneFilePath + ".nav")) screen) screen world
 
             // declare player
             World.doEntity<PlayerDispatcher> "Player"
