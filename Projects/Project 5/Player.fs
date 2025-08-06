@@ -74,9 +74,9 @@ type PlayerDispatcher () =
         if world.Advancing then
             processPlayerInput entity world
 
-    override this.ProcessCharacterView (entity, world) =
+    override this.DeclareCharacterView (entity, world) =
 
-        // process animated model
+        // declare animated model
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
         let playerState = entity.GetPlayerState world
@@ -101,7 +101,7 @@ type PlayerDispatcher () =
              Entity.SubsortOffsets .= Map.ofList [(3, -1.0f); (8, -2.0f); (14, -1.0f)]] world
         let animatedModel = world.DeclaredEntity
 
-        // process flash light
+        // declare flash light
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
         let state = entity.GetPlayerState world

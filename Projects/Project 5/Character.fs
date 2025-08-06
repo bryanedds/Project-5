@@ -244,8 +244,8 @@ type [<AbstractClass>] CharacterDispatcher () =
                 entity.SetActionState actionState world
             | WoundState _ -> ()
 
-        // process character view
-        let animatedModel = this.ProcessCharacterView (entity, world)
+        // declare character view
+        let animatedModel = this.DeclareCharacterView (entity, world)
 
         // process traversal animations
         match entity.GetActionState world with
@@ -395,4 +395,4 @@ type [<AbstractClass>] CharacterDispatcher () =
     abstract ProcessCharacterState : Entity * World -> unit
 
     /// Process the character view, returning its animated model.
-    abstract ProcessCharacterView : Entity * World -> Entity
+    abstract DeclareCharacterView : Entity * World -> Entity
