@@ -124,6 +124,6 @@ type PlayerDispatcher () =
                  Entity.Size .= v3 32.0f 32.0f 0.0f
                  Entity.MountOpt .= None
                  Entity.StaticImage @= if hitPoints >= inc i then Assets.Gameplay.HeartFull else Assets.Gameplay.HeartEmpty] world
-    
+
         // fin
         animatedModel
