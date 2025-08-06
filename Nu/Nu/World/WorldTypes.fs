@@ -1813,14 +1813,15 @@ and [<Struct>] ArgImSim<'s when 's :> Simulant> =
       ArgValue : obj }
 
 /// The world's dispatchers (including facets).
-/// NOTE: it would be nice to make this structure internal, but doing so would non-trivially increase the number of
+/// NOTE: it would be nice to make this record internal, but doing so would non-trivially increases the number of
 /// parameters of World.make, which is already rather long.
 and [<ReferenceEquality>] Dispatchers =
-    { Facets : Map<string, Facet>
-      EntityDispatchers : Map<string, EntityDispatcher>
-      GroupDispatchers : Map<string, GroupDispatcher>
-      ScreenDispatchers : Map<string, ScreenDispatcher>
-      GameDispatchers : Map<string, GameDispatcher> }
+    internal
+        { Facets : Map<string, Facet>
+          EntityDispatchers : Map<string, EntityDispatcher>
+          GroupDispatchers : Map<string, GroupDispatcher>
+          ScreenDispatchers : Map<string, ScreenDispatcher>
+          GameDispatchers : Map<string, GameDispatcher> }
 
 /// The subsystems contained by the engine.
 and [<ReferenceEquality>] internal Subsystems =
@@ -1828,7 +1829,7 @@ and [<ReferenceEquality>] internal Subsystems =
       PhysicsEngine2d : PhysicsEngine
       PhysicsEngine3d : PhysicsEngine
       RendererProcess : RendererProcess
-      RendererPhysics3d : DebugRenderer
+      RendererPhysics3dOpt : DebugRenderer option
       AudioPlayer : AudioPlayer }
 
 /// Keeps the World from occupying more than two cache lines.
@@ -1866,7 +1867,7 @@ and [<ReferenceEquality>] WorldState =
           AmbientState : World AmbientState
           Subsystems : Subsystems
           Simulants : UMap<Simulant, Simulant USet option> // OPTIMIZATION: using None instead of empty USet to descrease number of USet instances.
-          EntitiesIndexed : UMap<struct (Group * Type), Entity USet> // NOTE: could even add: UMap<string, EntitySubquery * Entities USet> to entry value where subqueries are populated via NuPlugin.
+          EntitiesIndexed : UMap<struct (Group * Type), Entity USet> // NOTE: could even add: UMap<string, EntitySubquery * Entities USet to entry value where subqueries are populated via NuPlugin.
           WorldExtension : WorldExtension }
 
     override this.ToString () =
@@ -2003,18 +2004,17 @@ and [<NoEquality; NoComparison>] World =
         AmbientState.getTimers this.AmbientState
 
     /// Get the current ImSim context.
+    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.ContextImSim =
         this.WorldExtension.ContextImSim
 
     /// Get the current ImSim Game context (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.ContextGame =
         if this.WorldExtension.ContextImSim.Names.Length > 0
         then Game.Handle
         else raise (InvalidOperationException "ImSim context not of type needed to construct requested handle.")
 
     /// Get the current ImSim Screen context (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.ContextScreen =
         match this.WorldExtension.ContextImSim with
         | :? (Screen Address) as screenAddress -> Screen screenAddress
@@ -2023,7 +2023,6 @@ and [<NoEquality; NoComparison>] World =
         | _ -> raise (InvalidOperationException "ImSim context not of type needed to construct requested handle.")
 
     /// Get the current ImSim Group context (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.ContextGroup =
         match this.WorldExtension.ContextImSim with
         | :? (Group Address) as groupAddress -> Group (Array.take 3 groupAddress.Names)
@@ -2031,7 +2030,6 @@ and [<NoEquality; NoComparison>] World =
         | _ -> raise (InvalidOperationException "ImSim context not of type needed to construct requested handle.")
 
     /// Get the current ImSim Entity context (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.ContextEntity =
         match this.WorldExtension.ContextImSim with
         | :? (Entity Address) as entityAddress -> Entity entityAddress
@@ -2044,18 +2042,17 @@ and [<NoEquality; NoComparison>] World =
         | (false, _) -> false
 
     /// Get the recent ImSim declaration.
+    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.DeclaredImSim =
         this.WorldExtension.DeclaredImSim
 
     /// Get the recent ImSim Game declaration (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.DeclaredGame =
         if this.WorldExtension.DeclaredImSim.Names.Length > 0
         then Game.Handle
         else raise (InvalidOperationException "ImSim declaration not of type needed to construct requested handle.")
 
     /// Get the recent ImSim Screen declaration (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.DeclaredScreen =
         match this.WorldExtension.DeclaredImSim with
         | :? (Screen Address) as screenAddress -> Screen screenAddress
@@ -2064,7 +2061,6 @@ and [<NoEquality; NoComparison>] World =
         | _ -> raise (InvalidOperationException "ImSim declaration not of type needed to construct requested handle.")
 
     /// Get the recent ImSim Group declaration (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.DeclaredGroup =
         match this.WorldExtension.DeclaredImSim with
         | :? (Group Address) as groupAddress -> Group (Array.take 3 groupAddress.Names)
@@ -2072,7 +2068,6 @@ and [<NoEquality; NoComparison>] World =
         | _ -> raise (InvalidOperationException "ImSim declaration not of type needed to construct requested handle.")
 
     /// Get the recent ImSim Entity declaration (throwing upon failure).
-    [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
     member this.DeclaredEntity =
         match this.WorldExtension.DeclaredImSim with
         | :? (Entity Address) as entityAddress -> Entity entityAddress
@@ -2229,6 +2224,7 @@ and [<AbstractClass>] NuPlugin () =
 
     interface LateBindings
 
+/// Lens functions.
 [<RequireQualifiedAccess; CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Lens =
 
@@ -2279,6 +2275,7 @@ module Lens =
     let makeReadOnly<'a, 's when 's :> Simulant> (name : string) (this : 's) (get : World -> 'a) : Lens<'a, 's> =
         { Name = name; This = this; Get = get; SetOpt = ValueNone }
 
+/// Lens operators.
 [<AutoOpen>]
 module LensOperators =
 
@@ -2316,6 +2313,7 @@ module LensOperators =
                  | None -> None)
         PropertyDefinition.makeValidated lens.Name typeof<ComputedProperty> (ComputedExpr computedProperty)
 
+/// Signal functions.
 [<RequireQualifiedAccess; CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Signal =
 
@@ -2344,6 +2342,7 @@ module Signal =
         for signal in signals do
             processSignal processMessage processCommand modelLens signal simulant world
 
+/// Signal operators.
 [<AutoOpen>]
 module SignalOperators =
 

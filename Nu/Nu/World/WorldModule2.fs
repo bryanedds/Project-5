@@ -12,6 +12,7 @@ open SDL2
 open ImGuiNET
 open Prime
 
+/// Universal function definitions for the world (2/4).
 [<AutoOpen>]
 module WorldModule2 =
 
@@ -1946,7 +1947,7 @@ module WorldModule2 =
                 Constants.Engine.ExitCodeFailure
 
 [<AutoOpen>]
-module EntityDispatcherModule2 =
+module EntityDispatcherModule =
 
     /// The ImSim dispatcher for entities.
     type [<AbstractClass>] EntityDispatcherImSim (is2d, physical, lightProbe, light) =
@@ -2217,6 +2218,7 @@ module EntityDispatcherModule2 =
         static member Properties =
             [define Entity.Size Constants.Engine.EntityVuiSizeDefault]
 
+/// Entity PropertyDescriptor functions.
 [<RequireQualifiedAccess>]
 module EntityPropertyDescriptor =
 
@@ -2498,6 +2500,7 @@ module GroupDispatcherModule =
         abstract UntruncateModel : current : 'model * incoming : 'model -> 'model
         default this.UntruncateModel (_, incoming) = incoming
 
+/// Group PropertyDescriptor functions.
 [<RequireQualifiedAccess>]
 module GroupPropertyDescriptor =
 
@@ -2713,6 +2716,7 @@ module ScreenDispatcherModule =
         abstract UntruncateModel : current : 'model * incoming : 'model -> 'model
         default this.UntruncateModel (_, incoming) = incoming
 
+/// Screen PropertyDescriptor functions.
 [<RequireQualifiedAccess>]
 module ScreenPropertyDescriptor =
 
@@ -2928,6 +2932,7 @@ module GameDispatcherModule =
         abstract UntruncateModel : current : 'model * incoming : 'model -> 'model
         default this.UntruncateModel (_, incoming) = incoming
 
+/// Game PropertyDescriptor functions.
 [<RequireQualifiedAccess>]
 module GamePropertyDescriptor =
 
@@ -3023,8 +3028,9 @@ module SimulantPropertyDescriptor =
         | :? Game as game -> GamePropertyDescriptor.trySetValue value propertyDescriptor game world
         | _ -> failwithumf ()
 
+/// Universal function definitions for the world (3/4).
 [<AutoOpen>]
-module WorldModule2' =
+module WorldModule3 =
 
     type World with
 
