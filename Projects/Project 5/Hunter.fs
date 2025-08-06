@@ -63,7 +63,7 @@ type HunterDispatcher () =
                         | None ->
                             let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
                             entity.SetHunterState state world
-                    else CharacterDispatcher.processEnemyNavigation Hunter.WalkSpeed Hunter.TurnSpeed wayPointPosition entity world
+                    else CharacterDispatcher.processEnemyNavigation wayPointPosition entity world
                 | None -> ()
             | Some _ | None ->
                 entity.LinearVelocity.Map ((*) 0.5f) world
@@ -100,13 +100,13 @@ type HunterDispatcher () =
                     entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
                     false
                 else
-                    CharacterDispatcher.processEnemyAggression Hunter.WalkSpeed Hunter.TurnSpeed targetPosition targetBodyIds entity world
+                    CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
                     false
             | AwareOfTargetHiding startTime ->
                 if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
                     entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
                     false
-                elif CharacterDispatcher.processEnemyUncovering Hunter.WalkSpeed Hunter.TurnSpeed targetPosition entity world then
+                elif CharacterDispatcher.processEnemyUncovering targetPosition entity world then
                     entity.SetHunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime } world
                     true
                 else false

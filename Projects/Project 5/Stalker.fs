@@ -21,9 +21,9 @@ type StalkerDispatcher () =
             ()
         | StalkingState stalking ->
             if not stalking.Awareness.IsUnawareOfTarget then
-                CharacterDispatcher.processEnemyAggression Stalker.WalkSpeed Stalker.TurnSpeed targetPosition targetBodyIds entity world
+                CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
         | LeavingState leaving ->
-            CharacterDispatcher.processEnemyNavigation Stalker.WalkSpeed Stalker.TurnSpeed leaving.UnspawnPosition entity world
+            CharacterDispatcher.processEnemyNavigation leaving.UnspawnPosition entity world
 
     static member Properties =
         let characterType = Stalker

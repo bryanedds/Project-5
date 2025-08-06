@@ -64,10 +64,12 @@ type [<AbstractClass>] CharacterDispatcher () =
          define Entity.WeaponCollisions Set.empty
          define Entity.WeaponModel Assets.Gameplay.GreatSwordModel]
 
-    static member processEnemyNavigation walkSpeed turnSpeed (goalPosition : Vector3) (entity : Entity) world =
+    static member processEnemyNavigation (goalPosition : Vector3) (entity : Entity) world =
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState -> Some (walkSpeed, turnSpeed)
+            | NormalState ->
+                let characterType = entity.GetCharacterType world
+                Some (characterType.WalkSpeed, characterType.TurnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
@@ -79,7 +81,7 @@ type [<AbstractClass>] CharacterDispatcher () =
             entity.SetRotation followOutput.NavRotation world
         | None -> ()
 
-    static member processEnemyAggression walkSpeed turnSpeed (targetPosition : Vector3) (targetBodyIds : BodyId Set) (entity : Entity) world =
+    static member processEnemyAggression (targetPosition : Vector3) (targetBodyIds : BodyId Set) (entity : Entity) world =
 
         // attacking
         match entity.GetActionState world with
@@ -100,7 +102,9 @@ type [<AbstractClass>] CharacterDispatcher () =
         // navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState -> Some (walkSpeed, turnSpeed)
+            | NormalState ->
+                let characterType = entity.GetCharacterType world
+                Some (characterType.WalkSpeed, characterType.TurnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
@@ -117,7 +121,7 @@ type [<AbstractClass>] CharacterDispatcher () =
             entity.SetRotation followOutput.NavRotation world
         | None -> ()
 
-    static member processEnemyUncovering walkSpeed turnSpeed (targetPosition : Vector3) (entity : Entity) world =
+    static member processEnemyUncovering (targetPosition : Vector3) (entity : Entity) world =
 
         // opening door
         let uncoveredPlayer =
@@ -137,7 +141,9 @@ type [<AbstractClass>] CharacterDispatcher () =
         // navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
-            | NormalState -> Some (walkSpeed, turnSpeed)
+            | NormalState ->
+                let characterType = entity.GetCharacterType world
+                Some (characterType.WalkSpeed, characterType.TurnSpeed)
             | _ -> None
         match navSpeedsOpt with
         | Some (moveSpeed, turnSpeed) ->
