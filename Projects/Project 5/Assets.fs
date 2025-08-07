@@ -27,6 +27,7 @@ module Assets =
         let StealthSong = asset<Song> PackageName "Stealth"
         let HuntedSong = asset<Song> PackageName "Hunted"
         let StalkedSong = asset<Song> PackageName "Stalked"
+        let CountryNightCricketsSong = asset<Song> PackageName "CountryNightCrickets"
         let HeartFull = asset<Image> PackageName "HeartFull"
         let HeartEmpty = asset<Image> PackageName "HeartEmpty"
         let IconEmissionImage = asset<Image> PackageName "IconEmission"
@@ -39,24 +40,11 @@ module Assets =
         let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
 
-    // these are assets from the AbandonedMansion package.
-    [<RequireQualifiedAccess>]
-    module AbandonedMansion =
-
-        let PackageName = "AbandonedMansion"
-        let CountryNightCrickets = asset<Song> PackageName "CountryNightCrickets"
-
     // these are assets from the ClassicMansion package.
     [<RequireQualifiedAccess>]
     module ClassicMansion =
 
         let PackageName = "ClassicMansion"
-
-    // these are assets from the Residence package.
-    [<RequireQualifiedAccess>]
-    module Residence =
-
-        let PackageName = "Residence"
 
     // these are assets from the SwampHouse package.
     [<RequireQualifiedAccess>]

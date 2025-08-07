@@ -19,13 +19,6 @@
    [Assets Assets/Gameplay [wav ogg mp3] [] [Audio]]
    [Assets Assets/Gameplay [nueffect nuscript csv] [] [Symbol]]
    [Assets Assets/Gameplay [nuentity nugroup tsx tmx atlas nav nbrd glsl bin] [] []]]]
- [AbandonedMansion
-  [[Assets Assets/AbandonedMansion [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
-   [Assets Assets/AbandonedMansion [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]
-   [Assets Assets/AbandonedMansion [cbm fbx gltf glb dae obj mtl raw] [] [Render3d]]
-   [Assets Assets/AbandonedMansion [wav ogg mp3] [] [Audio]]
-   [Assets Assets/AbandonedMansion [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/AbandonedMansion [nuentity nugroup tsx tmx atlas nav nbrd glsl bin] [] []]]]
  [ClassicMansion
   [[Assets Assets/ClassicMansion [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/ClassicMansion [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]
@@ -33,13 +26,6 @@
    [Assets Assets/ClassicMansion [wav ogg mp3] [] [Audio]]
    [Assets Assets/ClassicMansion [nueffect nuscript csv] [] [Symbol]]
    [Assets Assets/ClassicMansion [nuentity nugroup tsx tmx atlas nav nbrd glsl bin] [] []]]]
- [Residence
-  [[Assets Assets/Residence [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
-   [Assets Assets/Residence [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]
-   [Assets Assets/Residence [cbm fbx gltf glb dae obj mtl raw] [] [Render3d]]
-   [Assets Assets/Residence [wav ogg mp3] [] [Audio]]
-   [Assets Assets/Residence [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Residence [nuentity nugroup tsx tmx atlas nav nbrd glsl bin] [] []]]]
  [SwampHouse
   [[Assets Assets/SwampHouse [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/SwampHouse [jpg jpeg tga tif tiff dds] [ConvertToDds] [Render3d]]

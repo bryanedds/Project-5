@@ -366,7 +366,7 @@ type GameplayDispatcher () =
             | (_, _) -> ()
 
             // process song playback
-            let ambientSong = Assets.AbandonedMansion.CountryNightCrickets
+            let ambientSong = Assets.Gameplay.CountryNightCricketsSong
             let huntedDurationOpt = match screen.GetHuntedTimeOpt world with Some huntedTime -> Some (world.GameTime - huntedTime) | None -> None
             let stalkedDurationOpt = (screen.GetStalkerSpawnState world).SpawnDurationOpt world.GameTime
             match (huntedDurationOpt, stalkedDurationOpt) with
