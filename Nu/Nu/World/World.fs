@@ -252,7 +252,7 @@ module WorldModule4 =
             let worldExtension = world.WorldExtension
             let worldExtension = { worldExtension with Plugin = plugin }
             let worldExtension =
-                Array.fold (fun worldExtension  (facetName, facet) ->
+                Array.fold (fun worldExtension (facetName, facet) ->
                     { worldExtension with Dispatchers = { worldExtension.Dispatchers with Facets = Map.add facetName facet worldExtension.Dispatchers.Facets }})
                     worldExtension pluginFacets
             let worldExtension =
@@ -287,7 +287,7 @@ module WorldModule4 =
             for (simulant, _) in world.Simulants do
                 World.trySynchronize true simulant world
 
-        /// Make the world.
+        /// Make the world with the given dependencies.
         static member makePlus plugin eventGraph jobGraph geometryViewport rasterViewport outerViewport dispatchers quadtree octree worldConfig sdlDepsOpt imGui physicsEngine2d physicsEngine3d rendererPhysics3dOpt rendererProcess audioPlayer activeGameDispatcher =
             Nu.init () // ensure game engine is initialized
             let symbolics = Symbolics.makeEmpty ()
@@ -389,7 +389,9 @@ module WorldModule4 =
 
             // make the world
             let world =
-                World.makePlus plugin eventGraph jobGraph geometryViewport rasterViewport outerViewport dispatchers quadtree octree worldConfig None imGui physicsEngine2d physicsEngine3d None rendererProcess audioPlayer (snd defaultGameDispatcher)
+                World.makePlus
+                    plugin eventGraph jobGraph geometryViewport rasterViewport outerViewport dispatchers quadtree octree worldConfig
+                    None imGui physicsEngine2d physicsEngine3d None rendererProcess audioPlayer (snd defaultGameDispatcher)
 
             // register the game
             World.registerGame Game world
@@ -493,7 +495,9 @@ module WorldModule4 =
 
             // make the world
             let world =
-                World.makePlus plugin eventGraph jobGraph geometryViewport rasterViewport outerViewport dispatchers quadtree octree config (Some sdlDeps) imGui physicsEngine2d physicsEngine3d (Some rendererPhysics3dOpt) rendererProcess audioPlayer activeGameDispatcher
+                World.makePlus
+                    plugin eventGraph jobGraph geometryViewport rasterViewport outerViewport dispatchers quadtree octree config
+                    (Some sdlDeps) imGui physicsEngine2d physicsEngine3d (Some rendererPhysics3dOpt) rendererProcess audioPlayer activeGameDispatcher
 
             // add the keyed values
             for (key, value) in plugin.MakeKeyedValues world do
