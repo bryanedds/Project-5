@@ -46,7 +46,7 @@ type [<AbstractClass>] CharacterDispatcher () =
 
     static member Facets =
         [typeof<RigidBodyFacet>
-         typeof<TraversalInterpoledFacet>]
+         typeof<TraversalInterpolatedFacet>]
 
     static member Properties =
         [define Entity.Size (v3Dup 2.0f)
