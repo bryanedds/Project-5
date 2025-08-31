@@ -308,7 +308,7 @@ module WorldModuleGame =
             bounds.Intersects viewBounds
 
         /// Query the quadtree's spatial bounds for 2D entities.
-        static member getSpatialBounds2d world =
+        static member getSpatialBounds2d (world : World) =
             Quadtree.getBounds world.Quadtree
 
         static member internal getGameEye3dCenter game world =
@@ -489,7 +489,7 @@ module WorldModuleGame =
                 containment = ContainmentType.Intersects
 
         /// Query the octree's spatial bounds for 3D entities.
-        static member getSpatialBounds3d world =
+        static member getSpatialBounds3d (world : World) =
             Octree.getBounds world.Octree
 
         static member internal getElements2dBy (getElementsFromQuadree : Entity Quadtree -> unit) (world : World) =
