@@ -410,7 +410,7 @@ type GameplayDispatcher () =
                 for attacked in World.doSubscription "Attacks" character.AttackEvent world do
                     match attacked.GetActionState world with
                     | HideState hide when hide.HidePhase.IsHideUncovered -> attacked.SetHitPoints 0 world
-                    | _ -> attacked.HitPoints.Map (dec >> max 0) world
+                    | _ -> attacked.HitPoints.Map dec world
                     let actionState = attacked.GetActionState world
                     if attacked.GetHitPoints world > 0 then
                         if not actionState.IsInjuryState then
