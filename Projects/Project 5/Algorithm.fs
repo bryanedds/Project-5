@@ -22,7 +22,7 @@ module Algorithm =
             seq {
                 for sightRay in computeSightRays sightDistance position rotation do
                     let sightedOpt =
-                        World.rayCast3dBodies sightRay Int32.MaxValue false world
+                        World.rayCastBodies3d sightRay Int32.MaxValue false world
                         |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId <> bodyId)
                         |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource.Name <> Constants.Gameplay.CharacterWeaponName)
                         |> Seq.tryHead
@@ -38,7 +38,7 @@ module Algorithm =
         let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName
         let eyeDistanceScalarBOpt =
             if entity = Simulants.GameplayPlayer then
-                World.rayCast3dBodies ray Int32.MaxValue false world
+                World.rayCastBodies3d ray Int32.MaxValue false world
                 |> Seq.filter (fun intersection -> not (World.getBodySensor intersection.BodyShapeIntersected.BodyId world))
                 |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entity)
                 |> Seq.filter (fun intersection -> intersection.BodyShapeIntersected.BodyId.BodySource <> entityEhs)
