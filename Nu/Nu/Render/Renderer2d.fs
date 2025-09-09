@@ -176,6 +176,7 @@ type [<ReferenceEquality>] GlRenderer2d =
           SpriteVao : uint // TODO: P1: release these resources on clean-up.
           mutable SpriteShader : int * int * int * int * uint // TODO: P1: release these resources on clean-up.
           TextQuad : uint * uint // TODO: P1: release these resources on clean-up.
+          TextTextureIdPool : uint Stack
           TextTextures : Dictionary<obj, bool ref * (int * int * Matrix4x4 * OpenGL.Texture.Texture)>
           SpriteBatchEnv : OpenGL.SpriteBatch.SpriteBatchEnv
           RenderPackages : Packages<RenderAsset, AssetClient>
@@ -699,13 +700,11 @@ type [<ReferenceEquality>] GlRenderer2d =
                         // attempt to find or create text texture
                         // NOTE: because of the hacky way the cursor is shown, texture is recreated every blink on / off.
                         let textTextureOpt =
-                            let textTextureKey = (perimeter.Size, text, font, fontSize, fontStyling, color, justification)
+                            let textTextureKey = (size, text, font, fontSize, fontStyling, color, justification)
                             match renderer.TextTextures.TryGetValue textTextureKey with
                             | (false, _) ->
 
                                 // gather rendering resources
-                                // NOTE: the resource implications (throughput and fragmentation?) of creating and destroying a
-                                // surface and texture one or more times a frame must be understood!
                                 let (offset, textSurface, textSurfacePtr) =
 
                                     // create sdl color
@@ -774,8 +773,13 @@ type [<ReferenceEquality>] GlRenderer2d =
                                     let modelMatrix = modelScale * modelTranslation
                                     let modelViewProjection = modelMatrix * viewProjection2d
 
+                                    // attempt to get text texture id from pool
+                                    let textTextureId =
+                                        match renderer.TextTextureIdPool.TryPop () with
+                                        | (true, textureId) -> textureId
+                                        | (false, _) -> OpenGL.Gl.GenTexture ()
+
                                     // upload texture data
-                                    let textTextureId = OpenGL.Gl.GenTexture ()
                                     OpenGL.Gl.BindTexture (OpenGL.TextureTarget.Texture2d, textTextureId)
                                     OpenGL.Gl.TexImage2D (OpenGL.TextureTarget.Texture2d, 0, Constants.OpenGL.UncompressedTextureFormat, textSurfaceWidth, textSurfaceHeight, 0, OpenGL.PixelFormat.Bgra, OpenGL.PixelType.UnsignedByte, textSurface.pixels)
                                     OpenGL.Gl.TexParameter (OpenGL.TextureTarget.Texture2d, OpenGL.TextureParameterName.TextureMinFilter, int OpenGL.TextureMinFilter.Nearest)
@@ -895,6 +899,12 @@ type [<ReferenceEquality>] GlRenderer2d =
         OpenGL.SpriteBatch.EndSpriteBatchFrame renderer.Viewport renderer.SpriteBatchEnv
         OpenGL.Hl.Assert ()
 
+        // reload render assets upon request
+        if renderer.ReloadAssetsRequested then
+            GlRenderer2d.handleReloadShaders renderer
+            GlRenderer2d.handleReloadRenderAssets renderer
+            renderer.ReloadAssetsRequested <- false
+
         // sweep up any text textures that went unused this frame
         let textTexturesUnused =
             renderer.TextTextures
@@ -904,19 +914,13 @@ type [<ReferenceEquality>] GlRenderer2d =
         for entry in textTexturesUnused do
             let (_, _, _, textTexture) = snd renderer.TextTextures.[entry]
             renderer.TextTextures.Remove entry |> ignore<bool>
-            textTexture.Destroy ()
+            renderer.TextTextureIdPool.Push textTexture.TextureId
             OpenGL.Hl.Assert ()
 
         // mark unswept text textures as unused for next frame
         for entry in renderer.TextTextures.Values do
             let used = fst entry
             used.Value <- false
-
-        // reload render assets upon request
-        if renderer.ReloadAssetsRequested then
-            GlRenderer2d.handleReloadShaders renderer
-            GlRenderer2d.handleReloadRenderAssets renderer
-            renderer.ReloadAssetsRequested <- false
 
         // sweep up any skeleton renderers that went unused this frame
         let entriesUnused = renderer.SpineSkeletonRenderers |> Seq.filter (fun entry -> not (fst entry.Value).Value)
@@ -938,6 +942,10 @@ type [<ReferenceEquality>] GlRenderer2d =
         let textQuad = OpenGL.Sprite.CreateSpriteQuad true
         OpenGL.Hl.Assert ()
 
+        // create initial text texture ids
+        let textTextureIds = Array.zeroCreate 64
+        OpenGL.Gl.CreateTextures (OpenGL.TextureTarget.Texture2d, textTextureIds)
+
         // create sprite batch env
         let spriteBatchEnv = OpenGL.SpriteBatch.CreateSpriteBatchEnv ()
         OpenGL.Hl.Assert ()
@@ -948,6 +956,7 @@ type [<ReferenceEquality>] GlRenderer2d =
               SpriteVao = spriteVao
               SpriteShader = spriteShader
               TextQuad = textQuad
+              TextTextureIdPool = Stack textTextureIds
               TextTextures = dictPlus HashIdentity.Structural []
               SpriteBatchEnv = spriteBatchEnv
               RenderPackages = dictPlus StringComparer.Ordinal []
@@ -971,6 +980,18 @@ type [<ReferenceEquality>] GlRenderer2d =
             // destroy sprite batch env
             OpenGL.SpriteBatch.DestroySpriteBatchEnv renderer.SpriteBatchEnv
             OpenGL.Hl.Assert ()
+
+            // free text texture ids
+            OpenGL.Gl.DeleteTextures (Seq.toArray renderer.TextTextureIdPool)
+            renderer.TextTextureIdPool.Clear ()
+
+            // free text textures
+            for (_, _, _, textTexture) in Seq.map snd renderer.TextTextures.Values do textTexture.Destroy ()
+            renderer.TextTextures.Clear ()
+
+            // free sprite skeleton renderers
+            for spineSkeletonRenderer in Seq.map snd renderer.SpineSkeletonRenderers.Values do spineSkeletonRenderer.Destroy ()
+            renderer.SpineSkeletonRenderers.Clear ()
 
             // free resources
             let renderPackages = renderer.RenderPackages |> Seq.map (fun entry -> entry.Value)
