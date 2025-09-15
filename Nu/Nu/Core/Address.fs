@@ -56,8 +56,12 @@ type AddressConverter (pointType : Type) =
                 let makeFromStringFunction = pointType.GetMethod ("makeFromString", BindingFlags.Static ||| BindingFlags.Public)
                 let makeFromStringFunctionGeneric = makeFromStringFunction.MakeGenericMethod ((pointType.GetGenericArguments ()).[0])
                 makeFromStringFunctionGeneric.Invoke (null, [|addressStr|])
+            | Symbols (symbols, _) when symbols.Length = 0 ->
+                let makeFromStringFunction = pointType.GetMethod ("makeEmpty", BindingFlags.Static ||| BindingFlags.Public)
+                let makeFromStringFunctionGeneric = makeFromStringFunction.MakeGenericMethod ((pointType.GetGenericArguments ()).[0])
+                makeFromStringFunctionGeneric.Invoke (null, [||])
             | Number (_, _) | Quote (_, _) | Symbols (_, _) ->
-                failconv "Expected Atom or Text for conversion to Address." (Some addressSymbol)
+                failconv "Expected Atom, Text, Symbols (empty) for conversion to Address." (Some addressSymbol)
         | _ ->
             if pointType.IsInstanceOfType source then source
             else failconv "Invalid AddressConverter conversion from source." None
