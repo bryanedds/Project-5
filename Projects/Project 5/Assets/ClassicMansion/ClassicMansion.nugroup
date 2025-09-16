@@ -14,8 +14,8 @@
       [LightCutoff 24]
       [LightType DirectionalLight]
       [Name Sun]
-      [Position [5.5068703 -1.3567773 -2.4994771]]
-      [PositionLocal [5.5068703 -1.3567773 -2.4994771]]
+      [Position [-10.917678 -0.013866423 -0.34064046]]
+      [PositionLocal [-10.917678 -0.013866423 -0.34064046]]
       [Presence Omnipresent]
       [Rotation [-0.115967855 0.8611823 -0.47583908 0.13599138]]
       [RotationLocal [-0.115967855 0.8611823 -0.47583908 0.13599138]]
@@ -55573,27 +55573,7 @@
            []]]]]]
       [Entity3dDispatcher
        [[Name BP_TV] [Presence Interior] [Static True] [Visible False] [VisibleLocal False]]
-       [[RigidModelSurfaceDispatcher
-         [[BodyFrozen True]
-          [BodyShape
-           [StaticModelSurfaceShape
-            [[ClassicMansion ClassicMansion] 2499 Convex None None]]]
-          [Name Geometry]
-          [NavEnabled False]
-          [Offset [-0.024177343 0.34445682 0.015744328]]
-          [Position [-6.8589225 1.1997453 -11.191439]]
-          [PositionLocal [-6.8589225 1.1997453 -11.191439]]
-          [Presence Interior]
-          [Rotation [0 0.7204955 0 0.69345963]]
-          [RotationLocal [0 0.7204955 0 0.69345963]]
-          [Size [0.64676356 0.68891364 1.0384976]]
-          [Static True]
-          [StaticModel [ClassicMansion ClassicMansion]]
-          [SurfaceIndex 2499]
-          [Visible False]
-          [VisibleLocal False]]
-         []]
-        [Entity3dDispatcher
+       [[Entity3dDispatcher
          [[Name SpotLight] [Presence Interior] [Static True] [Visible False] [VisibleLocal False]]
          []]
         [Entity3dDispatcher
@@ -193299,6 +193279,7 @@
           [Position [-26.046583 6.1035155E-07 6.9723697]]
           [PositionLocal [-26.046583 6.1035155E-07 6.9723697]]
           [Presence Interior]
+          [RenderStyle [Forward 0 0]]
           [Rotation [0 -0.608762 0 0.7933529]]
           [RotationLocal [0 -0.608762 0 0.7933529]]
           [Size [0.51059353 2.0409517 0.4223685]]
@@ -208468,6 +208449,7 @@
           [Position [-5.3426404 0.002250061 -11.9101715]]
           [PositionLocal [-5.3426404 0.002250061 -11.9101715]]
           [Presence Interior]
+          [RenderStyle [Forward 0 0]]
           [Rotation [0 -0.50000024 0 0.86602527]]
           [RotationLocal [0 -0.50000024 0 0.86602527]]
           [Scale [1.0000001 1 1.0000001]]
