@@ -70,7 +70,7 @@ type EnemyDispatcher () =
                 World.applyBodyForce Constants.Gameplay.EnemyWalkForce None bodyId world
             if enemy.Health <= 0 then
                 World.publish entity entity.DeathEvent entity world
-                World.destroyEntity entity world
                 World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.ExplosionSound world
+                World.destroyEntity entity world
         | Hit ->
             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.HitSound world
