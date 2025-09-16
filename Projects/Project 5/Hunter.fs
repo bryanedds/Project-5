@@ -21,7 +21,7 @@ type HunterDispatcher () =
             match state.HunterWayPointIndexOpt with
             | Some wayPointIndex when wayPointIndex < state.HunterWayPoints.Length ->
                 let wayPoint = state.HunterWayPoints.[wayPointIndex]
-                match tryResolve entity wayPoint.WayPoint with
+                match tryResolve wayPoint.WayPoint entity with
                 | Some wayPointEntity ->
                     let wayPointPosition = wayPointEntity.GetPosition world
                     let wayPointDistance = wayPointPosition.Distance (entity.GetPosition world)

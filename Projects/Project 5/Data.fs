@@ -122,7 +122,7 @@ type ActionState =
 (* Way Point *)
 
 type WayPoint =
-    { WayPoint : Entity Relation
+    { WayPoint : Entity Address
       WayPointWaitTime : GameTime }
 
 (* Door *)
