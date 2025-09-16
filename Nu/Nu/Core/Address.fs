@@ -3,17 +3,21 @@
 
 namespace Nu.Constants
 open System
+open System.Text.RegularExpressions
+open Prime
 open Nu
 
 [<RequireQualifiedAccess>]
 module Address =
 
+    let [<Literal>] EmptyStr = "[]"
     let [<Literal>] SeparatorName = "/"
     let [<Literal>] WildcardName = "*"
     let [<Literal>] EllipsisName = "..."
     let [<Literal>] CurrentName = "~"
     let [<Literal>] ParentName = "^"
-    let [<Literal>] EmptyStr = "[]"
+    let [<Uniform>] InvalidAddressName = Regex ("\[\]|\/", RegexOptions.Compiled)
+    let [<Uniform>] InvalidIdentifierName = Regex ("\[\]|\/|\*|\.\.\.|\^|\~", RegexOptions.Compiled)
 
 namespace Nu
 open System
@@ -134,11 +138,6 @@ type [<CustomEquality; CustomComparison; TypeConverter (typeof<AddressConverter>
     static member stoa<'a> str =
         Address<'a>.makeFromString<'a> str
 
-    /// Convert a names sequence into an address.
-    static member qtoa<'a> (names : string seq) : 'a Address =
-        let names = Array.ofSeq names
-        { Names = names; HashCode = String.hashMany names; Anonymous = false }
-
     /// Convert a names array into an address.
     static member rtoa<'a> (names : string array) : 'a Address =
         { Names = names; HashCode = String.hashMany names; Anonymous = false }
@@ -146,6 +145,10 @@ type [<CustomEquality; CustomComparison; TypeConverter (typeof<AddressConverter>
     /// Convert a names list into an address.
     static member ltoa<'a> (names : string list) : 'a Address =
         Address.rtoa<'a> (List.toArray names)
+
+    /// Convert a names sequence into an address.
+    static member qtoa<'a> (names : string seq) : 'a Address =
+        Address.rtoa<'a> (Seq.toArray names)
 
     /// Convert a single name into an address.
     static member ntoa<'a> name : 'a Address =
@@ -155,7 +158,7 @@ type [<CustomEquality; CustomComparison; TypeConverter (typeof<AddressConverter>
     static member itoa (address : Address) =
         { Names = address.Names; HashCode = address.HashCode; Anonymous = address.Anonymous }
 
-    /// Convert a string into an address.
+    /// Convert an address into a string.
     static member atos<'a> (address : 'a Address) =
         if address.Length <> 0
         then String.concat Constants.Address.SeparatorName address.Names
@@ -344,10 +347,47 @@ module Address =
     let notEmpty address =
         Array.notEmpty address.Names
 
-    /// Check that a string represents a valid address name.
-    let validName (name : string) =
-        not (name.Contains "/") &&
-        not (name.Contains "\"")
+    /// Check that an address name contains none of the invalid forms, specifically -
+    /// [] is reserved as the empty address string
+    /// / is reserved as the name separator
+    let validateAddressName (name : string) =
+        not (Constants.Address.InvalidAddressName.IsMatch name)
+
+    /// Assert that an address name contains none of the invalid forms, specifically -
+    /// [] is reserved as the empty address string
+    /// / is reserved as the name separator
+    let assertAddressName (name : string) =
+#if DEBUG
+        if not (validateAddressName name) then
+            raise (ArgumentException ("Address name '" + name + "' contains an invalid form of [] or /, which are reserved."))
+#else
+        ()
+#endif
+
+    /// Check that an identifier name contains none of the invalid forms, specifically -
+    /// [] is reserved as the empty address string
+    /// / is reserved as the name separator
+    /// * is reserved as the name wildcard
+    /// ... is reserved as the address tail wildcard
+    /// ^ is reserved as the parent symbol
+    /// ~ is reserved as the self symbol
+    let validateIdentifierName (name : string) =
+        not (Constants.Address.InvalidIdentifierName.IsMatch name)
+
+    /// Assert that an identifier name contains none of the invalid forms, specifically -
+    /// [] is reserved as the empty address string
+    /// / is reserved as the name separator
+    /// * is reserved as the name wildcard
+    /// ... is reserved as the address tail wildcard
+    /// ^ is reserved as the parent symbol
+    /// ~ is reserved as the self symbol
+    let assertIdentifierName (name : string) =
+#if DEBUG
+        if not (validateIdentifierName name) then
+            raise (ArgumentException ("Identifier name '" + name + "' contains an invalid form of [], /, *, ..., ^, or ~, which are reserved."))
+#else
+        ()
+#endif
 
     /// Resolve an absolute address from the given relation and address.
     let resolve<'a, 'b> (relation : 'b Address) (address : 'a Address) : 'b Address =
