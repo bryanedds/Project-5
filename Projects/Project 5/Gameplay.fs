@@ -207,7 +207,9 @@ type GameplayDispatcher () =
 
             // initialize gameplay state
             let initializing = FQueue.contains Select screenResults
-            if initializing then screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
+            if initializing then
+                World.setEye3dFieldOfView 1.13446f world // ~65 degrees in radians
+                screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
 
             // begin scene declaration, processing nav sync at end of frame since optimized representations like frozen
             // entities won't have their nav info registered until then
