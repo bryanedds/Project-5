@@ -626,7 +626,7 @@ module Quaternion =
             let cosYCosP = 1.0f - 2.0f * (this.Y * this.Y + this.Z * this.Z)
             MathF.Atan2 (sinYCosP, cosYCosP)
 
-        /// Create from the 2d rotation, i.e. the yaw angle around the Z axis.
+        /// Create from the 2d rotation, IE, the yaw angle around the Z axis.
         static member CreateFromAngle2d (angle : float32) =
             Quaternion (w = MathF.Cos (angle * 0.5f), x = 0f, y = 0f, z = MathF.Sin (angle * 0.5f))
 
@@ -1579,8 +1579,14 @@ type LightType =
 
 /// The type of fog to utilize.
 type [<Struct>] FogType =
+
+    /// Useful for a finite, user-specifiable visibility cutoff distance from FogStart to FogStop.
     | LinearFog
+
+    /// Useful for a pervasive fog that include 'foreground' and 'background' based on FogDensity.
     | ExponentialFog
+
+    /// Useful for a distance for that mostly just includes 'background' based on FogDensity.
     | ExponentialSquaredFog
 
     /// Convert to an int tag that can be utilized by a shader.
