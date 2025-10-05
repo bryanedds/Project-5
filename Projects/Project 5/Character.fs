@@ -202,7 +202,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         // unmount when advancing to enable physics
         if world.Advancing
         then entity.SetMountOptWithAdjustment None world
-        else entity.SetMountOptWithAdjustment (Some (Address.makeParent ())) world
+        else entity.SetMountOptWithAdjustment (Some Address.parent) world
 
         // process expanded hide sensor on state
         let characterType = entity.GetCharacterType world
