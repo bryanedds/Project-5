@@ -210,6 +210,7 @@ type GameplayDispatcher () =
             if initializing then
                 let config =
                     { World.getRenderer3dConfig world with
+                        FxaaEnabled = true // smooth hair rendering
                         SsaoSampleCount = 24 } // bit more ao fidelity
                 World.configureRenderer3d config world
                 World.setEye3dFieldOfView 1.13446f world // ~65 degrees in radians
