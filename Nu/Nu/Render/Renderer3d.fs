@@ -2228,12 +2228,17 @@ type [<ReferenceEquality>] GlRenderer3d =
 
                     // oriented up and planar, like a tree billboard
                     if planar then
-                        let forwardFlat = eyeRotation.Forward.WithY 0.0f
-                        if forwardFlat.MagnitudeSquared > 0.0f then
-                            let forward = forwardFlat.Normalized
-                            let yaw = MathF.Atan2 (forward.X, forward.Z) - MathF.PI
-                            Matrix4x4.CreateRotationY yaw
-                        else m4Identity
+                        let up = Vector3.UnitY
+                        let camRight = Vector3.Transform (Vector3.UnitX, eyeRotation)
+                        let rightFlat = Vector3 (camRight.X, 0.0f, camRight.Z)
+                        let right = if rightFlat.LengthSquared () > 0.000001f then Vector3.Normalize rightFlat else Vector3.UnitX
+                        let forwardCandidate = Vector3.Cross (right, up)
+                        let toCamera = eyeCenter - model.Translation
+                        let below = Vector3.Dot (forwardCandidate, toCamera) >= 0.0f
+                        let forward = if below then forwardCandidate else Vector3.Cross (up, right)
+                        (right, up, forward)
+                        |> Matrix4x4.CreateRotation
+                        |> Matrix4x4.Transpose
 
                     // oriented up and not planar, like a character billboard
                     else
