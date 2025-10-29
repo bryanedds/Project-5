@@ -69,8 +69,7 @@ type EnemyDispatcher () =
                 let bodyId = entity.GetBodyId world
                 World.applyBodyForce Constants.Gameplay.EnemyWalkForce None bodyId world
             if enemy.Health <= 0 then
-                World.publish entity entity.DeathEvent entity world
-                World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.ExplosionSound world
+                World.publish () entity.DeathEvent entity world
                 World.destroyEntity entity world
         | Hit ->
             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.HitSound world
