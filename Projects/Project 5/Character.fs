@@ -39,6 +39,7 @@ module CharacterExtensions =
         member this.SetWeaponModel (value : StaticModel AssetTag) world = this.Set (nameof this.WeaponModel) value world
         member this.WeaponModel = lens (nameof this.WeaponModel) this this.GetWeaponModel this.SetWeaponModel
         member this.AttackEvent = Events.AttackEvent --> this
+        member this.DamageEvent = Events.DamageEvent --> this
         member this.DeathEvent = Events.DeathEvent --> this
 
 type [<AbstractClass>] CharacterDispatcher () =
@@ -384,7 +385,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         // process death
         match entity.GetActionState world with
         | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
-            World.publish entity entity.DeathEvent entity world
+            World.publish () entity.DeathEvent entity world
             let wound = { wound with WoundEventPublished = true }
             entity.SetActionState (WoundState wound) world
         | _ -> ()

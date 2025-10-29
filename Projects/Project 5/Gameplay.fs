@@ -412,29 +412,38 @@ type GameplayDispatcher () =
 
             // process attacks
             for character in characters do
-                for attacked in World.doSubscription "Attacks" character.AttackEvent world do
+                for attacked in World.doSubscription "Attack" character.AttackEvent world do
                     match attacked.GetActionState world with
-                    | HideState hide when hide.HidePhase.IsHideUncovered -> attacked.SetHitPoints 0 world
-                    | _ -> attacked.HitPoints.Map dec world
-                    let actionState = attacked.GetActionState world
-                    if attacked.GetHitPoints world > 0 then
+                    | HideState hide when hide.HidePhase.IsHideUncovered ->
+                        attacked.SetHitPoints 0 world
+                        World.publish Fatal attacked.DamageEvent screen world
+                    | _ ->
+                        let damage = 1 // a single unit of damage
+                        attacked.HitPoints.Map (fun hp -> hp - damage) world
+                        World.publish (Damage damage) attacked.DamageEvent screen world
+                    
+            // process damages
+            for character in characters do
+                for _ in World.doSubscription "Damage" character.DamageEvent world do
+                    let actionState = character.GetActionState world
+                    if character.GetHitPoints world > 0 then
                         if not actionState.IsInjuryState then
                             match actionState with
                             | InvestigationState investigation -> investigation.InvestigationSpot.SetInvestigationPhase InvestigationNotStarted world
                             | _ -> ()
-                            attacked.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
-                            attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                            character.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
+                            character.LinearVelocity.Map ((*) v3Up) world // zero out horizontal velocity on injury
                             World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
                     elif not actionState.IsWoundState then
-                        attacked.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
-                        attacked.SetLinearVelocity (v3Up * attacked.GetLinearVelocity world) world
+                        character.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
+                        character.LinearVelocity.Map ((*) v3Up) world // zero out horizontal velocity on injury
                         World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
 
             // process deaths
             for character in characters do
-                for dead in World.doSubscription "Deaths" character.DeathEvent world do
-                    match dead.GetCharacterType world with
-                    | Hunter | Stalker -> World.destroyEntity dead world
+                if World.doSubscriptionAny "Death" character.DeathEvent world then
+                    match character.GetCharacterType world with
+                    | Hunter | Stalker -> World.destroyEntity character world
                     | Player -> screen.SetGameplayState Quit world
 
             // update sun to shine over player as snapped to shadow map's texel grid in shadow space. This is similar

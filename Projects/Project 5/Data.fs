@@ -5,6 +5,10 @@ open Prime
 open Nu
 open MyGame
 
+type Damage =
+    | Damage of int
+    | Fatal
+
 (* Inventory *)
 
 type ItemType =
