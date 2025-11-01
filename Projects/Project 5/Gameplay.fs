@@ -421,7 +421,7 @@ type GameplayDispatcher () =
                         let damage = 1 // a single unit of damage
                         attacked.HitPoints.Map (fun hp -> hp - damage) world
                         World.publish (Damage damage) attacked.DamageEvent screen world
-                    
+
             // process damages
             for character in characters do
                 for _ in World.doSubscription "Damage" character.DamageEvent world do
