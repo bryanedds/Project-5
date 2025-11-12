@@ -1021,7 +1021,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
             true
         | Some _ | None -> false
 
-    let rec private propagateEntityStructure entity world =
+    let private propagateEntityStructure entity world =
         snapshot PropagateEntity world
         World.propagateEntityStructure entity world
 
@@ -1857,39 +1857,40 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
             ImGui.Text (entity.Name + if ImGui.IsCtrlDown () then " (Copy)" else "")
             ImGui.SetDragDropPayload ("Entity", IntPtr.Zero, 0u) |> ignore<bool>
             ImGui.EndDragDropSource ()
-        if entity.GetExists world && entity.Has<Freezer3dFacet> world then // check for existence since entity may have been deleted just above
-            let frozen = entity.GetFrozen world
-            let (text, color) = if frozen then ("Thaw", Color.CornflowerBlue) else ("Freeze", Color.DarkRed)
-            ImGui.SameLine ()
-            ImGui.PushStyleColor (ImGuiCol.Button, color.Abgr)
-            ImGui.PushID ("##frozen" + scstringMemo entity)
-            if ImGui.SmallButton text then
-                let frozen = not frozen
-                snapshot (SetEntityFrozen frozen) world
-                entity.SetFrozen frozen world
-            ImGui.PopID ()
-            ImGui.PopStyleColor ()
-        let hasPropagationTargets = entity.HasPropagationTargets world
-        let hasPropagationDescriptorOpt = Option.isSome (entity.GetPropagatedDescriptorOpt world)
-        if hasPropagationTargets || hasPropagationDescriptorOpt then
-            ImGui.SameLine ()
-            ImGui.PushID ("##push" + scstringMemo entity)
-            if ImGui.SmallButton "Push" then
-                propagateEntityStructure entity world
-            ImGui.PopID ()
-            if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
-                ImGui.Text "Propagate entity structure to all targets, preserving propagation data."
-                ImGui.EndTooltip ()
-            ImGui.SameLine ()
-            ImGui.PushID ("##wipe" + scstringMemo entity)
-            if ImGui.SmallButton "Wipe" then
-                snapshot WipePropagationTargets world
-                World.clearPropagationTargets entity world
-                entity.SetPropagatedDescriptorOpt None world
-            ImGui.PopID ()
-            if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
-                ImGui.Text "Clear entity structure propagation targets, wiping any propagated descriptor data."
-                ImGui.EndTooltip ()
+        if entity.GetExists world then // check for existence since entity may have been deleted just above
+            if entity.Has<Freezer3dFacet> world then
+                let frozen = entity.GetFrozen world
+                let (text, color) = if frozen then ("Thaw", Color.CornflowerBlue) else ("Freeze", Color.DarkRed)
+                ImGui.SameLine ()
+                ImGui.PushStyleColor (ImGuiCol.Button, color.Abgr)
+                ImGui.PushID ("##frozen" + scstringMemo entity)
+                if ImGui.SmallButton text then
+                    let frozen = not frozen
+                    snapshot (SetEntityFrozen frozen) world
+                    entity.SetFrozen frozen world
+                ImGui.PopID ()
+                ImGui.PopStyleColor ()
+            let hasPropagationTargets = entity.HasPropagationTargets world
+            let hasPropagationDescriptorOpt = Option.isSome (entity.GetPropagatedDescriptorOpt world)
+            if hasPropagationTargets || hasPropagationDescriptorOpt then
+                ImGui.SameLine ()
+                ImGui.PushID ("##push" + scstringMemo entity)
+                if ImGui.SmallButton "Push" then
+                    propagateEntityStructure entity world
+                ImGui.PopID ()
+                if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
+                    ImGui.Text "Propagate entity structure to all targets, preserving propagation data."
+                    ImGui.EndTooltip ()
+                ImGui.SameLine ()
+                ImGui.PushID ("##wipe" + scstringMemo entity)
+                if ImGui.SmallButton "Wipe" then
+                    snapshot WipePropagationTargets world
+                    World.clearPropagationTargets entity world
+                    entity.SetPropagatedDescriptorOpt None world
+                ImGui.PopID ()
+                if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
+                    ImGui.Text "Clear entity structure propagation targets, wiping any propagated descriptor data."
+                    ImGui.EndTooltip ()
         expanded
 
     let rec private imGuiEntityHierarchy (entity : Entity) world =
@@ -4282,7 +4283,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1280,720 Split=
                 Log.error errorMsg
                 Constants.Engine.ExitCodeFailure
 
-    let rec private runWithCleanUp gaiaState targetDir_ screen world =
+    let private runWithCleanUp gaiaState targetDir_ screen world =
         OpenProjectFilePath <- gaiaState.ProjectDllPath
         OpenProjectImperativeExecution <- gaiaState.ProjectImperativeExecution
         CloseProjectImperativeExecution <- gaiaState.ProjectImperativeExecution
