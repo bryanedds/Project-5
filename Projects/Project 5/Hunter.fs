@@ -96,14 +96,14 @@ type HunterDispatcher () =
                 processHunterWayPointNavigation entity world
                 false
             | AwareOfTargetTraversing startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0f then
+                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0 then
                     entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
                     false
                 else
                     CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
                     false
             | AwareOfTargetHiding startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0f then
+                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0 then
                     entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
                     false
                 elif CharacterDispatcher.processEnemyUncovering targetPosition entity world then

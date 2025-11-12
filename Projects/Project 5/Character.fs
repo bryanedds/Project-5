@@ -56,7 +56,7 @@ type [<AbstractClass>] CharacterDispatcher () =
          define Entity.BodyType KinematicCharacter
          define Entity.Substance (Mass 50.0f)
          define Entity.ActionState NormalState
-         define Entity.MovementState (Standing 0.0f)
+         define Entity.MovementState (Standing 0.0)
          define Entity.HitPoints 1
          define Entity.InsertionSpotCollisions Set.empty
          define Entity.DoorSpotCollisions Set.empty
@@ -228,7 +228,7 @@ type [<AbstractClass>] CharacterDispatcher () =
             | NormalState -> ()
             | AttackState attack as actionState ->
                 let localTime = world.GameTime - attack.AttackTime
-                let actionState = if localTime <= 0.92f then actionState else NormalState
+                let actionState = if localTime <= 0.92 then actionState else NormalState
                 entity.SetActionState actionState world
             | InventoryState -> ()
             | InsertionState _ -> ()
@@ -237,12 +237,12 @@ type [<AbstractClass>] CharacterDispatcher () =
                 match hide.HidePhase with
                 | HideEntering ->
                     let localTime = world.GameTime - hide.HideTime
-                    if localTime >= 1.5f then
+                    if localTime >= 1.5 then
                         entity.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideWaiting }) world
                 | HideWaiting -> ()
                 | HideEmerging ->
                     let localTime = world.GameTime - hide.HideTime
-                    if localTime >= 1.5f then entity.SetActionState NormalState world
+                    if localTime >= 1.5 then entity.SetActionState NormalState world
                 | HideUncovered -> ()
             | InjuryState injury as actionState ->
                 let localTime = world.GameTime - injury.InjuryTime
@@ -301,15 +301,15 @@ type [<AbstractClass>] CharacterDispatcher () =
             match entity.GetMovementState world with
             | Standing _ -> ()
             | Walking (startTime, lastStepTime) ->
-                let strideTime = GameTime.ofSeconds 0.75f
-                let offsetTime = GameTime.ofSeconds 0.255f
+                let strideTime = GameTime.ofSeconds 0.75
+                let offsetTime = GameTime.ofSeconds 0.255
                 let localStepTime = world.GameTime - lastStepTime + offsetTime
                 if localStepTime >= strideTime then
                     World.playSound 0.25f Assets.Gameplay.StepSound world
                     entity.SetMovementState (Walking (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
-            if localTime > 0.12f && not attack.AttackSoundPlayed then
+            if localTime > 0.12 && not attack.AttackSoundPlayed then
                 let attack = { attack with AttackSoundPlayed = true }
                 entity.SetActionState (AttackState attack) world
                 World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
@@ -373,7 +373,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         match entity.GetActionState world with
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
-            if localTime >= 0.2f && localTime < 0.8f then
+            if localTime >= 0.2 && localTime < 0.8 then
                 let weaponCollisions = entity.GetWeaponCollisions world
                 let attackedCharacters = Set.difference weaponCollisions attack.AttackedCharacters
                 entity.SetActionState (AttackState { attack with AttackedCharacters = Set.union attack.AttackedCharacters weaponCollisions }) world
@@ -384,7 +384,7 @@ type [<AbstractClass>] CharacterDispatcher () =
 
         // process death
         match entity.GetActionState world with
-        | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0f && not wound.WoundEventPublished ->
+        | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0 && not wound.WoundEventPublished ->
             World.publish () entity.DeathEvent entity world
             let wound = { wound with WoundEventPublished = true }
             entity.SetActionState (WoundState wound) world

@@ -152,13 +152,13 @@ type GameplayDispatcher () =
                 player.SetActionState NormalState world
             | InvestigationStarted startTime ->
                 let localTime = world.GameTime - startTime
-                if  localTime < 8.0f &&
+                if  localTime < 8.0 &&
                     World.doButton "Abandon" [Entity.Text .= "Abandon"; Entity.Position .= v3 232.0f -104.0f 0.0f] world then
                     investigationSpot.SetInvestigationPhase InvestigationNotStarted world
                 else investigationSpot.SetInvestigationPhase (InvestigationFinished world.GameTime) world
             | InvestigationFinished startTime ->
                 let localTime = world.GameTime - startTime
-                if localTime < 2.0f then
+                if localTime < 2.0 then
                     match investigationSpot.GetInteractionResult world with
                     | Description description ->
                         World.doText "InteractionResult" [Entity.Text @= description; Entity.Size .= v3 640.0f 32.0f 0.0f] world
@@ -324,7 +324,7 @@ type GameplayDispatcher () =
                 let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
                 if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                     let caughtTargetHiding = match player.GetActionState world with HideState hide -> hide.HidePhase.IsHideEntering | _ -> false
-                    let resetTime = max spawnTime (world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f))
+                    let resetTime = max spawnTime (world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0))
                     screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, spawnPoint, resetTime)) world
 
             | StalkerLeaving (unspawnPoint, _) ->
@@ -343,7 +343,7 @@ type GameplayDispatcher () =
                 let playerBodyIds = Set.ofList [player.GetBodyId world; playerEhs.GetBodyId world]                    
                 if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId playerBodyIds world then
                     let caughtTargetHiding = match player.GetActionState world with HideState hide -> hide.HidePhase.IsHideEntering | _ -> false
-                    let resetTime = world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0f)
+                    let resetTime = world.GameTime - (Constants.Gameplay.StalkDuration - GameTime.ofSeconds 10.0)
                     screen.SetStalkerSpawnState (StalkerStalking (caughtTargetHiding, unspawnPoint, resetTime)) world
                 elif (stalker.GetPosition world).Distance unspawnPosition < 0.5f then
                     screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
@@ -377,9 +377,9 @@ type GameplayDispatcher () =
             | (_, Some _) ->
                 match World.getSongOpt world with
                 | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.StalkedSong ->
-                    World.playSong 0.0f 0.0f 0.0f None 0.3f Assets.Gameplay.StalkedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.StalkedSong world
                 | None ->
-                    World.playSong 0.0f 0.0f 0.0f None 0.3f Assets.Gameplay.StalkedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.StalkedSong world
                 | Some _ -> ()
             | (Some _, _) ->
                 let playHuntedSong =
@@ -387,22 +387,22 @@ type GameplayDispatcher () =
                     | Some songDescriptor -> songDescriptor.Song <> Assets.Gameplay.HuntedSong || World.getSongFadingOut world
                     | None -> true
                 if playHuntedSong then
-                    World.playSong 0.0f 0.0f 0.0f None 0.3f Assets.Gameplay.HuntedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.HuntedSong world
             | (None, None) ->
                 match World.getSongOpt world with
                 | Some songDescriptor ->
                     if (songDescriptor.Song = Assets.Gameplay.HuntedSong || songDescriptor.Song = Assets.Gameplay.StalkedSong) && not (World.getSongFadingOut world) then
-                        World.fadeOutSong 7.5f world
+                        World.fadeOutSong 7.5 world
                     elif songDescriptor.Song <> ambientSong && not (World.getSongFadingOut world) then
-                        World.playSong 0.0f 0.0f 0.0f None 1.0f ambientSong world
+                        World.playSong 0.0 0.0 0.0 None 1.0f ambientSong world
                 | None ->
-                    World.playSong 0.0f 0.0f 0.0f None 1.0f ambientSong world
+                    World.playSong 0.0 0.0 0.0 None 1.0f ambientSong world
 
             // process danger
             screen.Danger.Map (fun danger ->
                 match max huntedDurationOpt stalkedDurationOpt with
-                | Some dangerDuration -> min 1.0f dangerDuration.Seconds
-                | None -> max 0.0f (danger - world.GameDelta.Seconds / 7.5f))
+                | Some dangerDuration -> min 1.0f dangerDuration.SecondsF
+                | None -> max 0.0f (danger - world.GameDelta.SecondsF / 7.5f))
                 world
 
             // process lighting

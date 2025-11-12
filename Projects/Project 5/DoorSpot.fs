@@ -44,14 +44,14 @@ type DoorSpotDispatcher () =
             | DoorClosed ->
                 parent.SetRotationLocal rotationInitial world
             | DoorOpening startTime ->
-                let progress = GameTime.progress startTime world.GameTime 1.25f
+                let progress = GameTime.progressF startTime world.GameTime 1.25
                 let openness = progress * 2.0f
                 parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
                 if progress = 1.0f then entity.SetDoorState DoorOpened world
             | DoorOpened ->
                 parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, 2.0f) * rotationInitial) world
             | DoorClosing startTime ->
-                let progress = GameTime.progress startTime world.GameTime 1.25f
+                let progress = GameTime.progressF startTime world.GameTime 1.25
                 let openness = (1.0f - progress) * 2.0f
                 parent.SetRotation (Quaternion.CreateFromAxisAngle (v3Down, openness) * rotationInitial) world
                 if progress = 1.0f then entity.SetDoorState DoorClosed world

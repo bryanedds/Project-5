@@ -117,8 +117,8 @@ type ActionState =
         match state with
         | HideState hide ->
             match hide.HidePhase with
-            | HideEntering -> 1.0f - GameTime.progress hide.HideTime time 1.5f
-            | HideEmerging -> GameTime.progress hide.HideTime time 1.5f
+            | HideEntering -> 1.0f - GameTime.progressF hide.HideTime time 1.5
+            | HideEmerging -> GameTime.progressF hide.HideTime time 1.5
             | HideWaiting -> 0.0f
             | HideUncovered -> 0.0f
         | _ -> 1.0f
@@ -194,7 +194,7 @@ type StalkerSpawnState =
         | None -> None
 
     static member initial =
-        StalkerUnspawned Single.MaxValue
+        StalkerUnspawned Double.MaxValue
 
 (* Player *)
 
@@ -239,9 +239,9 @@ and CharacterType =
 
     member this.InjuryTime =
         match this with
-        | Hunter -> 0.667f
-        | Stalker -> 0.25f
-        | Player -> 0.5f
+        | Hunter -> 0.667
+        | Stalker -> 0.25
+        | Player -> 0.5
 
     member this.AnimationRate =
         match this with

@@ -36,7 +36,7 @@ type InsertionSpotDispatcher () =
         | InsertionNotStarted -> ()
         | InsertionStarted startTime ->
             let localTime = world.GameTime - startTime
-            if localTime > 4.0f then entity.SetInsertionPhase InsertionFinished world
+            if localTime > 4.0 then entity.SetInsertionPhase InsertionFinished world
         | InsertionFinished -> ()
 
     override this.GetAttributesInferred (_, _) =

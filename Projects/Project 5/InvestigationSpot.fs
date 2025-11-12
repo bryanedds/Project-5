@@ -41,7 +41,7 @@ type InvestigationSpotDispatcher () =
                 elif playerDistance > viewDistance then 0.0f
                 else (viewDistance - playerDistance) / viewDistance
             else 0.0f
-        let visibility = (inc world.GameTime.Seconds % 2.0f) * distanceScalar / 2.0f
+        let visibility = single (inc world.GameTime.Seconds % 2.0 * double distanceScalar / 2.0)
         let albedoImage =
             match phase with
             | InvestigationNotStarted -> Assets.Gameplay.InvestigationPendingIconAlbedoImage
@@ -62,7 +62,7 @@ type InvestigationSpotDispatcher () =
                  Entity.Material @= material
                  Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
                  Entity.DepthTest .= if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
-                 Entity.AnimationDelay .= 1.0f
+                 Entity.AnimationDelay .= 1.0
                  Entity.CelCount @= cels
                  Entity.CelRun @= cels] world
 
