@@ -66,8 +66,7 @@ type RenderStyle =
 type NavShape =
     | EmptyNavShape
     | BoundsNavShape
-    | StaticModelNavShape
-    | StaticModelSurfaceNavShape
+    | ContourNavShape
 
 /// The batch phasing such involved in persisting OpenGL state.
 type [<Struct>] BatchPhase =
@@ -229,18 +228,18 @@ module AssimpExtensions =
           NodeName : string
           HashCode : int }
 
-        static member make animationName nodeName =
-            let hashCode = hash animationName ^^^ hash nodeName
-            { AnimationName = animationName
-              NodeName = nodeName
-              HashCode = hashCode }
-
         static member equals left right =
             left.AnimationName = right.AnimationName &&
             left.NodeName = right.NodeName
 
         static member hash key =
             key.HashCode
+
+        static member make animationName nodeName =
+            let hashCode = hash animationName ^^^ hash nodeName
+            { AnimationName = animationName
+              NodeName = nodeName
+              HashCode = hashCode }
 
         override this.Equals thatObj =
             match thatObj with
