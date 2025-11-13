@@ -432,11 +432,11 @@ type GameplayDispatcher () =
                             | _ -> ()
                             character.SetActionState (InjuryState { InjuryTime = world.GameTime }) world
                             character.LinearVelocity.Map ((*) v3Up) world // zero out horizontal velocity on injury
-                            World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                            World.playSound 0.0f 0.0f 1.0f Assets.Gameplay.InjureSound world
                     elif not actionState.IsWoundState then
                         character.SetActionState (WoundState { WoundTime = world.GameTime; WoundEventPublished = false }) world
                         character.LinearVelocity.Map ((*) v3Up) world // zero out horizontal velocity on injury
-                        World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.InjureSound world
+                        World.playSound 0.0f 0.0f 1.0f Assets.Gameplay.InjureSound world
 
             // process deaths
             for character in characters do

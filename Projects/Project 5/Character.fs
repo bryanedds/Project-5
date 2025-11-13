@@ -305,14 +305,14 @@ type [<AbstractClass>] CharacterDispatcher () =
                 let offsetTime = GameTime.ofSeconds 0.255
                 let localStepTime = world.GameTime - lastStepTime + offsetTime
                 if localStepTime >= strideTime then
-                    World.playSound 0.25f Assets.Gameplay.StepSound world
+                    World.playSound 0.0f 0.0f 0.25f Assets.Gameplay.StepSound world
                     entity.SetMovementState (Walking (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
             if localTime > 0.12 && not attack.AttackSoundPlayed then
                 let attack = { attack with AttackSoundPlayed = true }
                 entity.SetActionState (AttackState attack) world
-                World.playSound Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
+                World.playSound 0.0f 0.0f Constants.Audio.SoundVolumeDefault Assets.Gameplay.SlashSound world
             let animation = Animation.once attack.AttackTime None "Attack"
             animatedModel.SetAnimations [|animation|] world
         | InventoryState -> ()
