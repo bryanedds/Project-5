@@ -27,6 +27,7 @@ const int SHADOW_CASCADE_LEVELS = 3;
 const float SHADOW_CASCADE_SEAM_INSET = 0.005;
 const float SHADOW_CASCADE_DENSITY_BONUS = 0.5;
 const float SHADOW_FOV_MAX = 2.1;
+const float CLEAR_COAT_REFRACTIVE_INDEX = 1.5; // typical for automotive clear coat
 
 const vec4 SSVF_DITHERING[4] =
     vec4[](
@@ -48,15 +49,16 @@ uniform float lightShadowExponent;
 uniform float lightShadowDensity;
 uniform int sssEnabled;
 uniform int ssvfEnabled;
+uniform float ssvfIntensity;
 uniform int ssvfSteps;
 uniform float ssvfAsymmetry;
-uniform float ssvfIntensity;
 uniform sampler2D depthTexture;
 uniform sampler2D albedoTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D normalPlusTexture;
 uniform sampler2D subdermalPlusTexture;
 uniform sampler2D scatterPlusTexture;
+uniform sampler2D clearCoatPlusTexture;
 uniform sampler2DArray shadowTextures;
 uniform samplerCube shadowMaps[SHADOW_MAPS_MAX];
 uniform sampler2DArray shadowCascades[SHADOW_CASCADES_MAX];
@@ -94,6 +96,26 @@ float linstep(float low, float high, float v)
 vec3 rotate(vec3 axis, float angle, vec3 v)
 {
     return mix(dot(axis, v) * axis, v, cos(angle)) + cross(axis, v) * sin(angle);
+}
+
+float signNotZero(float f)
+{
+    return f >= 0.0 ? 1.0 : -1.0;
+}
+
+vec2 signNotZero(vec2 v)
+{
+    return vec2(signNotZero(v.x), signNotZero(v.y));
+}
+
+vec3 decodeOctahedral(vec2 o)
+{
+    vec3 v = vec3(o.x, o.y, 1.0 - abs(o.x) - abs(o.y));
+    if (v.z < 0.0)
+    {
+        v.xy = (1.0 - abs(v.yx)) * signNotZero(v.xy);
+    }
+    return normalize(v);
 }
 
 vec4 depthToPosition(float depth, vec2 texCoords)
@@ -763,6 +785,12 @@ void main()
     float roughness = material.r;
     float metallic = material.g;
 
+    // compute clear coat values
+    vec4 clearCoatPlus = texture(clearCoatPlusTexture, texCoordsOut);
+    float clearCoat = clearCoatPlus.r;
+    float clearCoatRoughness = clearCoatPlus.g;
+    vec3 clearCoatNormal = decodeOctahedral(clearCoatPlus.ba);
+
     // clear accumulation buffers because there seems to exist a Mesa bug where glClear doesn't work on certain
     // platforms on this buffer - https://github.com/bryanedds/Nu/issues/800#issuecomment-3239861861
     lightAccum = vec4(0.0);
@@ -780,13 +808,14 @@ void main()
         int lightType = lightTypes[i];
         bool lightPoint = lightType == 0;
         bool lightSpot = lightType == 1;
+        float hDotV, intensity;
         vec3 l, h, radiance;
-        float intensity = 0.0;
         if (lightPoint || lightSpot)
         {
             vec3 d = lightOrigin - position.xyz;
             l = normalize(d);
             h = normalize(v + l);
+            hDotV = max(dot(h,  v), 0.0);
             float distanceSquared = dot(d, d);
             float distance = sqrt(distanceSquared);
             float cutoffScalar = 1.0 - smoothstep(lightCutoff * (1.0 - lightCutoffMargin), lightCutoff, distance);
@@ -804,6 +833,7 @@ void main()
         {
             l = -lightDirections[i];
             h = normalize(v + l);
+            hDotV = max(dot(h, v), 0.0);
             intensity = 1.0;
             radiance = lightColors[i] * lightBrightnesses[i];
         }
@@ -823,7 +853,6 @@ void main()
         }
 
         // cook-torrance brdf
-        float hDotV = max(dot(h, v), 0.0);
         float ndf = distributionGGX(normal, h, roughness);
         float g = geometrySchlick(normal, v, l, roughness);
         vec3 f = fresnelSchlick(hDotV, f0);
@@ -832,7 +861,29 @@ void main()
         vec3 numerator = ndf * g * f;
         float nDotL = max(dot(normal, l), 0.0);
         float denominator = 4.0 * nDotV * nDotL + 0.0001; // add epsilon to prevent division by zero
-        vec3 specular = numerator / denominator;
+        vec3 specular = clamp(numerator / denominator, 0.0, 10000.0);
+
+        // mix in specularity of clear coat when desired
+        if (clearCoat > 0.0)
+        {
+            // nDotV and f0 derived from clear coat specific values
+            float nDotV = max(dot(clearCoatNormal, v), 0.0);
+            vec3 f0 = vec3(pow((CLEAR_COAT_REFRACTIVE_INDEX - 1.0) / (CLEAR_COAT_REFRACTIVE_INDEX + 1.0), 2.0));
+
+            // cook-torrance brdf
+            float ndf = distributionGGX(clearCoatNormal, h, clearCoatRoughness);
+            float g = geometrySchlick(clearCoatNormal, v, l, clearCoatRoughness);
+            vec3 f = fresnelSchlick(hDotV, f0);
+
+            // compute specularity
+            vec3 numerator = ndf * g * f;
+            float nDotL = max(dot(clearCoatNormal, l), 0.0);
+            float denominator = 4.0 * nDotV * nDotL + 0.0001; // add epsilon to prevent division by zero
+            vec3 clearCoatSpecular = clamp(numerator / denominator, 0.0, 10000.0);
+
+            // mix specular
+            specular = mix(specular, clearCoatSpecular, clearCoat);
+        }
 
         // compute diffusion
         vec3 kS = f;
@@ -842,8 +893,8 @@ void main()
         // compute burley diffusion approximation (unlike lambert, this is NOT energy-preserving!)
         float lDotH = max(dot(l, h), 0.0);
         float f90 = 0.5 + 2.0 * roughness * lDotH * lDotH; // retroreflection term
-        float lightScatter = pow(1.0 - nDotL, 5.0) * (f90 - 1.0) + 1.0;
-        float viewScatter  = pow(1.0 - nDotV, 5.0) * (f90 - 1.0) + 1.0;
+        float lightScatter = pow(1.0 - min(1.0, nDotL), 5.0) * (f90 - 1.0) + 1.0;
+        float viewScatter = pow(1.0 - min(1.0, nDotV), 5.0) * (f90 - 1.0) + 1.0;
         float burley = lightScatter * viewScatter;
 
         // accumulate light
