@@ -48,7 +48,7 @@ type InteractionResult =
 
 type MovementState =
     | Standing of GameTime
-    | Walking of startTime : GameTime * lastStepTime : GameTime
+    | Moving of startTime : GameTime * lastStepTime : GameTime
 
 (* Action *)
 
@@ -204,7 +204,7 @@ type PlayerState =
 
     static member initial =
         { ViewFlip = false
-          FlashLightEnabled = true }
+          FlashLightEnabled = false }
 
 (* Character *)
 

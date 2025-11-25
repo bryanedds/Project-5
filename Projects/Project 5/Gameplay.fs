@@ -249,6 +249,13 @@ type GameplayDispatcher () =
                         | Some investigationSpot -> processPlayerInvestigationSpot investigationSpot player screen world
                         | None -> ()
 
+            // process player view flip
+            player.PlayerState.Map (fun state -> { state with ViewFlip = World.isKeyboardShiftDown world }) world
+
+            // toggle player flash light
+            if World.isKeyboardKeyPressed KeyboardKey.Space world then
+                player.PlayerState.Map (fun state -> { state with FlashLightEnabled = not state.FlashLightEnabled }) world
+
             // declare inventory view
             match player.GetActionState world with
             | InventoryState ->

@@ -29,7 +29,7 @@ type PlayerDispatcher () =
         match entity.GetActionState world with
         | NormalState ->
             let rotation = entity.GetRotation world
-            let walkSpeed = Player.WalkSpeed
+            let walkSpeed = if (entity.GetPlayerState world).FlashLightEnabled then 0.0f else Player.WalkSpeed
             let forward = rotation.Forward
             let right = rotation.Right
             let walkDirection =
@@ -53,13 +53,6 @@ type PlayerDispatcher () =
             entity.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
             entity.SetRotation rotation world
         | AttackState _ | InjuryState _ | WoundState _ -> ()
-
-        // process view flip
-        entity.PlayerState.Map (fun state -> { state with ViewFlip = World.isKeyboardShiftDown world }) world
-
-        // toggle flash light
-        if World.isKeyboardKeyPressed KeyboardKey.Space world then
-            entity.PlayerState.Map (fun state -> { state with FlashLightEnabled = not state.FlashLightEnabled }) world
 
     static member Properties =
         let characterType = Player

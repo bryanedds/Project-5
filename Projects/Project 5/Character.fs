@@ -270,7 +270,7 @@ type [<AbstractClass>] CharacterDispatcher () =
             let startTime =
                 match entity.GetMovementState world with
                 | Standing startTime -> startTime
-                | Walking (startTime, _) -> startTime
+                | Moving (startTime, _) -> startTime
             let animations =
                 [Animation.make startTime None "Idle" Loop rate 1.0f None]
             let animations =
@@ -288,9 +288,9 @@ type [<AbstractClass>] CharacterDispatcher () =
             let movementState = entity.GetMovementState world
             if List.hasAtLeast 2 animations then
                 if movementState.IsStanding then
-                    entity.SetMovementState (Walking (world.GameTime, world.GameTime)) world
+                    entity.SetMovementState (Moving (world.GameTime, world.GameTime)) world
             else
-                if movementState.IsWalking then
+                if movementState.IsMoving then
                     entity.SetMovementState (Standing world.GameTime) world
             animatedModel.SetAnimations (Array.ofList animations) world
         | _ -> ()
@@ -300,13 +300,14 @@ type [<AbstractClass>] CharacterDispatcher () =
         | NormalState ->
             match entity.GetMovementState world with
             | Standing _ -> ()
-            | Walking (startTime, lastStepTime) ->
+            | Moving (startTime, lastStepTime) ->
                 let strideTime = GameTime.ofSeconds 0.75
                 let offsetTime = GameTime.ofSeconds 0.255
                 let localStepTime = world.GameTime - lastStepTime + offsetTime
+                let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
                 if localStepTime >= strideTime then
-                    World.playSound 0.0f 0.0f 0.25f Assets.Gameplay.StepSound world
-                    entity.SetMovementState (Walking (startTime, lastStepTime + strideTime)) world
+                    if notJustTurning then World.playSound 0.0f 0.0f 0.25f Assets.Gameplay.StepSound world
+                    entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
             if localTime > 0.12 && not attack.AttackSoundPlayed then
