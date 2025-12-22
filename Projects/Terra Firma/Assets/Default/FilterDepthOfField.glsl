@@ -50,15 +50,34 @@ vec4 depthToPosition(float depth, vec2 texCoords)
 
 void main()
 {
+    // retrieve unblurred color
     vec4 unblurredColor = texture(unblurredTexture, texCoordsOut);
+
+    // sample depth values that may be invalid when 0.0
     vec2 texelSize = vec2(1.0) / textureSize(depthTexture, 0);
-    float depth = // TODO: P1: attempt to increase efficiency here by downsampling the depth texture instead of multi-tapping.
-        (texture(depthTexture, texCoordsOut + texelSize).r +
-         texture(depthTexture, texCoordsOut + texelSize * -1.0).r +
-         texture(depthTexture, texCoordsOut + texelSize * vec2(1.0, -1.0)).r +
-         texture(depthTexture, texCoordsOut + texelSize * vec2(-1.0, -1.0)).r) *
-        0.25;
-    if (depth != 0.0)
+    float depths[] =
+        float[](
+            texture(depthTexture, texCoordsOut + texelSize * vec2(-1.0, -1.0)).r,
+            texture(depthTexture, texCoordsOut + texelSize * vec2(1.0, -1.0)).r,
+            texture(depthTexture, texCoordsOut + texelSize * vec2(-1.0, 1.0)).r,
+            texture(depthTexture, texCoordsOut + texelSize * vec2(1.0, 1.0)).r);
+
+    // compute average of valid depth values
+    int depthCount = 0;
+    float depth = 0.0;
+    for (int i = 0; i < 4; ++i)
+    {
+        float depthCurrent = depths[i];
+        if (depthCurrent != 0.0)
+        {
+            depth += depthCurrent;
+            ++depthCount;
+        }
+    }
+    depth /= float(depthCount);
+
+    // compute frag
+    if (depthCount > 0)
     {
         vec4 blurredColor = texture(blurredTexture, texCoordsOut);
         if (focalType == 0)
