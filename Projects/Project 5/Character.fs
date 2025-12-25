@@ -306,9 +306,12 @@ type [<AbstractClass>] CharacterDispatcher () =
                 let localStepTime = world.GameTime - lastStepTime + offsetTime
                 if localStepTime >= strideTime then
                     let distanceFromPlayer =
-                        let playerPosition = Simulants.GameplayPlayer.GetPosition world
-                        let entityPosition = entity.GetPosition world
-                        playerPosition.Distance entityPosition * Constants.Gameplay.StepSoundDistanceScalar
+                        let player = Simulants.GameplayPlayer
+                        if player.GetExists world then
+                            let playerPosition = player.GetPosition world
+                            let entityPosition = entity.GetPosition world
+                            playerPosition.Distance entityPosition * Constants.Gameplay.StepSoundDistanceScalar
+                        else 0.0f
                     let volume =
                         if entity = Simulants.GameplayPlayer then
                             let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
