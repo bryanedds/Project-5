@@ -379,9 +379,9 @@ type GameplayDispatcher () =
             | (_, Some _) ->
                 match World.getSongOpt world with
                 | Some songDescriptor when songDescriptor.Song <> Assets.Gameplay.StalkedSong ->
-                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.StalkedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.15f Assets.Gameplay.StalkedSong world
                 | None ->
-                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.StalkedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.15f Assets.Gameplay.StalkedSong world
                 | Some _ -> ()
             | (Some _, _) ->
                 let playHuntedSong =
@@ -389,7 +389,7 @@ type GameplayDispatcher () =
                     | Some songDescriptor -> songDescriptor.Song <> Assets.Gameplay.HuntedSong || World.getSongFadingOut world
                     | None -> true
                 if playHuntedSong then
-                    World.playSong 0.0 0.0 0.0 None 0.3f Assets.Gameplay.HuntedSong world
+                    World.playSong 0.0 0.0 0.0 None 0.2f Assets.Gameplay.HuntedSong world
             | (None, None) ->
                 match World.getSongOpt world with
                 | Some songDescriptor ->

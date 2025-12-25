@@ -17,6 +17,7 @@ module Constants =
         let [<Literal>] EnemySightDistance = 7.5f
         let [<Uniform>] AttackProximity = 0.5f
         let [<Uniform>] HuntWayPointProximity = 0.5f
+        let [<Uniform>] StepSoundDistanceScalar = 0.05f
         let [<Uniform>] AwareOfTargetTraversingDuration = GameTime.ofSeconds 16.0
         let [<Uniform>] AwareOfTargetHidingDuration = GameTime.ofSeconds 32.0
         let [<Uniform>] StalkDelay = GameTime.ofSeconds 180.0
