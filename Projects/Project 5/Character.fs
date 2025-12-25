@@ -306,8 +306,8 @@ type [<AbstractClass>] CharacterDispatcher () =
                 let localStepTime = world.GameTime - lastStepTime + offsetTime
                 if localStepTime >= strideTime then
                     let distanceFromPlayer =
-                        let player = Simulants.GameplayPlayer
-                        if player.GetExists world then
+                        if Simulants.GameplayPlayer.GetExists world then
+                            let player = Simulants.GameplayPlayer
                             let playerPosition = player.GetPosition world
                             let entityPosition = entity.GetPosition world
                             playerPosition.Distance entityPosition * Constants.Gameplay.StepSoundDistanceScalar
