@@ -138,8 +138,7 @@ type HunterDispatcher () =
             match enemyTargetingEir with
             | Right (targetPosition, targetBodyIds, targetActionState) ->
                 let uncoveredPlayer = processHunterState targetPosition targetBodyIds targetActionState entity world
-                if uncoveredPlayer && player.GetExists world then
-                    player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
+                if uncoveredPlayer then player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
             | Left () -> ()
 
     override this.DeclareCharacterView (entity, world) =
