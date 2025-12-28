@@ -34,13 +34,11 @@ type InvestigationSpotDispatcher () =
         let phase = entity.GetInvestigationPhase world
         let viewDistance = entity.GetViewDistance world
         let distanceScalar =
-            if Simulants.GameplayPlayer.GetExists world then
-                let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
-                let playerDistance = playerPosition.Distance (entity.GetPosition world)
-                if playerDistance < dec viewDistance then 1.0f
-                elif playerDistance > viewDistance then 0.0f
-                else (viewDistance - playerDistance) / viewDistance
-            else 0.0f
+            let playerPosition = Simulants.GameplayPlayer.GetPosition world + v3Up * 1.25f
+            let playerDistance = playerPosition.Distance (entity.GetPosition world)
+            if playerDistance < dec viewDistance then 1.0f
+            elif playerDistance > viewDistance then 0.0f
+            else (viewDistance - playerDistance) / viewDistance
         let visibility = single (inc world.GameTime.Seconds % 2.0 * double distanceScalar / 2.0)
         let albedoImage =
             match phase with

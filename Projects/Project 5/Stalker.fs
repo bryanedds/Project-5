@@ -34,7 +34,7 @@ type StalkerDispatcher () =
          define Entity.StalkerState StalkerState.initial]
 
     override this.ProcessCharacterState (entity, world) =
-        if world.Advancing && Simulants.GameplayPlayer.GetExists world then
+        if world.Advancing then
             let player = Simulants.GameplayPlayer
             let enemyTargetingEir =
                 let processEnemies =
