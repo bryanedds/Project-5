@@ -166,6 +166,11 @@ type [<AbstractClass>] CharacterDispatcher () =
 
     override this.Process (entity, world) =
 
+        // unmount when advancing to enable physics
+        if world.Advancing
+        then entity.SetMountOptWithAdjustment false None world
+        else entity.SetMountOptWithAdjustment false (Some Address.parent) world
+
         // process body events
         let bodyEvents = World.doSubscriptionToBodyEvents "BodyEvents" entity world
         for bodyEvent in bodyEvents do
@@ -199,11 +204,6 @@ type [<AbstractClass>] CharacterDispatcher () =
                     entity.HidingSpotCollisions.Map (Set.remove separatee) world
                 | _ -> ()
             | BodyTransformData _ -> ()
-
-        // unmount when advancing to enable physics
-        if world.Advancing
-        then entity.SetMountOptWithAdjustment false None world
-        else entity.SetMountOptWithAdjustment false (Some Address.parent) world
 
         // process expanded hide sensor on state
         let characterType = entity.GetCharacterType world
