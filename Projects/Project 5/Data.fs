@@ -216,9 +216,6 @@ and CharacterType =
     member this.IsEnemy =
         not this.IsPlayer
 
-    member this.Persistent =
-        not this.IsPlayer
-
     member this.HitPointsMax =
         match this with
         | Hunter -> 1

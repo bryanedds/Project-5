@@ -56,8 +56,7 @@ type PlayerDispatcher () =
 
     static member Properties =
         let characterType = Player
-        [define Entity.Persistent characterType.Persistent
-         define Entity.BodyShape characterType.BodyShape
+        [define Entity.BodyShape characterType.BodyShape
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterType characterType

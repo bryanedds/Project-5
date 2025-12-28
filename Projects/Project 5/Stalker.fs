@@ -27,8 +27,7 @@ type StalkerDispatcher () =
 
     static member Properties =
         let characterType = Stalker
-        [define Entity.Persistent characterType.Persistent
-         define Entity.BodyShape characterType.BodyShape
+        [define Entity.BodyShape characterType.BodyShape
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterType characterType
