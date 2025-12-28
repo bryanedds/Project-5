@@ -218,7 +218,7 @@ type GameplayDispatcher () =
             if initializing then World.defer (World.synchronizeNav3d false (Some (sceneFilePath + ".nav")) screen) screen world
 
             // declare player
-            World.doEntity<PlayerDispatcher> "Player"
+            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name
                 [Entity.Position |= v3 5.5f -1.35f -2.5f
                  Entity.Degrees |= v3 0.0f 90.0f 0.0f
                  Entity.Size .= v3 1.5f 2.0f 1.5f
@@ -354,7 +354,8 @@ type GameplayDispatcher () =
 
             // collect characters
             let characters =
-                World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene world
+                world
+                |> World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene
                 |> USet.filter (fun entity -> entity.Surnames.[0] <> "Palettes")
 
             // process hunted time
