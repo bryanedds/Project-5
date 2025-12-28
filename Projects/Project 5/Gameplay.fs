@@ -222,8 +222,7 @@ type GameplayDispatcher () =
                 [Entity.Position |= v3 5.5f -1.35f -2.5f
                  Entity.Degrees |= v3 0.0f 90.0f 0.0f
                  Entity.Size .= v3 1.5f 2.0f 1.5f
-                 Entity.Offset .= v3 0.0f 1.0f 0.0f
-                 Entity.AnimatedModel .= Assets.Gameplay.SophieModel] world
+                 Entity.Offset .= v3 0.0f 1.0f 0.0f] world
             let player = world.DeclaredEntity
 
             // process player interaction spots
