@@ -619,7 +619,9 @@ module AssimpExtensions =
                 mesh.Faces.Clear ()
                 mesh.Faces.Capacity <- 0
 
-        member this.ClearUnusedAnimationAttachmentData () =
+        member this.ClearUnusedMeshData () =
+
+            // TODO: P1: see if we can prevent this discarded data from being generated in the first place.
             for i in 0 .. dec this.Meshes.Count do
                 let mesh = this.Meshes.[i]
                 let m_colorsField = (getType mesh).GetField ("m_colors", BindingFlags.Instance ||| BindingFlags.NonPublic)
@@ -631,10 +633,6 @@ module AssimpExtensions =
                     m_texCoordsField.SetValue (attachment, Array.empty<Assimp.Vector3D List>)
                     let m_normalsField = (getType attachment).GetField ("m_normals", BindingFlags.Instance ||| BindingFlags.NonPublic)
                     m_normalsField.SetValue (attachment, List<Assimp.Vector3D> ())
-                    let m_tangentsField = (getType attachment).GetField ("m_tangents", BindingFlags.Instance ||| BindingFlags.NonPublic)
-                    m_tangentsField.SetValue (attachment, List<Assimp.Vector3D> ())
-                    let m_bitangentsField = (getType attachment).GetField ("m_bitangents", BindingFlags.Instance ||| BindingFlags.NonPublic)
-                    m_bitangentsField.SetValue (attachment, List<Assimp.Vector3D> ())
                     let m_colorsField = (getType attachment).GetField ("m_colors", BindingFlags.Instance ||| BindingFlags.NonPublic)
                     m_colorsField.SetValue (attachment, Array.empty<Assimp.Color4D List>)
 
@@ -785,7 +783,7 @@ module AssimpContext =
     let private LoadScene (filePath : string) =
         let scene = AssimpContext.Value.ImportFile (filePath, Constants.Assimp.PostProcessSteps)
         scene.IndexDatasToMetadata () // avoid polluting memory with face data
-        scene.ClearUnusedAnimationAttachmentData () // avoid polluting memory with unused animation data
+        scene.ClearUnusedMeshData () // avoid polluting memory with unused mesh data
         scene
 
     /// Attempt to load an assimp scene from the given file path, using an existing one if already loaded.
