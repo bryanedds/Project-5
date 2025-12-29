@@ -35,7 +35,6 @@ module Assets =
         let InvestigationProcedingIconAlbedoImage = asset<Image> PackageName "InvestigationProcedingIconAlbedo"
         let InvestigationConcludedIconAlbedoImage = asset<Image> PackageName "InvestigationConcludedIconAlbedo"
         let AvaModel = asset<AnimatedModel> PackageName "Ava"
-        let SophieModel = asset<AnimatedModel> PackageName "Sophie"
         let CruciformModel = asset<AnimatedModel> PackageName "Cruciform"
         let RhyoliteModel = asset<AnimatedModel> PackageName "Rhyolite"
         let GreatSwordModel = asset<StaticModel> PackageName "GreatSword"
