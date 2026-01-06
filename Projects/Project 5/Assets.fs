@@ -21,7 +21,6 @@ module Assets =
 
         let PackageName = "Gameplay"
         let SlashSound = asset<Sound> PackageName "Slash"
-        let Slash2Sound = asset<Sound> PackageName "Slash2"
         let InjureSound = asset<Sound> PackageName "Injure"
         let StepSound = asset<Sound> PackageName "Step"
         let StealthSong = asset<Song> PackageName "Stealth"
