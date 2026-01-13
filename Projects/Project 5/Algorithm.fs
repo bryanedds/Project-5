@@ -13,7 +13,7 @@ module Algorithm =
         let sightRotation = rotation
         seq {
             for i in 0 .. dec 15 do
-                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> Math.DegreesToRadians)
+                let angle = Quaternion.CreateFromAxisAngle (v3Up, single i * 5.0f - 35.0f |> degToRadF)
                 let scanRotation = sightRotation * angle
                 Ray3 (sightPosition, scanRotation.Forward * sightDistance) }
 
