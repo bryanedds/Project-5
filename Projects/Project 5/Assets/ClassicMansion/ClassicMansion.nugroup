@@ -62,7 +62,7 @@
         [LightShadowBias 0.02]
         [LightShadowSampleScalar 0.02]
         [LightShadowExponent 80]
-        [LightShadowDensity 8]
+        [LightShadowDensity 12]
         [LightMapSingletonBlendMargin 0.1]
         [LightExposure 1.5]
         [ToneMapType AgXToneMap]
