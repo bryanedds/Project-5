@@ -1,8 +1,8 @@
 [GroupDispatcher
- [[Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
+ [[Editing True]
+  [Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
   [Name Scene]
-  [Persistent True]
-  [Visible True]]
+  [Persistent True]]
  [[Entity3dDispatcher
    [[MountOpt [Some ^]]
     [Name Environment]
@@ -17,8 +17,6 @@
       [LightType DirectionalLight]
       [MountOpt [Some ^]]
       [Name Sun]
-      [Position [5.5103946 -1.3554317 -2.4998515]]
-      [PositionLocal [5.5103946 -1.3554317 -2.4998515]]
       [Presence Omnipresent]
       [Rotation [-0.115967855 0.8611823 -0.47583908 0.13599138]]
       [RotationLocal [-0.115967855 0.8611823 -0.47583908 0.13599138]]
