@@ -8,9 +8,9 @@
     [Name Environment]
     [Pickable False]]
    [[Light3dDispatcher
-     [[AttenuationLinear 0.0625]
-      [AttenuationQuadratic 0.001953125]
-      [Brightness 0.5]
+     [[AttenuationLinear 0.078125]
+      [AttenuationQuadratic 0.0024414062]
+      [Brightness 0.4]
       [DesireFog True]
       [DesireShadows True]
       [LightCutoff 32]
