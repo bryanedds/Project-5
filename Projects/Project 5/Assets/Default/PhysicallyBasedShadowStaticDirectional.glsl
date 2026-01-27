@@ -19,10 +19,13 @@ void main()
 
 uniform float lightShadowExponent;
 
-layout(location = 0) out vec2 depths;
+layout(location = 0) out vec4 moments;
 
 void main()
 {
-	depths.x = gl_FragCoord.z; // linear, screen space depth
-	depths.y = exp(lightShadowExponent * depths.x);
+    float z = gl_FragCoord.z;
+	float z2 = z * z;
+	float z3 = z2 * z;
+	float z4 = z3 * z;
+    moments = vec4(z, z2, z3, z4);
 }
