@@ -473,7 +473,7 @@ type GameplayDispatcher () =
         match op with
         | ViewportOverlay _ ->
 
-            // show spawn points
+            // show points of interest
             let entitiesInView = World.getEntities3dInView (HashSet ()) world
             for entity in entitiesInView do
                 match entity.GetDispatcher world with
