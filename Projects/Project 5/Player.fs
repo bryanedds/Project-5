@@ -95,7 +95,7 @@ type PlayerDispatcher () =
         // declare flash light
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
-        let state = entity.GetPlayerState world
+        let playerState = entity.GetPlayerState world
         World.doLight3d Constants.Gameplay.CharacterLightName
             [Entity.Position @= positionInterpolated + v3Up * 1.2f + rotationInterpolated.Forward * 0.25f
              Entity.Rotation @= rotationInterpolated * Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
@@ -105,7 +105,7 @@ type PlayerDispatcher () =
              Entity.LightCutoff .= 9.0f
              Entity.Brightness .= 0.75f
              Entity.DesireShadows .= true
-             Entity.VisibleLocal @= state.FlashLightEnabled] world
+             Entity.VisibleLocal @= playerState.FlashLightEnabled] world
 
         // declare player hearts
         let hitPoints = entity.GetHitPoints world

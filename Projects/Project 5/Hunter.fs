@@ -16,34 +16,34 @@ type HunterDispatcher () =
     inherit CharacterDispatcher ()
 
     static let processHunterWayPointNavigation (entity : Entity) world =
-        let state = entity.GetHunterState world
-        if Array.notEmpty state.HunterWayPoints then
-            match state.HunterWayPointIndexOpt with
-            | Some wayPointIndex when wayPointIndex < state.HunterWayPoints.Length ->
-                let wayPoint = state.HunterWayPoints.[wayPointIndex]
+        let hunterState = entity.GetHunterState world
+        if Array.notEmpty hunterState.HunterWayPoints then
+            match hunterState.HunterWayPointIndexOpt with
+            | Some wayPointIndex when wayPointIndex < hunterState.HunterWayPoints.Length ->
+                let wayPoint = hunterState.HunterWayPoints.[wayPointIndex]
                 match tryResolve wayPoint.WayPoint entity with
                 | Some wayPointEntity ->
                     let wayPointPosition = wayPointEntity.GetPosition world
                     let wayPointDistance = wayPointPosition.Distance (entity.GetPosition world)
                     if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
-                        match state.HunterWayPointTimeOpt with
+                        match hunterState.HunterWayPointTimeOpt with
                         | Some wayPointTime ->
                             let waitTime = world.GameTime - wayPointTime
                             if waitTime >= wayPoint.WayPointWaitTime then
                                 let (wayPointIndexOpt, wayPointBouncing) =
-                                    match state.HunterWayPointPlayback with
+                                    match hunterState.HunterWayPointPlayback with
                                     | Once ->
                                         let wayPointIndex = inc wayPointIndex
-                                        if wayPointIndex < state.HunterWayPoints.Length
+                                        if wayPointIndex < hunterState.HunterWayPoints.Length
                                         then (Some wayPointIndex, false)
                                         else (None, false)
                                     | Loop ->
-                                        let wayPointIndex = inc wayPointIndex % state.HunterWayPoints.Length
+                                        let wayPointIndex = inc wayPointIndex % hunterState.HunterWayPoints.Length
                                         (Some wayPointIndex, false)
                                     | Bounce ->
-                                        if not state.HunterWayPointBouncing then
+                                        if not hunterState.HunterWayPointBouncing then
                                             let wayPointIndex = inc wayPointIndex
-                                            if wayPointIndex = state.HunterWayPoints.Length
+                                            if wayPointIndex = hunterState.HunterWayPoints.Length
                                             then (Some (dec wayPointIndex), true)
                                             else (Some wayPointIndex, false)
                                         else
@@ -52,7 +52,7 @@ type HunterDispatcher () =
                                             then (Some (inc wayPointIndex), false)
                                             else (Some wayPointIndex, true)
                                 let state =
-                                    { state with
+                                    { hunterState with
                                         HunterWayPointBouncing = wayPointBouncing
                                         HunterWayPointIndexOpt = wayPointIndexOpt
                                         HunterWayPointTimeOpt = None }
@@ -61,7 +61,7 @@ type HunterDispatcher () =
                                 entity.LinearVelocity.Map ((*) 0.5f) world
                                 entity.AngularVelocity.Map ((*) 0.5f) world
                         | None ->
-                            let state = { state with HunterWayPointTimeOpt = Some world.GameTime }
+                            let state = { hunterState with HunterWayPointTimeOpt = Some world.GameTime }
                             entity.SetHunterState state world
                     else CharacterDispatcher.processEnemyNavigation wayPointPosition entity world
                 | None -> ()
@@ -76,38 +76,38 @@ type HunterDispatcher () =
         let rotation = entity.GetRotation world
         let bodyId = entity.GetBodyId world
         if Algorithm.getTargetInSight Constants.Gameplay.EnemySightDistance position rotation bodyId targetBodyIds world then
-            let state = entity.GetHunterState world
-            let state =
+            let hunterState = entity.GetHunterState world
+            let hunterState =
                 match targetActionState with
                 | HideState hide ->
                     match hide.HidePhase with
-                    | HideEntering -> { state with HunterAwareness = AwareOfTargetHiding world.GameTime }
-                    | HideWaiting -> state
-                    | HideEmerging -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-                    | HideUncovered -> state
-                | _ -> { state with HunterAwareness = AwareOfTargetTraversing world.GameTime }
-            entity.SetHunterState state world
+                    | HideEntering -> { hunterState with HunterAwareness = AwareOfTargetHiding world.GameTime }
+                    | HideWaiting -> hunterState
+                    | HideEmerging -> { hunterState with HunterAwareness = AwareOfTargetTraversing world.GameTime }
+                    | HideUncovered -> hunterState
+                | _ -> { hunterState with HunterAwareness = AwareOfTargetTraversing world.GameTime }
+            entity.SetHunterState hunterState world
 
         // process hunter state
         let uncoveredPlayer =
-            let state = entity.GetHunterState world
-            match state.HunterAwareness with
+            let hunterState = entity.GetHunterState world
+            match hunterState.HunterAwareness with
             | UnawareOfTarget ->
                 processHunterWayPointNavigation entity world
                 false
             | AwareOfTargetTraversing startTime ->
                 if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0 then
-                    entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
+                    entity.SetHunterState { hunterState with HunterAwareness = UnawareOfTarget } world
                     false
                 else
                     CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
                     false
             | AwareOfTargetHiding startTime ->
                 if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0 then
-                    entity.SetHunterState { state with HunterAwareness = UnawareOfTarget } world
+                    entity.SetHunterState { hunterState with HunterAwareness = UnawareOfTarget } world
                     false
                 elif CharacterDispatcher.processEnemyUncovering targetPosition entity world then
-                    entity.SetHunterState { state with HunterAwareness = AwareOfTargetTraversing world.GameTime } world
+                    entity.SetHunterState { hunterState with HunterAwareness = AwareOfTargetTraversing world.GameTime } world
                     true
                 else false
 
