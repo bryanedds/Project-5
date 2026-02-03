@@ -308,13 +308,14 @@ type [<AbstractClass>] CharacterDispatcher () =
                     let distanceFromPlayer =
                         let playerPosition = Simulants.GameplayPlayer.GetPosition world
                         let entityPosition = entity.GetPosition world
-                        playerPosition.Distance entityPosition * Constants.Gameplay.StepSoundDistanceScalar
+                        let deltaWithYScaled = (playerPosition - entityPosition).MapY ((*) Constants.Gameplay.StepSoundYScalar)
+                        deltaWithYScaled.Length ()
                     let volume =
                         if entity = Simulants.GameplayPlayer then
                             let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
                             if notJustTurning then 0.15f else 0.0f
                         else 0.3f
-                    World.playSound distanceFromPlayer 0.0f volume Assets.Gameplay.StepSound world
+                    World.playSound (distanceFromPlayer * Constants.Gameplay.StepSoundDistanceScalar) 0.0f volume Assets.Gameplay.StepSound world
                     entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime

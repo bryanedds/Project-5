@@ -26,18 +26,21 @@ type PlayerDispatcher () =
             | _ -> ()
 
         // movement
+        let playerState = entity.GetPlayerState world
         match entity.GetActionState world with
         | NormalState ->
-            let rotation = entity.GetRotation world
-            let forward = rotation.Forward
-            let right = rotation.Right
-            let walkDirection =
-                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
-                (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
-            let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * Player.WalkSpeed else v3Zero
-            entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+            if not playerState.FlashLightEnabled then
+                let rotation = entity.GetRotation world
+                let forward = rotation.Forward
+                let right = rotation.Right
+                let walkDirection =
+                    (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
+                    (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
+                let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * Player.WalkSpeed else v3Zero
+                entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+            else entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
         // rotation
