@@ -308,7 +308,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                     let distanceFromPlayer =
                         let playerPosition = Simulants.GameplayPlayer.GetPosition world
                         let entityPosition = entity.GetPosition world
-                        let deltaWithYScaled = (playerPosition - entityPosition).MapY ((*) Constants.Gameplay.StepSoundYScalar)
+                        let deltaWithYScaled = (playerPosition - entityPosition).MapY ((*) Constants.Gameplay.StepSoundDistanceYScalar)
                         deltaWithYScaled.Length ()
                     let volume =
                         if entity = Simulants.GameplayPlayer then
