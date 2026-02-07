@@ -106,7 +106,7 @@ type PlayerDispatcher () =
              Entity.Static .= false
              Entity.LightType .= SpotLight (0.8f, 1.2f)
              Entity.LightCutoff .= 9.0f
-             Entity.Brightness .= 0.75f
+             Entity.Brightness .= 0.65f
              Entity.DesireShadows .= true
              Entity.VisibleLocal @= playerState.FlashLightEnabled] world
 
