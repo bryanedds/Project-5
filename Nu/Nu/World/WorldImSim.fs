@@ -1,5 +1,8 @@
 ﻿// Nu Game Engine.
+// Required Notice:
 // Copyright (C) Bryan Edds.
+// Nu Game Engine is licensed under the Nu Game Engine Noncommercial License.
+// See https://github.com/bryanedds/Nu/blob/master/License.md.
 
 namespace Nu
 open System
@@ -830,3 +833,9 @@ module WorldImSim =
         /// See <see cref="RigidModelHierarchyDispatcher" />.
         /// </summary>
         static member doRigidModelHierarchy name args world = World.doEntity<RigidModelHierarchyDispatcher> name args world
+
+        /// <summary>
+        /// ImSim declare a block map with the given arguments.
+        /// See <see cref="BlockMapDispatcher" />.
+        /// </summary>
+        static member doBlockMap name args world = World.doEntity<BlockMapDispatcher> name args world

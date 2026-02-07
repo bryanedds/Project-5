@@ -1,5 +1,8 @@
 ﻿// Nu Game Engine.
+// Required Notice:
 // Copyright (C) Bryan Edds.
+// Nu Game Engine is licensed under the Nu Game Engine Noncommercial License.
+// See https://github.com/bryanedds/Nu/blob/master/License.md.
 
 namespace Nu
 open System
@@ -309,7 +312,7 @@ and DragDropPayload =
 and EditContext =
     { Snapshot : SnapshotType -> World -> unit
       FocusProperty : unit -> unit
-      UnfocusProperty : unit -> unit
+      UnfocusProperty : unit -> unit // TODO: see if this is ever useful.
       SearchAssetViewer : unit -> unit
       DragDropPayloadOpt : DragDropPayload option
       SnapDrag : single
@@ -404,7 +407,9 @@ and SnapshotType =
     | FreezeEntities
     | ThawEntities
     | Permafreeze
-    | ReregisterPhysics
+    | ClearBlocks
+    | GenerateFromBlockMap
+    | PaintBlocks
     | SynchronizeNav
     | SetEditMode of int
     | ReloadCode
@@ -444,10 +449,12 @@ and SnapshotType =
         | RencenterInProbeBounds -> (scstringMemo this).Spaced
         | ResetProbeBounds -> (scstringMemo this).Spaced
         | VolumeEdit volumeEditType -> "Volume Edit " + volumeEditType
+        | ClearBlocks -> (scstringMemo this).Spaced
+        | GenerateFromBlockMap -> (scstringMemo this).Spaced
+        | PaintBlocks -> (scstringMemo this).Spaced
         | FreezeEntities -> (scstringMemo this).Spaced
         | ThawEntities -> (scstringMemo this).Spaced
         | Permafreeze -> (scstringMemo this).Spaced
-        | ReregisterPhysics -> (scstringMemo this).Spaced
         | SynchronizeNav -> (scstringMemo this).Spaced
         | SetEditMode i -> (scstringMemo this).Spaced + " (" + string (inc i) + " of 2)"
         | ReloadCode -> (scstringMemo this).Spaced
@@ -1926,6 +1933,7 @@ and [<ReferenceEquality>] internal WorldExtension =
       WindowViewport : Viewport
       DestructionListRev : Simulant list
       LateBindingsInstances : LateBindingsInstances
+      TryMakeEditContext : unit -> EditContext option
       Plugin : NuPlugin
       PropagationTargets : UMap<Entity, Entity USet>
       EditDeferrals : UMap<EditDeferralId, UList<EditDeferral>> }
@@ -2099,7 +2107,7 @@ and [<NoEquality; NoComparison>] World =
 
     /// Get the current edit context, if any.
     member this.EditContextOpt =
-        this.WorldExtension.Plugin.EditContextOpt
+        this.WorldExtension.TryMakeEditContext ()
 
     /// Get the current ImSim context.
     [<DebuggerBrowsable (DebuggerBrowsableState.Never)>]
@@ -2260,14 +2268,26 @@ and [<AbstractClass>] NuPlugin () =
     abstract EditModes : Map<string, World -> unit>
     default this.EditModes = Map.empty
 
-    /// Attempt to retrieve an edit context for the plugin.
-    abstract EditContextOpt : EditContext option
-    default this.EditContextOpt = None
-
     /// The packages that should be loaded at start-up in all contexts, including in audio player, renderers, and
     /// metadata. The Default package is always included.
     abstract InitialPackages : string list
     default this.InitialPackages = []
+
+    /// The makeable particle emitters.
+    abstract MakeEmitters : Map<string, Particles.MakeEmitter>
+    default this.MakeEmitters = Particles.MakeEmitters.Default
+
+    /// Attempt to make a block granulator function of the given name.
+    abstract GranulatorFns : Map<string, Vector3i * BlockMap.GranulatorFn>
+    default this.GranulatorFns = Map.empty
+
+    /// Attempt to make a block combiner function of the given name.
+    abstract CombinerFns : Map<string, Vector3i * BlockMap.CombinerFn>
+    default this.CombinerFns = Map.empty
+
+    /// Attempt to make a block process function of the given name.
+    abstract ProcessFns : Map<string, Vector3i * BlockMap.ProcessFn<Entity, World>>
+    default this.ProcessFns = Map.empty
 
     /// Clean-up any user-defined resources of the plugin, such with shutting down a Steamworks API.
     abstract CleanUp : unit -> unit
@@ -2280,14 +2300,6 @@ and [<AbstractClass>] NuPlugin () =
     /// Make a list of keyed values to hook into the engine.
     abstract MakeKeyedValues : world : World -> ((string * obj) list)
     default this.MakeKeyedValues _ = []
-
-    /// Attempt to make an emitter of the given name.
-    abstract TryMakeEmitter : time : GameTime -> lifeTimeOpt : GameTime -> particleLifeTimeOpt : GameTime -> particleRate : single -> particleMax : int -> emitterName : string -> Particles.Emitter option
-    default this.TryMakeEmitter time lifeTimeOpt particleLifeTimeOpt particleRate particleMax emitterName =
-        match emitterName with
-        | "BasicStaticSpriteEmitter" -> Particles.BasicStaticSpriteEmitter.makeDefault time lifeTimeOpt particleLifeTimeOpt particleRate particleMax :> Particles.Emitter |> Some
-        | "BasicStaticBillboardEmitter" -> Particles.BasicStaticBillboardEmitter.makeDefault time lifeTimeOpt particleLifeTimeOpt particleRate particleMax :> Particles.Emitter |> Some
-        | _ -> None
 
     /// Make the 2D physics engine for the engine to use.
     abstract MakePhysicsEngine2d : unit -> PhysicsEngine

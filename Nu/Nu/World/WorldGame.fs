@@ -1,5 +1,8 @@
 ﻿// Nu Game Engine.
+// Required Notice:
 // Copyright (C) Bryan Edds.
+// Nu Game Engine is licensed under the Nu Game Engine Noncommercial License.
+// See https://github.com/bryanedds/Nu/blob/master/License.md.
 
 namespace Nu
 open System
@@ -57,7 +60,7 @@ module WorldGameModule =
         member this.KeyedValueChangeEvent key = Events.KeyedValueChangeEvent key --> Game.Handle
         member this.MouseMoveEvent = Events.MouseMoveEvent --> Game.Handle
         member this.MouseDragEvent = Events.MouseDragEvent --> Game.Handle
-        member this.MouseWheelEvent = Events.MouseWheelEvent --> Game.Handle
+        member this.MouseScrollEvent = Events.MouseScrollEvent --> Game.Handle
         member this.MouseButtonChangeEvent mouseButton = Events.MouseButtonChangeEvent mouseButton --> Game.Handle
         member this.MouseButtonDownEvent mouseButton = Events.MouseButtonDownEvent mouseButton --> Game.Handle
         member this.MouseButtonUpEvent mouseButton = Events.MouseButtonUpEvent mouseButton --> Game.Handle

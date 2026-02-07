@@ -1,5 +1,8 @@
 ﻿// Nu Game Engine.
+// Required Notice:
 // Copyright (C) Bryan Edds.
+// Nu Game Engine is licensed under the Nu Game Engine Noncommercial License.
+// See https://github.com/bryanedds/Nu/blob/master/License.md.
 
 namespace Nu.Constants
 open System
@@ -244,7 +247,7 @@ module Render =
     let [<Literal>] LightShadowBiasDefault = 0.02f
     let [<Literal>] LightShadowSampleScalarDefault = 0.02f
     let [<Literal>] LightShadowExponentDefault = 40.0f
-    let [<Literal>] LightShadowDensityDefault = 8.0f
+    let [<Literal>] LightShadowDensityDefault = 12.0f
     let [<Literal>] LightMapSingletonBlendMarginDefault = 0.1f // meters
     let [<Literal>] LightExposureDefault = 1.0f
     let [<Uniform>] ToneMapTypeDefault = AgXToneMap
