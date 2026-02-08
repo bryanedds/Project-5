@@ -218,7 +218,7 @@ type GameplayDispatcher () =
             if initializing then World.defer (World.synchronizeNav3d false (Some (sceneFilePath + ".nav")) screen) screen world
 
             // protect player
-            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name [Entity.Protected .= true] world
+            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name [Entity.Protection .= ManualProtection] world
             let player = world.DeclaredEntity
 
             // process player interaction spots
