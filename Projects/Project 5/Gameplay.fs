@@ -217,8 +217,11 @@ type GameplayDispatcher () =
             World.beginGroupFromFile "Scene" (sceneFilePath + ".nugroup") [] world
             if initializing then World.defer (World.synchronizeNav3d false (Some (sceneFilePath + ".nav")) screen) screen world
 
+            // protect player
+            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name [Entity.Protected .= true] world
+            let player = world.DeclaredEntity
+
             // process player interaction spots
-            let player = Simulants.GameplayPlayer
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let insertionSpotCollisionOpt = player.GetInsertionSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
             let doorSpotCollisionOpt = player.GetDoorSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
