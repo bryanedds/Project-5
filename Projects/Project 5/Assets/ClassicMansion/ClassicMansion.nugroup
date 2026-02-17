@@ -24787,6 +24787,22 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 1029 Concave None None]]]
+          [Material
+           [[AlbedoImageOpt None]
+            [RoughnessImageOpt None]
+            [MetallicImageOpt None]
+            [AmbientOcclusionImageOpt None]
+            [EmissionImageOpt None]
+            [NormalImageOpt None]
+            [HeightImageOpt None]
+            [SubdermalImageOpt None]
+            [FinenessImageOpt None]
+            [ScatterImageOpt None]
+            [ClearCoatImageOpt None]
+            [ClearCoatRoughnessImageOpt None]
+            [ClearCoatNormalImageOpt None]
+            [TwoSidedOpt None]
+            [ClippedOpt [Some True]]]]
           [MaterialProperties
            [[AlbedoOpt
              [Some [1 1 1 1]]]
