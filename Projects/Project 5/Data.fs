@@ -260,5 +260,5 @@ and CharacterType =
 
     member this.CharacterProperties =
         match this with
-        | Hunter | Stalker -> CharacterProperties.defaultProperties
-        | Player -> { CharacterProperties.defaultProperties with StairStepUp = v3 0.0f 0.125f 0.0f; StairStepDownStickToFloor = v3 0.0f -0.125f 0.0f }
+        | Hunter | Stalker -> StairSteppingCharacterProperties StairSteppingCharacterProperties.defaultProperties
+        | Player -> StairSteppingCharacterProperties { StairSteppingCharacterProperties.defaultProperties with StairStepUp = v3 0.0f 0.125f 0.0f; StairStepDownStickToFloor = v3 0.0f -0.125f 0.0f }
