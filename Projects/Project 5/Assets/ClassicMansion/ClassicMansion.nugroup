@@ -84,7 +84,7 @@
         [FogColor [0.0019703899 0.002246301 0.0049019456 0]]
         [SssEnabled True]
         [SsaoEnabled True]
-        [SsaoIntensity 2]
+        [SsaoIntensity 1.75]
         [SsaoBias 0.025]
         [SsaoRadius 0.25]
         [SsaoDistanceMax 0.125]
