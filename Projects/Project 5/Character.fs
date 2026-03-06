@@ -315,7 +315,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                             let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
                             if notJustTurning then 0.15f else 0.0f
                         else 0.25f
-                    World.playSound (distanceFromPlayer * Constants.Gameplay.StepSoundDistanceScalar) 0.0f volume Assets.Gameplay.StepSound world
+                    World.playSound distanceFromPlayer 0.0f volume Assets.Gameplay.StepSound world
                     entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
