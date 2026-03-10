@@ -293936,7 +293936,7 @@
       [Static True]]
      []]
     [LightProbe3dDispatcher
-     [[AmbientBrightness 0.1]
+     [[AmbientBrightness 0.05]
       [MountOpt [Some ^]]
       [Name LightProbe3d-0006]
       [OverflowAbsolute False]
@@ -293981,7 +293981,7 @@
       [Static True]]
      []]
     [LightProbe3dDispatcher
-     [[AmbientBrightness 0.1]
+     [[AmbientBrightness 0.05]
       [MountOpt [Some ^]]
       [Name LightProbe3d-0007]
       [OverflowAbsolute False]
@@ -294011,7 +294011,7 @@
       [Static True]]
      []]
     [LightProbe3dDispatcher
-     [[AmbientBrightness 0.1]
+     [[AmbientBrightness 0.05]
       [MountOpt [Some ^]]
       [Name LightProbe3d-0002]
       [OverflowAbsolute False]
@@ -294024,7 +294024,7 @@
       [Static True]]
      []]
     [LightProbe3dDispatcher
-     [[AmbientBrightness 0.1]
+     [[AmbientBrightness 0.05]
       [MountOpt [Some ^]]
       [Name LightProbe3d-0003]
       [OverflowAbsolute False]
@@ -294109,20 +294109,6 @@
       [Presence Omnipresent]
       [ProbeBounds
        [[-28.51 -0.1 -16.51] [8.360001 3.5499995 6.04]]]
-      [PropagatedDescriptorOpt
-       [Some
-        [LightProbe3dDispatcher
-         [[AmbientBrightness 0.05]
-          [MountOpt [Some ^]]
-          [Name LightProbe3d-0005]
-          [Position [-24.65 1.3082371 -12.8]]
-          [PositionLocal [-24.65 1.3082371 -12.8]]
-          [Presence Omnipresent]
-          [ProbeBounds
-           [[-28.51 -0.1 -16.51] [8.360001 3.5499995 6.04]]]
-          [Size [0.25 0.25 0.25]]
-          [Static True]]
-         []]]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
@@ -294222,7 +294208,6 @@
       [Presence Omnipresent]
       [ProbeBounds
        [[-28.51 -3.56 -16.51] [6.01 7.01 2.0100002]]]
-      [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/LightProbe3d-0005]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
