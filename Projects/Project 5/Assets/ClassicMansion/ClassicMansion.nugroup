@@ -29,8 +29,6 @@
      [[AttenuationLinear 1.6666666]
       [AttenuationQuadratic 0.06944444]
       [Brightness 0.025]
-      [Enabled False]
-      [EnabledLocal False]
       [LightCutoff 24]
       [LightType [DirectionalLight 0]]
       [MountOpt [Some ^]]
@@ -41,8 +39,7 @@
       [Static True]]
      []]
     [SkyBoxDispatcher
-     [[Absolute True]
-      [AmbientBrightness 0.025]
+     [[AmbientBrightness 0.025]
       [Brightness 0.05]
       [CubeMap [ClassicMansion SkyBoxMap]]
       [MountOpt [Some ^]]
