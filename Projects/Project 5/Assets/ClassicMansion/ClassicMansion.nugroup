@@ -72038,6 +72038,22 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 2601 Convex None None]]]
+          [Material
+           [[AlbedoImageOpt None]
+            [RoughnessImageOpt None]
+            [MetallicImageOpt None]
+            [AmbientOcclusionImageOpt None]
+            [EmissionImageOpt None]
+            [NormalImageOpt None]
+            [HeightImageOpt None]
+            [SubdermalImageOpt None]
+            [FinenessImageOpt None]
+            [ScatterImageOpt None]
+            [ClearCoatImageOpt None]
+            [ClearCoatRoughnessImageOpt None]
+            [ClearCoatNormalImageOpt None]
+            [TwoSidedOpt [Some True]]
+            [ClippedOpt None]]]
           [MountOpt [Some ^]]
           [Name Geometry]
           [NavEnabled False]
