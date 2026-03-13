@@ -1,6 +1,6 @@
 [GroupDispatcher
  [[Editing True]
-  [Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
+  [Model ["Microsoft.FSharp.Core.Unit, FSharp.Core, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" []]]
   [Name Scene]
   [Persistent True]]
  [[Entity3dDispatcher
@@ -294239,6 +294239,32 @@
       [PropagationSourceOpt [Some Game/Gameplay/Scene/Lighting/Light3d-0015]]
       [Size [15 15 15]]
       [Static True]]
+     []]
+    [LightProbe3dDispatcher
+     [[AmbientBrightness 0.05]
+      [MountOpt [Some ^]]
+      [Name LightProbe3d-0012]
+      [OverflowAbsolute False]
+      [Position [-32.669083 1.5 -2.1919906]]
+      [PositionLocal [-32.669083 1.5 -2.1919906]]
+      [Presence Omnipresent]
+      [ProbeBounds
+       [[-36.5 -0.1 -8.5] [8 5.1 12.1]]]
+      [Size [0.25 0.25 0.25]]
+      [Static True]]
+     []]
+    [LightProbe3dDispatcher
+     [[AmbientBrightness 0.05]
+      [MountOpt [Some ^]]
+      [Name LightProbe3d-0001]
+      [OverflowAbsolute False]
+      [Position [-13.6 2.7 9.8]]
+      [PositionLocal [-13.6 2.7 9.8]]
+      [Presence Omnipresent]
+      [ProbeBounds
+       [[-20.6 -0.1 5.8] [16.15 7 9.75]]]
+      [Size [0.25 0.25 0.25]]
+      [Static True]]
      []]]]
   [RigidModelDispatcher
    [[BodyShape EmptyShape]
@@ -294276,16 +294302,4 @@
       [PositionLocal [3.33786E-06 0.099998474 -1.1444092E-05]]
       [Rotation [0 0.21643962 0 0.976296]]
       [ViewDistance 2.5]]
-     []]]]
-  [LightProbe3dDispatcher
-   [[AmbientBrightness 0.05]
-    [MountOpt [Some ^]]
-    [Name LightProbe3d-0012]
-    [OverflowAbsolute False]
-    [Position [-32.669083 1.5 -2.1919906]]
-    [Presence Omnipresent]
-    [ProbeBounds
-     [[-36.5 -0.1 -8.5] [8 5.1 12.1]]]
-    [Size [0.25 0.25 0.25]]
-    [Static True]]
-   []]]]
+     []]]]]]
