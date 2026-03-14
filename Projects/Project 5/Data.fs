@@ -180,16 +180,6 @@ type StalkerSpawnState =
     static member initial =
         StalkerUnspawned Double.MaxValue
 
-(* Player *)
-
-type PlayerState =
-    { ViewFlip : bool
-      FlashLightEnabled : bool }
-
-    static member initial =
-        { ViewFlip = false
-          FlashLightEnabled = false }
-
 (* Character *)
 
 and CharacterType =
