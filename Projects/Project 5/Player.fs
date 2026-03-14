@@ -8,9 +8,12 @@ open MyGame
 [<AutoOpen>]
 module PlayerDispatcherExtensions =
     type Entity with
-        member this.GetPlayerState world : PlayerState = this.Get (nameof this.PlayerState) world
-        member this.SetPlayerState (value : PlayerState) world = this.Set (nameof this.PlayerState) value world
-        member this.PlayerState = lens (nameof this.PlayerState) this this.GetPlayerState this.SetPlayerState
+        member this.GetViewFlip world : bool = this.Get (nameof this.ViewFlip) world
+        member this.SetViewFlip (value : bool) world = this.Set (nameof this.ViewFlip) value world
+        member this.ViewFlip = lens (nameof this.ViewFlip) this this.GetViewFlip this.SetViewFlip
+        member this.GetFlashLightEnabled world : bool = this.Get (nameof this.FlashLightEnabled) world
+        member this.SetFlashLightEnabled (value : bool) world = this.Set (nameof this.FlashLightEnabled) value world
+        member this.FlashLightEnabled = lens (nameof this.FlashLightEnabled) this this.GetFlashLightEnabled this.SetFlashLightEnabled
 
 type PlayerDispatcher () =
     inherit CharacterDispatcher ()
@@ -26,10 +29,11 @@ type PlayerDispatcher () =
             | _ -> ()
 
         // movement
-        let playerState = entity.GetPlayerState world
         match entity.GetActionState world with
         | NormalState ->
-            if not playerState.FlashLightEnabled then
+            if entity.GetFlashLightEnabled world then
+                entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
+            else
                 let rotation = entity.GetRotation world
                 let forward = rotation.Forward
                 let right = rotation.Right
@@ -40,7 +44,6 @@ type PlayerDispatcher () =
                     (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
                 let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * Player.WalkSpeed else v3Zero
                 entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
-            else entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
         // rotation
@@ -62,7 +65,8 @@ type PlayerDispatcher () =
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterType characterType
-         define Entity.PlayerState PlayerState.initial]
+         define Entity.ViewFlip false
+         define Entity.FlashLightEnabled false]
 
     override this.ProcessCharacterState (entity, world) =
         if world.Advancing then
@@ -73,11 +77,10 @@ type PlayerDispatcher () =
         // declare animated model
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
-        let playerState = entity.GetPlayerState world
         let actionState = entity.GetActionState world
         let eyeDistanceRotation =
             rotationInterpolated *
-            Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if playerState.ViewFlip then -1.0f else 1.0f) *
+            Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if entity.GetViewFlip world then -1.0f else 1.0f) *
             Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
         let visibilityScalar = Algorithm.computePlayerVisibilityScalar positionInterpolated eyeDistanceRotation actionState entity world
         World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
@@ -98,7 +101,6 @@ type PlayerDispatcher () =
         // declare flash light
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
-        let playerState = entity.GetPlayerState world
         World.doLight3d Constants.Gameplay.CharacterLightName
             [Entity.Position @= positionInterpolated + v3Up * 1.2f + rotationInterpolated.Forward * 0.25f
              Entity.Rotation @= rotationInterpolated * Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
@@ -108,7 +110,7 @@ type PlayerDispatcher () =
              Entity.LightCutoff .= 9.0f
              Entity.Brightness .= 0.65f
              Entity.DesireShadows .= true
-             Entity.VisibleLocal @= playerState.FlashLightEnabled] world
+             Entity.VisibleLocal @= entity.GetFlashLightEnabled world] world
 
         // declare player hearts
         let hitPoints = entity.GetHitPoints world

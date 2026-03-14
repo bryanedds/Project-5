@@ -240,11 +240,11 @@ type GameplayDispatcher () =
                         | None -> ()
 
             // process player view flip
-            player.PlayerState.Map (fun state -> { state with ViewFlip = World.isKeyboardShiftDown world }) world
+            player.SetViewFlip (World.isKeyboardShiftDown world) world
 
             // toggle player flash light
             if World.isKeyboardKeyPressed KeyboardKey.Space world then
-                player.PlayerState.Map (fun state -> { state with FlashLightEnabled = not state.FlashLightEnabled }) world
+                player.FlashLightEnabled.Map not world
 
             // declare inventory view
             match player.GetActionState world with
@@ -302,7 +302,7 @@ type GameplayDispatcher () =
 
                 // declare stalker in spawned state
                 let spawnPosition = spawnPoint.GetPosition world
-                let stalkerState =
+                let stalkState =
                     let awareness =
                         if caughtTargetHiding
                         then AwareOfTargetHiding world.GameTime
@@ -311,7 +311,7 @@ type GameplayDispatcher () =
                 World.doEntity<StalkerDispatcher> "Stalker"
                     [if spawnTime = world.GameTime then
                         Entity.Position @= spawnPosition
-                        Entity.StalkerState @= stalkerState] world
+                        Entity.StalkState @= stalkState] world
                 let stalker = world.DeclaredEntity
 
                 // process potentially resetting to late spawn state
@@ -329,8 +329,8 @@ type GameplayDispatcher () =
 
                 // declare stalker in unspawning state
                 let unspawnPosition = unspawnPoint.GetPosition world
-                let stalkerState = LeavingState { UnspawnPosition = unspawnPosition; Awareness = UnawareOfTarget }
-                World.doEntity<StalkerDispatcher> "Stalker" [Entity.StalkerState @= stalkerState] world
+                let stalkState = LeavingState { UnspawnPosition = unspawnPosition; Awareness = UnawareOfTarget }
+                World.doEntity<StalkerDispatcher> "Stalker" [Entity.StalkState @= stalkState] world
                 let stalker = world.DeclaredEntity
 
                 // process resetting to late spawn state or unspawning
@@ -359,8 +359,9 @@ type GameplayDispatcher () =
                 Seq.exists (fun (character : Entity) ->
                     match character.GetCharacterType world with
                     | Hunter ->
-                        let state = character.GetHunterState world
-                        not state.HunterAwareness.IsUnawareOfTarget
+                        match character.GetAwareness world with
+                        | UnawareOfTarget -> false
+                        | _ -> true
                     | _ -> false)
                     characters
             match (hunted, screen.GetHuntedTimeOpt world) with
@@ -452,7 +453,7 @@ type GameplayDispatcher () =
                 let eyeRotation = rotation * Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
                 let eyeDistanceRotation =
                     rotation *
-                    Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if (player.GetPlayerState world).ViewFlip then -1.0f else 1.0f) *
+                    Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if player.GetViewFlip world then -1.0f else 1.0f) *
                     Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
                 let eyeDistanceScalar = Algorithm.computeEyeDistanceScalar position eyeDistanceRotation actionState player world
                 let eyeOrigin = position + v3Up * Constants.Gameplay.PlayerEyeLevel

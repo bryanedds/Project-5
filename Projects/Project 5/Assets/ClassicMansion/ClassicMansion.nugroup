@@ -293835,14 +293835,13 @@
       [Name Hunters]
       [OverflowAbsolute False]]
      [[HunterDispatcher
-       [[HunterState
-         [[HunterWayPoints
-           [[^/^/WayPoints/WayPoint-0002 4] [^/^/WayPoints/WayPoint-0003 4] [^/^/WayPoints/WayPoint-0004 4] [^/^/WayPoints/WayPoint-0005 4]]]
-          [HunterWayPointPlayback Loop]
-          [HunterWayPointBouncing False]
-          [HunterWayPointIndexOpt [Some 2]]
-          [HunterWayPointTimeOpt None]
-          [HunterAwareness UnawareOfTarget]]]
+       [[Awareness UnawareOfTarget]
+        [WayPoints
+         [[^/^/WayPoints/WayPoint-0002 4] [^/^/WayPoints/WayPoint-0003 4] [^/^/WayPoints/WayPoint-0004 4] [^/^/WayPoints/WayPoint-0005 4]]]
+        [WayPointPlayback Loop]
+        [WayPointBouncing False]
+        [WayPointIndexOpt [Some 2]]
+        [WayPointTimeOpt None]
         [LinearVelocity [0.47969246 0 -1.1543858]]
         [MountOpt [Some ^]]
         [MovementState [Moving 2007.8007384 2009.3007384]]

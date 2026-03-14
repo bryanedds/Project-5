@@ -8,22 +8,12 @@ open MyGame
 [<AutoOpen>]
 module StalkerDispatcherExtensions =
     type Entity with
-        member this.GetStalkerState world : StalkerState = this.Get (nameof this.StalkerState) world
-        member this.SetStalkerState (value : StalkerState) world = this.Set (nameof this.StalkerState) value world
-        member this.StalkerState = lens (nameof this.StalkerState) this this.GetStalkerState this.SetStalkerState
+        member this.GetStalkState world : StalkState = this.Get (nameof this.StalkState) world
+        member this.SetStalkState (value : StalkState) world = this.Set (nameof this.StalkState) value world
+        member this.StalkState = lens (nameof this.StalkState) this this.GetStalkState this.SetStalkState
 
 type StalkerDispatcher () =
     inherit CharacterDispatcher ()
-
-    static let processStalkerState targetPosition targetBodyIds (entity : Entity) world =
-        match entity.GetStalkerState world with
-        | IdlingState ->
-            ()
-        | StalkingState stalking ->
-            if not stalking.Awareness.IsUnawareOfTarget then
-                CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
-        | LeavingState leaving ->
-            CharacterDispatcher.processEnemyNavigation leaving.UnspawnPosition entity world
 
     static member Properties =
         let characterType = Stalker
@@ -31,7 +21,7 @@ type StalkerDispatcher () =
          define Entity.CharacterProperties characterType.CharacterProperties
          define Entity.HitPoints characterType.HitPointsMax
          define Entity.CharacterType characterType
-         define Entity.StalkerState StalkerState.initial]
+         define Entity.StalkState StalkState.initial]
 
     override this.ProcessCharacterState (entity, world) =
         if world.Advancing then
@@ -48,7 +38,14 @@ type StalkerDispatcher () =
                 else Left ()
             match enemyTargetingEir with
             | Right (targetPosition, targetBodyIds) ->
-                processStalkerState targetPosition targetBodyIds entity world
+                match entity.GetStalkState world with
+                | IdlingState ->
+                    ()
+                | StalkingState stalking ->
+                    if not stalking.Awareness.IsUnawareOfTarget then
+                        CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
+                | LeavingState leaving ->
+                    CharacterDispatcher.processEnemyNavigation leaving.UnspawnPosition entity world
             | Left () -> ()
 
     override this.DeclareCharacterView (entity, world) =

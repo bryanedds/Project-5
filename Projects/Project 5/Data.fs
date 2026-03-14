@@ -144,22 +144,6 @@ type Awareness =
     | AwareOfTargetTraversing of GameTime
     | AwareOfTargetHiding of GameTime
 
-type [<SymbolicExpansion>] HunterState =
-    { HunterWayPoints : WayPoint array
-      HunterWayPointPlayback : Playback
-      HunterWayPointBouncing : bool
-      HunterWayPointIndexOpt : int option
-      HunterWayPointTimeOpt : GameTime option
-      HunterAwareness : Awareness }
-
-    static member initial =
-        { HunterWayPoints = [||]
-          HunterWayPointPlayback = Loop
-          HunterWayPointBouncing = false
-          HunterWayPointIndexOpt = None
-          HunterWayPointTimeOpt = None
-          HunterAwareness = UnawareOfTarget }
-
 (* Stalker *)
 
 type StalkingState =
@@ -170,7 +154,7 @@ type LeavingState =
     { UnspawnPosition : Vector3
       Awareness : Awareness }
 
-type [<SymbolicExpansion>] StalkerState =
+type [<SymbolicExpansion>] StalkState =
     | IdlingState
     | StalkingState of StalkingState
     | LeavingState of LeavingState
