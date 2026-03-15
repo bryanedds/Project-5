@@ -94,7 +94,7 @@ type HunterDispatcher () =
                 | HideUncovered -> ()
             | _ -> entity.SetAwareness (AwareOfTargetTraversing world.GameTime) world
 
-        // process hunter state
+        // process player uncovering
         let uncoveredPlayer =
             match entity.GetAwareness world with
             | UnawareOfTarget ->
