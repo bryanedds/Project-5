@@ -32,8 +32,7 @@ type HunterDispatcher () =
 
     static let processHunterWayPointNavigation (entity : Entity) world =
         match entity.GetWayPoints world with
-        | [||] -> ()
-        | wayPoints ->
+        | NonEmptyArray wayPoints ->
             match entity.GetWayPointIndexOpt world with
             | Some wayPointIndex when wayPointIndex < wayPoints.Length ->
                 let wayPoint = wayPoints.[wayPointIndex]
@@ -79,6 +78,7 @@ type HunterDispatcher () =
             | Some _ | None ->
                 entity.LinearVelocity.Map ((*) 0.5f) world
                 entity.AngularVelocity.Map ((*) 0.5f) world
+        | EmptyArray -> ()
 
     static let processHunterState targetPosition targetBodyIds targetActionState (entity : Entity) (world : World) =
 

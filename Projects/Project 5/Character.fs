@@ -172,8 +172,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         else entity.SetMountOptWithAdjustment false (Some Address.parent) world
 
         // process body events
-        let bodyEvents = World.doSubscriptionToBodyEvents "BodyEvents" entity world
-        for bodyEvent in bodyEvents do
+        for bodyEvent in World.doSubscriptionToBodyEvents "BodyEvents" entity world do
             match bodyEvent with
             | BodyPenetrationData penetration ->
                 match penetration.BodyShapePenetratee.BodyId.BodySource with
