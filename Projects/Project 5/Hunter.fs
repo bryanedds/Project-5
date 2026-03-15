@@ -75,9 +75,7 @@ type HunterDispatcher () =
                         | None -> entity.SetWayPointTimeOpt (Some world.GameTime) world
                     else CharacterDispatcher.processEnemyNavigation wayPointPosition entity world
                 | None -> ()
-            | Some _ | None ->
-                entity.LinearVelocity.Map ((*) 0.5f) world
-                entity.AngularVelocity.Map ((*) 0.5f) world
+            | Some _ | None -> ()
         | EmptyArray -> ()
 
     static let processHunterState targetPosition targetBodyIds targetActionState (entity : Entity) (world : World) =
