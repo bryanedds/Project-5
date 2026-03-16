@@ -29,7 +29,9 @@ type StalkerDispatcher () =
             let enemyTargetingEir =
                 let processEnemies =
                     match player.GetActionState world with
-                    | InvestigationState investigation -> not (investigation.InvestigationSpot.GetInvestigationPhase world).IsInvestigationFinished
+                    | InvestigationState investigation ->
+                        let phase = investigation.InvestigationSpot.GetInvestigationPhase world
+                        not phase.IsInvestigationFinished
                     | _ -> true
                 if processEnemies then
                     let playerEhs = player / Constants.Gameplay.CharacterExpandedHideSensorName
@@ -39,13 +41,11 @@ type StalkerDispatcher () =
             match enemyTargetingEir with
             | Right (targetPosition, targetBodyIds) ->
                 match entity.GetStalkState world with
-                | IdlingState ->
-                    ()
-                | StalkingState stalking ->
-                    if not stalking.Awareness.IsUnawareOfTarget then
-                        CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
+                | StalkingState stalking when not stalking.Awareness.IsUnawareOfTarget ->
+                    CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
                 | LeavingState leaving ->
                     CharacterDispatcher.processEnemyNavigation leaving.UnspawnPosition entity world
+                | _ -> ()
             | Left () -> ()
 
     override this.DeclareCharacterView (entity, world) =

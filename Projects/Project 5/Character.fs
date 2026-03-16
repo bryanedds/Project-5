@@ -210,13 +210,12 @@ type [<AbstractClass>] CharacterDispatcher () =
             match entity.GetActionState world with
             | HideState hide -> hide.HidePhase.IsHideEntering
             | _ -> false
-        let (_, _) =
-            World.doSensorModel Constants.Gameplay.CharacterExpandedHideSensorName
-                [Entity.PositionLocal @= entity.GetPosition world
-                 Entity.VisibleLocal .= false
-                 Entity.BodyEnabled @= expandedHideSensorBodyEnabled
-                 Entity.BodyShape .= characterType.ExpandedHideSensorBodyShape
-                 Entity.MountOpt .= None] world
+        World.doSensorModel Constants.Gameplay.CharacterExpandedHideSensorName
+            [Entity.PositionLocal @= entity.GetPosition world
+             Entity.VisibleLocal .= false
+             Entity.BodyEnabled @= expandedHideSensorBodyEnabled
+             Entity.BodyShape .= characterType.ExpandedHideSensorBodyShape
+             Entity.MountOpt .= None] world |> ignore<_ * _>
 
         // process character state
         this.ProcessCharacterState (entity, world)
