@@ -20,7 +20,7 @@ type PlayerDispatcher () =
 
     static let processPlayerInput (entity : Entity) world =
 
-        // attacking
+        // process attacking
         if World.isKeyboardKeyPressed KeyboardKey.Enter world && false then
             match entity.GetActionState world with
             | NormalState ->
@@ -28,7 +28,7 @@ type PlayerDispatcher () =
                 entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
             | _ -> ()
 
-        // movement
+        // process movement
         match entity.GetActionState world with
         | NormalState ->
             if entity.GetFlashLightEnabled world then
@@ -46,7 +46,7 @@ type PlayerDispatcher () =
                 entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
-        // rotation
+        // process rotation
         match entity.GetActionState world with
         | NormalState | InventoryState | InsertionState _  | InvestigationState _ | HideState _ ->
             let rotation = entity.GetRotation world

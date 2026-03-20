@@ -84,7 +84,7 @@ type [<AbstractClass>] CharacterDispatcher () =
 
     static member processEnemyAggression (targetPosition : Vector3) (targetBodyIds : BodyId Set) (entity : Entity) world =
 
-        // attacking
+        // process attacking
         match entity.GetActionState world with
         | NormalState ->
             let position = entity.GetPosition world
@@ -100,7 +100,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                     entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
-        // navigation
+        // process navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
             | NormalState ->
@@ -124,7 +124,7 @@ type [<AbstractClass>] CharacterDispatcher () =
 
     static member processEnemyUncovering (targetPosition : Vector3) (entity : Entity) world =
 
-        // opening door
+        // process opening door
         let uncoveredPlayer =
             match entity.GetActionState world with
             | NormalState ->
@@ -139,7 +139,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                 | None -> false
             | _ -> false
 
-        // navigation
+        // process navigation
         let navSpeedsOpt =
             match entity.GetActionState world with
             | NormalState ->
