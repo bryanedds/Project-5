@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module StalkerDispatcherExtensions =
+module StalkerExtensions =
     type Entity with
         member this.GetStalkState world : StalkState = this.Get (nameof this.StalkState) world
         member this.SetStalkState (value : StalkState) world = this.Set (nameof this.StalkState) value world

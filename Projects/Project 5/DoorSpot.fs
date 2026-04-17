@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module DoorSpotDispatcherExtensions =
+module DoorSpotExtensions =
     type Entity with
         member this.GetDoorState world : DoorState = this.Get (nameof this.DoorState) world
         member this.SetDoorState (value : DoorState) world = this.Set (nameof this.DoorState) value world

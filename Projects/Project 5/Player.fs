@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module PlayerDispatcherExtensions =
+module PlayerExtensions =
     type Entity with
         member this.GetViewFlip world : bool = this.Get (nameof this.ViewFlip) world
         member this.SetViewFlip (value : bool) world = this.Set (nameof this.ViewFlip) value world

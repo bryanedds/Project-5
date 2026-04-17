@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module HidingSpotDispatcherExtensions =
+module HidingSpotExtensions =
     type Entity with
         member this.GetHidingSpotOpt world : HidingSpot option = this.Get (nameof this.HidingSpotOpt) world
         member this.SetHidingSpotOpt (value : HidingSpot option) world = this.Set (nameof this.HidingSpotOpt) value world

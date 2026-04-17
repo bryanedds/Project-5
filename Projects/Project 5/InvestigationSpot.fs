@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module InvestigationSpotDispatcherExtensions =
+module InvestigationSpotExtensions =
     type Entity with
         member this.GetViewDistance world : single = this.Get (nameof this.ViewDistance) world
         member this.SetViewDistance (value : single) world = this.Set (nameof this.ViewDistance) value world

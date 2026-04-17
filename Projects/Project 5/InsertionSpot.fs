@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module InsertionSpotDispatcherExtensions =
+module InsertionSpotExtensions =
     type Entity with
         member this.GetInsertionPhase world : InsertionPhase = this.Get (nameof this.InsertionPhase) world
         member this.SetInsertionPhase (value : InsertionPhase) world = this.Set (nameof this.InsertionPhase) value world

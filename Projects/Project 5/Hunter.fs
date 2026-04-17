@@ -6,7 +6,7 @@ open Nu
 open MyGame
 
 [<AutoOpen>]
-module HunterDispatcherExtensions =
+module HunterExtensions =
     type Entity with
         member this.GetWayPoints world : WayPoint array = this.Get (nameof this.WayPoints) world
         member this.SetWayPoints (value : WayPoint array) world = this.Set (nameof this.WayPoints) value world
