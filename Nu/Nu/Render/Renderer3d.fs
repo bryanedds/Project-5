@@ -1130,7 +1130,7 @@ type [<ReferenceEquality>] private RenderTasks =
                             Seq.exists2 (fun struct (m, cs, _, _, _) struct (mCached, csCached, _, _, _) -> m <> mCached || cs <> csCached) value valueCached then
                             changed <- false
                     | (false, _) -> changed <- true
-                changed
+                not changed
             let deferredStaticClippedCached =
                 renderTasks.DeferredStaticClipped.Count = renderTasksCached.DeferredStaticClipped.Count &&
                 let mutable changed = false
@@ -1144,7 +1144,7 @@ type [<ReferenceEquality>] private RenderTasks =
                             Seq.exists2 (fun struct (m, cs, _, _, _) struct (mCached, csCached, _, _, _) -> m <> mCached || cs <> csCached) value valueCached then
                             changed <- false
                     | (false, _) -> changed <- true
-                changed
+                not changed
             let deferredStaticPreBatchesCached =
                 renderTasks.DeferredStaticPreBatches.Count = renderTasksCached.DeferredStaticPreBatches.Count &&
                 renderTasks.DeferredStaticPreBatches |> Seq.forall (fun preBatch -> renderTasksCached.DeferredStaticPreBatches.ContainsKey preBatch.Key)
@@ -1164,7 +1164,7 @@ type [<ReferenceEquality>] private RenderTasks =
                             Seq.exists2 (fun struct (m, cs, _, _, _) struct (mCached, csCached, _, _, _) -> m <> mCached || cs <> csCached) value valueCached then
                             changed <- false
                     | (false, _) -> changed <- true
-                changed
+                not changed
             let deferredTerrainsCached =
                 renderTasks.DeferredTerrains.Count = renderTasksCached.DeferredTerrains.Count &&
                 (renderTasks.DeferredTerrains, renderTasksCached.DeferredTerrains)
@@ -3644,6 +3644,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         ///////////////
         // End Frame //
         ///////////////
+
+        // clear config dirty flags
+        renderer.LightingConfigChanged <- false
+        renderer.RendererConfigChanged <- false
 
         // clear light shadow indices
         renderer.LightShadowIndices.Clear ()
