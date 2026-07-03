@@ -13,6 +13,7 @@ open System.Threading
 open SDL
 open ImGuiNET
 open Prime
+open Nu.Vulkan
 
 /// A renderer process that may or may not be threaded.
 /// TODO: name all these abstract method parameters.
@@ -71,7 +72,7 @@ type RendererInline () =
     let mutable messages3d = List ()
     let mutable messages2d = List ()
     let mutable messagesImGui = List ()
-    let mutable dependenciesOpt = Option<SDL_GLContextState nativeptr * Renderer3d * Renderer2d * RendererImGui>.None
+    let mutable dependenciesOpt = Option<Renderer3d * Renderer2d * RendererImGui * VulkanContext>.None
     let assetTextureRequests = ConcurrentDictionary<AssetTag, unit> HashIdentity.Structural
     let assetTextureOpts = ConcurrentDictionary<AssetTag, uint32 voption> HashIdentity.Structural
 
@@ -82,38 +83,47 @@ type RendererInline () =
             // assign windowOpt
             windowOpt <- windowOpt_
 
-            // ensure renderers not already created
+            // ensure dependencies not already created
             match dependenciesOpt with
             | None ->
 
-                // create renderers
+                // create dependencies
                 match windowOpt with
                 | Some window ->
-                
-                    // create gl context
-                    let glContext = OpenGL.Hl.CreateSglContextInitial window
-                    OpenGL.Hl.Assert ()
 
-                    // initialize gl context
-                    OpenGL.Hl.InitContext Constants.OpenGL.HlDebug
-                    OpenGL.Hl.Assert ()
+                    // attempt to create VulkanContext, storing reference to it
+                    let vkc =
+                        match VulkanContext.tryCreate window with
+                        | Some vkc -> vkc
+                        | None -> Log.fail "Could not create Vulkan context." // TODO: P0: handle failure more gracefully here?
+
+                    // create and populate the empty texture
+                    let emptyTexture =
+                        let defaultImageTag = AssetTag.make Assets.Default.PackageName Assets.Default.ImageName
+                        match Metadata.tryGetFilePath defaultImageTag with
+                        | Some filePath ->
+                            match Hl.tryCreateTextureInternal true false Uncompressed filePath RenderThread vkc with
+                            | Right textureInternal -> textureInternal
+                            | Left _ -> TextureInternal.createEmpty vkc
+                        | None -> TextureInternal.createEmpty vkc
+                    Hl.EmptyTextureOpt <- Some emptyTexture
 
                     // create 3d renderer
-                    let renderer3d = GlRenderer3d.make glContext window geometryViewport windowViewport :> Renderer3d
-                    OpenGL.Hl.Assert ()
+                    let renderer3d =
+                        if Constants.Render.SkipRendering3d
+                        then StubRenderer3d.make () :> Renderer3d
+                        else VulkanRenderer3d.make geometryViewport windowViewport vkc :> Renderer3d
 
                     // create 2d renderer
-                    let renderer2d = GlRenderer2d.make windowViewport :> Renderer2d
-                    OpenGL.Hl.Assert ()
+                    let renderer2d = VulkanRenderer2d.make windowViewport vkc :> Renderer2d
 
                     // create imgui renderer
-                    let rendererImGui = GlRendererImGui.make assetTextureRequests assetTextureOpts fonts windowViewport :> RendererImGui
-                    OpenGL.Hl.Assert ()
+                    let rendererImGui = VulkanRendererImGui.make assetTextureRequests assetTextureOpts fonts windowViewport vkc :> RendererImGui
 
                     // fin
-                    dependenciesOpt <- Some (glContext, renderer3d, renderer2d, rendererImGui)
+                    dependenciesOpt <- Some (renderer3d, renderer2d, rendererImGui, vkc)
 
-                // no renderers
+                // no dependencies
                 | None -> dependenciesOpt <- None
 
                 // fin
@@ -124,7 +134,7 @@ type RendererInline () =
 
         member ri.Renderer3dConfig =
             match dependenciesOpt with
-            | Some (_, renderer3d, _, _) -> renderer3d.RendererConfig
+            | Some (renderer3d, _, _, _) -> renderer3d.RendererConfig
             | None -> Renderer3dConfig.defaultConfig
 
         member ri.TryGetImGuiTextureId assetTag =
@@ -175,61 +185,43 @@ type RendererInline () =
 
         member ri.SubmitMessages frustumInterior frustumExterior frustumImposter eye3dCenter eye3dRotation eye3dFieldOfView eye2dCenter eye2dSize windowSize geometryViewport windowViewport drawData =
             match dependenciesOpt with
-            | Some (_, renderer3d, renderer2d, rendererImGui) ->
+            | Some (renderer3d, renderer2d, rendererImGui, vkc) ->
 
                 // begin frame
-                OpenGL.Hl.BeginFrame (windowSize, windowViewport.Bounds)
-                OpenGL.Hl.Assert ()
+                VulkanContext.beginFrame windowViewport vkc
 
                 // render 3d
                 renderer3d.Render frustumInterior frustumExterior frustumImposter eye3dCenter eye3dRotation eye3dFieldOfView geometryViewport windowViewport messages3d
                 messages3d.Clear ()
-                OpenGL.Hl.Assert ()
 
                 // render 2d
                 renderer2d.Render eye2dCenter eye2dSize windowViewport messages2d
                 messages2d.Clear ()
-                OpenGL.Hl.Assert ()
 
                 // render imgui
                 rendererImGui.Render windowViewport drawData messagesImGui
                 messagesImGui.Clear ()
-                OpenGL.Hl.Assert ()
 
                 // end frame
-                OpenGL.Hl.EndFrame ()
-                OpenGL.Hl.Assert ()
+                VulkanContext.endFrame ()
 
             | None -> ()
 
         member ri.RequestSwap () =
-            match windowOpt with
-            | Some window -> SDL3.SDL_GL_SwapWindow window |> ignore<SDLBool>
+            match dependenciesOpt with
+            | Some (_, _, _, vkc) -> VulkanContext.present vkc
             | None -> ()
 
         member ri.Terminate () =
             match dependenciesOpt with
-            | Some (glContext, renderer3d, renderer2d, rendererImGui) ->
-            
-                // clean up 3d
+            | Some (renderer3d, renderer2d, rendererImGui, vkc) ->
+                VulkanContext.waitIdle vkc
                 renderer3d.CleanUp ()
-                OpenGL.Hl.Assert ()
-
-                // clean up 2d
                 renderer2d.CleanUp ()
-                OpenGL.Hl.Assert ()
-
-                // clean up imgui
                 rendererImGui.CleanUp ()
-                OpenGL.Hl.Assert ()
-
-                // clean up gl
+                TextureInternal.destroy TextureInternal.empty vkc
+                VulkanContext.cleanup vkc
                 dependenciesOpt <- None
-                match windowOpt with
-                | Some window -> OpenGL.Hl.DestroySglContext (glContext, window)
-                | None -> ()
-
-                // fin
                 terminated <- true
 
             | None -> ()
@@ -262,6 +254,7 @@ type RendererThread () =
     let cachedSpriteMessagesLock = obj ()
     let cachedSpriteMessages = System.Collections.Generic.Queue ()
     let [<VolatileField>] mutable cachedSpriteMessagesCapacity = Constants.Render.SpriteMessagesPrealloc
+    let mutable vkcOpt = None
 
     let allocStaticModelMessage () =
         lock cachedStaticModelMessagesLock (fun () ->
@@ -371,26 +364,30 @@ type RendererThread () =
                     | _ -> ()
                 | _ -> ())
 
-    member private rt.Run fonts window geometryViewport windowViewport =
+    member private rt.Run fonts geometryViewport windowViewport vkc =
 
-        // create gl context
-        let glContext = OpenGL.Hl.CreateSglContextInitial window
-        OpenGL.Hl.Assert ()
-
-        // initialize gl context
-        OpenGL.Hl.InitContext Constants.OpenGL.HlDebug
-        OpenGL.Hl.Assert ()
+        // create and populate the empty texture
+        let emptyTexture = 
+            let defaultImageTag = AssetTag.make Assets.Default.PackageName Assets.Default.ImageName
+            match Metadata.tryGetFilePath defaultImageTag with
+            | Some filePath ->
+                match Hl.tryCreateTextureInternal true false Uncompressed filePath RenderThread vkc with
+                | Right textureInternal -> textureInternal
+                | Left _ -> TextureInternal.createEmpty vkc
+            | None -> TextureInternal.createEmpty vkc
+        Hl.EmptyTextureOpt <- Some emptyTexture
 
         // create 3d renderer
-        let renderer3d = GlRenderer3d.make glContext window geometryViewport windowViewport :> Renderer3d
-        OpenGL.Hl.Assert ()
+        let renderer3d =
+            if Constants.Render.SkipRendering3d
+            then StubRenderer3d.make () :> Renderer3d
+            else VulkanRenderer3d.make geometryViewport windowViewport vkc :> Renderer3d
 
         // create 2d renderer
-        let renderer2d = GlRenderer2d.make windowViewport :> Renderer2d
-        OpenGL.Hl.Assert ()
+        let renderer2d = VulkanRenderer2d.make windowViewport vkc :> Renderer2d
 
         // create imgui renderer
-        let rendererImGui = GlRendererImGui.make assetTextureRequests assetTextureOpts fonts windowViewport :> RendererImGui
+        let rendererImGui = VulkanRendererImGui.make assetTextureRequests assetTextureOpts fonts windowViewport vkc :> RendererImGui
 
         // mark as started
         started <- true
@@ -405,10 +402,9 @@ type RendererThread () =
 
             // guard against early termination
             if not terminated then
-
+                
                 // begin frame
-                OpenGL.Hl.BeginFrame (windowSize, windowViewport.Bounds)
-                OpenGL.Hl.Assert ()
+                VulkanContext.beginFrame windowViewport vkc
 
                 // render 3d
                 renderer3d.Render frustumInterior frustumExterior frustumImposter eye3dCenter eye3dRotation eye3dFieldOfView geometryViewport windowViewport messages3d
@@ -416,20 +412,16 @@ type RendererThread () =
                 freeStaticModelSurfaceMessages messages3d
                 freeAnimatedModelMessages messages3d
                 renderer3dConfig <- renderer3d.RendererConfig
-                OpenGL.Hl.Assert ()
 
                 // render 2d
                 renderer2d.Render eye2dCenter eye2dSize windowViewport messages2d
                 freeSpriteMessages messages2d
-                OpenGL.Hl.Assert ()
 
                 // render imgui
                 rendererImGui.Render windowViewport drawData messagesImGui
-                OpenGL.Hl.Assert ()
 
                 // end frame
-                OpenGL.Hl.EndFrame ()
-                OpenGL.Hl.Assert ()
+                VulkanContext.endFrame ()
 
                 // guard against early termination
                 if not terminated then
@@ -444,23 +436,15 @@ type RendererThread () =
                         // acknowledge swap request
                         swapRequestAcknowledged <- true
 
-                        // swap
-                        SDL3.SDL_GL_SwapWindow window |> ignore<SDLBool>
+                        // present
+                        VulkanContext.present vkc
 
-        // clean up 3d
+        // clean up
+        VulkanContext.waitIdle vkc
         renderer3d.CleanUp ()
-        OpenGL.Hl.Assert ()
-
-        // clean up 2d
         renderer2d.CleanUp ()
-        OpenGL.Hl.Assert ()
-
-        // clean up imgui
         rendererImGui.CleanUp ()
-        OpenGL.Hl.Assert ()
-
-        // clean up gl
-        OpenGL.Hl.DestroySglContext (glContext, window)
+        TextureInternal.destroy TextureInternal.empty vkc
 
     interface RendererProcess with
 
@@ -473,8 +457,15 @@ type RendererThread () =
             match windowOpt with
             | Some window ->
 
+                // attempt to create VulkanContext (on main thread, unlike OpenGL), storing a reference for clean-up.
+                let vkc =
+                    match VulkanContext.tryCreate window with
+                    | Some vkc -> vkc
+                    | None -> Log.fail "Could not create Vulkan context." // TODO: P0: handle failure more gracefully here?
+                vkcOpt <- Some vkc
+
                 // start real thread
-                let thread = Thread (ThreadStart (fun () -> rt.Run fonts window geometryViewport windowViewport))
+                let thread = Thread (ThreadStart (fun () -> rt.Run fonts geometryViewport windowViewport vkc))
                 threadOpt <- Some thread
                 thread.Name <- nameof RendererThread
                 thread.IsBackground <- true
@@ -702,4 +693,9 @@ type RendererThread () =
             if terminated then raise (InvalidOperationException "Redundant Terminate calls.")
             terminated <- true
             thread.Join ()
+            match vkcOpt with
+            | Some vkc ->
+                VulkanContext.cleanup vkc
+                vkcOpt <- None
+            | None -> ()
             threadOpt <- None

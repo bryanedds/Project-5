@@ -10,10 +10,10 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Numerics
-open System.Runtime.InteropServices
-open FSharp.NativeInterop
+open Vortice.Vulkan
 open SDL
 open Prime
+open Nu.Vulkan
 
 /// A layer from which a 3d terrain's material is composed.
 type TerrainLayer =
@@ -109,12 +109,8 @@ type [<SymbolicExpansion>] MaterialProperties =
     member this.ClearCoat = ValueOption.defaultValue Constants.Render.ClearCoatDefault this.ClearCoatOpt
     member this.ClearCoatRoughness = ValueOption.defaultValue Constants.Render.ClearCoatRoughnessDefault this.ClearCoatRoughnessOpt
 
-/// MaterialProperties functions.
-[<RequireQualifiedAccess>]
-module MaterialProperties =
-
     /// Material properties with populated default properties.
-    let defaultProperties =
+    static member val defaultProperties =
         { AlbedoOpt = ValueSome Constants.Render.AlbedoDefault
           RoughnessOpt = ValueSome Constants.Render.RoughnessDefault
           MetallicOpt = ValueSome Constants.Render.MetallicDefault
@@ -133,7 +129,7 @@ module MaterialProperties =
           ClearCoatRoughnessOpt = ValueSome Constants.Render.ClearCoatRoughnessDefault }
 
     /// Empty material properties.
-    let empty =
+    static member val empty =
         { AlbedoOpt = ValueNone
           RoughnessOpt = ValueNone
           MetallicOpt = ValueNone
@@ -222,24 +218,8 @@ type [<SymbolicExpansion; CustomEquality; NoComparison>] Material =
         this.TwoSidedOpt = that.TwoSidedOpt &&
         this.ClippedOpt = that.ClippedOpt
 
-    override this.GetHashCode () =
-        Material.hash this
-
-    override this.Equals (that : obj) =
-        match that with
-        | :? Material as that -> Material.equals this that
-        | _ -> false
-
-    interface IEquatable<Material> with
-        member this.Equals that =
-            Material.equals this that
-
-/// Material functions.
-[<RequireQualifiedAccess>]
-module Material =
-
     /// The material with populated default images.
-    let defaultMaterial =
+    static member val defaultMaterial =
         { AlbedoImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialAlbedoName)
           RoughnessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialRoughnessName)
           MetallicImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialMetallicName)
@@ -257,7 +237,7 @@ module Material =
           ClippedOpt = ValueSome false }
 
     /// The empty material.
-    let empty =
+    static member val empty =
         { AlbedoImageOpt = ValueNone
           RoughnessImageOpt = ValueNone
           MetallicImageOpt = ValueNone
@@ -273,6 +253,18 @@ module Material =
           ClearCoatNormalImageOpt = ValueNone
           TwoSidedOpt = ValueNone
           ClippedOpt = ValueNone }
+
+    override this.GetHashCode () =
+        Material.hash this
+
+    override this.Equals (that : obj) =
+        match that with
+        | :? Material as that -> Material.equals this that
+        | _ -> false
+
+    interface IEquatable<Material> with
+        member this.Equals that =
+            Material.equals this that
 
 /// A mutable 3d light probe value type.
 type [<Struct>] LightProbe3dValue =
@@ -431,7 +423,7 @@ type StaticModelSurfaceDescriptor =
       Indices : int array
       ModelMatrix : Matrix4x4
       Bounds : Box3
-      MaterialProperties : OpenGL.PhysicallyBased.PhysicallyBasedMaterialProperties
+      MaterialProperties : PhysicallyBasedMaterialProperties
       IgnoreLightMaps : bool
       AlbedoImage : Image AssetTag
       RoughnessImage : Image AssetTag
@@ -859,8 +851,8 @@ type private SortableLightMap =
       SortableLightMapAmbientColor : Color
       SortableLightMapAmbientBrightness : single
       SortableLightMapBounds : Box3
-      SortableLightMapIrradianceMap : OpenGL.Texture.Texture
-      SortableLightMapEnvironmentFilterMap : OpenGL.Texture.Texture
+      SortableLightMapIrradianceMap : Texture
+      SortableLightMapEnvironmentFilterMap : Texture
       mutable SortableLightMapDistanceSquared : single }
 
     /// TODO: maybe put this somewhere general?
@@ -870,16 +862,16 @@ type private SortableLightMap =
         let z = min bounds.Max.Z (max bounds.Min.Z point.Z)
         (point - v3 x y z).MagnitudeSquared
 
-    /// Sort light maps into array for uploading to OpenGL.
+    /// Sort light maps into array for uploading to Vulkan.
     /// TODO: consider getting rid of allocation here.
-    static member sortLightMaps lightMapsMax position boundsOpt lightMaps =
+    static member sortLightMaps lightMapsMax position boundsOpt irradianceMapDefault environmentMapDefault lightMaps =
         let lightMapOrigins = Array.zeroCreate<Vector3> lightMapsMax
         let lightMapMins = Array.zeroCreate<Vector3> lightMapsMax
         let lightMapSizes = Array.zeroCreate<Vector3> lightMapsMax
         let lightMapAmbientColors = Array.zeroCreate<Color> lightMapsMax
         let lightMapAmbientBrightnesses = Array.zeroCreate<single> lightMapsMax
-        let lightMapIrradianceMaps = Array.init<OpenGL.Texture.Texture> lightMapsMax (fun _ -> OpenGL.Texture.EmptyTexture)
-        let lightMapEnvironmentFilterMaps = Array.init<OpenGL.Texture.Texture> lightMapsMax (fun _ -> OpenGL.Texture.EmptyTexture)
+        let lightMapIrradianceMaps = Array.replicate<Texture> lightMapsMax irradianceMapDefault
+        let lightMapEnvironmentFilterMaps = Array.replicate<Texture> lightMapsMax environmentMapDefault
         let lightMapsFiltered =
             match boundsOpt with
             | Some (bounds : Box3) -> lightMaps |> Array.filter (fun lightMap -> lightMap.SortableLightMapBounds.Intersects bounds)
@@ -960,25 +952,7 @@ type private SortableLight =
                 lightsArray[i] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
         lightsArray
 
-    /// Sort shadowing cascaded lights.
-    /// TODO: see if we can get rid of allocation here.
-    static member sortShadowingCascadedLightsIntoArray lightsMax position lights =
-        let lightsArray = Array.zeroCreate<_> lightsMax
-        for light in lights do
-            light.SortableLightDistance <-
-                (light.SortableLightOrigin - position).Magnitude - light.SortableLightCutoff |> max 0.0f
-        let lightsSorted =
-            lights
-            |> Seq.toArray
-            |> Array.filter (fun light -> light.SortableLightDesireShadows = 1 && light.SortableLightType = 3)
-            |> Array.sortBy SortableLight.project
-        for i in 0 .. dec lightsMax do
-            if i < lightsSorted.Length then
-                let light = lightsSorted[i]
-                lightsArray[i] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
-        lightsArray
-
-    /// Sort lights into float array for uploading to OpenGL.
+    /// Sort lights into float array for uploading to Vulkan.
     /// TODO: see if we can get rid of allocation here.
     static member sortLights lightsMax position lights =
         let lightIds = Array.zeroCreate<uint64> lightsMax
@@ -1027,12 +1001,12 @@ type private SortableLight =
 /// Enables efficient comparison of animated model surfaces.
 type [<CustomEquality; NoComparison; Struct>] private AnimatedModelSurfaceKey =
     { BoneTransforms : Matrix4x4 array
-      AnimatedSurface : OpenGL.PhysicallyBased.PhysicallyBasedSurface }
+      AnimatedSurface : PhysicallyBasedSurface }
 
     static member hash amsKey =
         let mutable hashCode = 0
         for i in 0 .. dec amsKey.BoneTransforms.Length do hashCode <- hashCode ^^^ amsKey.BoneTransforms[i].GetHashCode ()
-        hashCode <- hashCode ^^^ OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.hash amsKey.AnimatedSurface
+        hashCode <- hashCode ^^^ PhysicallyBasedSurface.hash amsKey.AnimatedSurface
         hashCode
 
     static member equals left right =
@@ -1042,7 +1016,7 @@ type [<CustomEquality; NoComparison; Struct>] private AnimatedModelSurfaceKey =
             while i < left.BoneTransforms.Length && equal do
                 equal <- left.BoneTransforms[i] = right.BoneTransforms[i]
                 i <- inc i
-            equal && OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.equals left.AnimatedSurface right.AnimatedSurface
+            equal && PhysicallyBasedSurface.equals left.AnimatedSurface right.AnimatedSurface
         else false
 
     static member comparer =
@@ -1063,16 +1037,16 @@ type [<ReferenceEquality>] private RenderTasks =
       LightMaps : SortableLightMap List
       LightMapRenders : uint64 HashSet
       Lights : SortableLight List
-      DeferredStatic : Dictionary<OpenGL.PhysicallyBased.PhysicallyBasedSurface, struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List>
-      DeferredStaticPreBatches : Dictionary<Guid, struct (OpenGL.PhysicallyBased.PhysicallyBasedSurface * (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)>
-      DeferredStaticClipped : Dictionary<OpenGL.PhysicallyBased.PhysicallyBasedSurface, struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List>
-      DeferredStaticClippedPreBatches : Dictionary<Guid, struct (OpenGL.PhysicallyBased.PhysicallyBasedSurface * (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)>
+      DeferredStatic : Dictionary<PhysicallyBasedSurface, struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List>
+      DeferredStaticPreBatches : Dictionary<Guid, struct (PhysicallyBasedSurface * (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)>
+      DeferredStaticClipped : Dictionary<PhysicallyBasedSurface, struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List>
+      DeferredStaticClippedPreBatches : Dictionary<Guid, struct (PhysicallyBasedSurface * (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)>
       DeferredAnimated : Dictionary<AnimatedModelSurfaceKey, struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List>
-      DeferredTerrains : struct (TerrainDescriptor * TerrainPatchDescriptor * OpenGL.PhysicallyBased.PhysicallyBasedGeometry) List
-      Forward : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest) List
-      ForwardSorted : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest) List
-      DeferredStaticRemovals : OpenGL.PhysicallyBased.PhysicallyBasedSurface List
-      DeferredStaticClippedRemovals : OpenGL.PhysicallyBased.PhysicallyBasedSurface List
+      DeferredTerrains : struct (TerrainDescriptor * TerrainPatchDescriptor * PhysicallyBasedGeometry) List
+      Forward : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest) List
+      ForwardSorted : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest) List
+      DeferredStaticRemovals : PhysicallyBasedSurface List
+      DeferredStaticClippedRemovals : PhysicallyBasedSurface List
       DeferredAnimatedRemovals : AnimatedModelSurfaceKey List
       mutable ShadowBufferIndexOpt : int option }
 
@@ -1082,9 +1056,9 @@ type [<ReferenceEquality>] private RenderTasks =
           LightMapRenders = HashSet HashIdentity.Structural
           LightMaps = List ()
           Lights = List ()
-          DeferredStatic = dictPlus OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.comparer []
+          DeferredStatic = dictPlus PhysicallyBasedSurfaceFns.comparer []
           DeferredStaticPreBatches = dictPlus HashIdentity.Structural []
-          DeferredStaticClipped = dictPlus OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.comparer []
+          DeferredStaticClipped = dictPlus PhysicallyBasedSurfaceFns.comparer []
           DeferredStaticClippedPreBatches = dictPlus HashIdentity.Structural []
           DeferredAnimated = dictPlus AnimatedModelSurfaceKey.comparer []
           DeferredTerrains = List ()
@@ -1251,60 +1225,56 @@ type [<ReferenceEquality>] StubRenderer3d =
         member renderer.Render _ _ _ _ _ _ _ _ _ = ()
         member renderer.CleanUp () = ()
 
-/// The OpenGL implementation of Renderer3d.
-type [<ReferenceEquality>] GlRenderer3d =
+/// The Vulkan implementation of Renderer3d.
+type [<ReferenceEquality>] VulkanRenderer3d =
     private
-        { mutable GeometryViewport : Viewport
+        { VulkanContext : VulkanContext
+          mutable GeometryViewport : Viewport
           mutable WindowViewport : Viewport
-          LazyTextureQueues : ConcurrentDictionary<OpenGL.Texture.LazyTexture ConcurrentQueue, OpenGL.Texture.LazyTexture ConcurrentQueue>
-          TextureServer : OpenGL.Texture.TextureServer
-          CubeMapVao : uint
-          mutable SkyBoxShader : OpenGL.SkyBox.SkyBoxShader
-          mutable IrradianceShader : OpenGL.CubeMap.CubeMapShader
-          mutable EnvironmentFilterShader : OpenGL.LightMap.EnvironmentFilterShader
-          mutable FilterShaders : OpenGL.Filter.FilterShaders
-          PhysicallyBasedStaticVao : uint
-          PhysicallyBasedAnimatedVao : uint
-          PhysicallyBasedTerrainVao : uint
-          mutable PhysicallyBasedShaders : OpenGL.PhysicallyBased.PhysicallyBasedShaders
+          LazyTextureQueues : ConcurrentDictionary<LazyTexture ConcurrentQueue, LazyTexture ConcurrentQueue>
+          TextureServer : TextureServer
+          TextureDumpster : TextureDumpster
+          FilteredSampler : Sampler
+          CubeMapSampler : Sampler
+          GeometrySampler : Sampler
+          ShadowSampler : Sampler
+          ColorSampler : Sampler
+          DepthSampler : Sampler
+          BrdfSampler : Sampler
+          mutable RenderPassIndex : int
+          GeometryInstanced : PhysicallyBasedGeometry HashSet
+          mutable SkyBoxPipeline : SkyBoxPipeline
+          mutable IrradiancePipeline : CubeMapPipeline
+          mutable EnvironmentFilterPipeline : EnvironmentFilterPipeline
+          mutable PhysicallyBasedPipelines : PhysicallyBasedPipelines
           ShadowMatrices : Matrix4x4 array
           LightShadowIndices : Dictionary<uint64, int>
           LightsDesiringShadows : Dictionary<uint64, SortableLight>
-          CubeMapGeometry : OpenGL.CubeMap.CubeMapGeometry
-          BillboardGeometry : OpenGL.PhysicallyBased.PhysicallyBasedGeometry
-          PhysicallyBasedQuad : OpenGL.PhysicallyBased.PhysicallyBasedGeometry
-          PhysicallyBasedTerrainGeometries : Dictionary<TerrainGeometryDescriptor, Dictionary<TerrainPatchDescriptor, OpenGL.PhysicallyBased.PhysicallyBasedGeometry>>
-          PhysicallyBasedTerrainGeometriesUtilized : TerrainGeometryDescriptor HashSet
-          CubeMap : OpenGL.Texture.Texture
-          WhiteTexture : OpenGL.Texture.Texture
-          BlackTexture : OpenGL.Texture.Texture
-          BrdfTexture : OpenGL.Texture.Texture
-          ReflectionRenderbuffer : uint
-          ReflectionFramebuffer : uint
-          IrradianceMapRenderbuffer : uint
-          IrradianceMapFramebuffer : uint
-          EnvironmentFilterRenderbuffer : uint
-          EnvironmentFilterFramebuffer : uint
-          IrradianceMap : OpenGL.Texture.Texture
-          EnvironmentFilterMap : OpenGL.Texture.Texture
-          PhysicallyBasedMaterial : OpenGL.PhysicallyBased.PhysicallyBasedMaterial
-          mutable PhysicallyBasedBuffers : OpenGL.PhysicallyBased.PhysicallyBasedBuffers
-          LightMaps : Dictionary<uint64, OpenGL.LightMap.LightMap>
+          CubeMapGeometry : CubeMapGeometry
+          BillboardGeometry : PhysicallyBasedGeometry
+          QuadGeometry : PhysicallyBasedGeometry
+          CubeMap : Texture
+          WhiteTexture : Texture
+          BlackTexture : Texture
+          BrdfTexture : Texture
+          IrradianceMap : Texture
+          EnvironmentFilterMap : Texture
+          PhysicallyBasedMaterial : PhysicallyBasedMaterial
+          mutable PhysicallyBasedAttachments : PhysicallyBasedAttachments
+          LightMaps : Dictionary<uint64, LightMap>
           mutable LightingConfig : Lighting3dConfig
           mutable LightingConfigChanged : bool
           mutable RendererConfig : Renderer3dConfig
           mutable RendererConfigChanged : bool
           mutable InstanceFields : single array
-          mutable UserDefinedStaticModelFields : single array
-          ForwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int)>
-          ForwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int) List
+          ForwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest * single * int)>
+          ForwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest * single * int) List
           RenderPackages : Packages<RenderAsset, AssetClient>
           mutable RenderPasses : Dictionary<RenderPass, RenderTasks>
           mutable RenderPasses2 : Dictionary<RenderPass, RenderTasks>
           mutable RenderPackageCachedOpt : RenderPackageCached
           mutable RenderAssetCached : RenderAssetCached
-          mutable ReloadAssetsRequested : bool
-          RenderMessages : RenderMessage3d List }
+          mutable ReloadAssetsRequested : bool }
 
     static member private logRenderAssetUnavailableOnce (assetTag : AssetTag) =
         let message =
@@ -1322,7 +1292,7 @@ type [<ReferenceEquality>] GlRenderer3d =
         single bits * 2.3283064365386963e-10f
 
     static member private hammersley (i : int) (N : int) =
-        v2 (single i / single N) (GlRenderer3d.radicalInverse (uint i))
+        v2 (single i / single N) (VulkanRenderer3d.radicalInverse (uint i))
 
     static member private importanceSampleGGX (xi : Vector2) (roughness : single) (n : Vector3) =
 
@@ -1354,8 +1324,8 @@ type [<ReferenceEquality>] GlRenderer3d =
         nom / denom
 
     static member private geometrySmith (roughness : single) (nov : single) (nol : single) =
-        let ggx2 = GlRenderer3d.geometrySchlickGGX nov roughness
-        let ggx1 = GlRenderer3d.geometrySchlickGGX nol roughness
+        let ggx2 = VulkanRenderer3d.geometrySchlickGGX nov roughness
+        let ggx1 = VulkanRenderer3d.geometrySchlickGGX nol roughness
         ggx1 * ggx2
         
     static member private integrateBrdf (nDotV : single) (roughness : single) (samples : int) =
@@ -1367,15 +1337,15 @@ type [<ReferenceEquality>] GlRenderer3d =
         let mutable b = 0.0f
         let n = v3Back
         for i in 0 .. dec samples do
-            let xi = GlRenderer3d.hammersley i samples
-            let h = GlRenderer3d.importanceSampleGGX xi roughness n
+            let xi = VulkanRenderer3d.hammersley i samples
+            let h = VulkanRenderer3d.importanceSampleGGX xi roughness n
             let l = (2.0f * v.Dot h * h - v).Normalized
             let nol = max l.Z 0.0f
             let noh = max h.Z 0.0f
             let voh = max (v.Dot h) 0.0f
             let nov = max (n.Dot v) 0.0f
             if nol > 0.0f then
-                let g = GlRenderer3d.geometrySmith roughness nov nol
+                let g = VulkanRenderer3d.geometrySmith roughness nov nol
                 let gVis = (g * voh) / (noh * nov)
                 let fc = pown (1.0f - voh) 5
                 a <- a + (1.0f - fc) * gVis
@@ -1392,8 +1362,8 @@ type [<ReferenceEquality>] GlRenderer3d =
         renderer.RenderPasses2.Clear ()
 
     static member private tryLoadTextureAsset (assetClient : AssetClient) (asset : Asset) renderer =
-        GlRenderer3d.invalidateCaches renderer
-        match assetClient.TextureClient.TryCreateTextureFiltered (true, OpenGL.Texture.InferCompression asset.FilePath, asset.FilePath) with
+        VulkanRenderer3d.invalidateCaches renderer
+        match assetClient.TextureClient.TryCreateTextureFiltered true (Hl.inferTextureCompression asset.FilePath) asset.FilePath RenderThread renderer.VulkanContext with
         | Right texture ->
             Some texture
         | Left error ->
@@ -1401,7 +1371,7 @@ type [<ReferenceEquality>] GlRenderer3d =
             None
 
     static member private tryLoadCubeMapAsset (assetClient : AssetClient) (asset : Asset) renderer =
-        GlRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.invalidateCaches renderer
         match File.ReadAllLines asset.FilePath |> Array.filter (String.IsNullOrWhiteSpace >> not) with
         | [|faceRightFilePath; faceLeftFilePath; faceTopFilePath; faceBottomFilePath; faceBackFilePath; faceFrontFilePath|] ->
             let dirPath = PathF.GetDirectoryName asset.FilePath
@@ -1412,40 +1382,40 @@ type [<ReferenceEquality>] GlRenderer3d =
             let faceBackFilePath = dirPath + "/" + faceBackFilePath.Trim ()
             let faceFrontFilePath = dirPath + "/" + faceFrontFilePath.Trim ()
             let cubeMapKey = (faceRightFilePath, faceLeftFilePath, faceTopFilePath, faceBottomFilePath, faceBackFilePath, faceFrontFilePath)
-            match assetClient.CubeMapClient.TryCreateCubeMap cubeMapKey with
+            match assetClient.CubeMapClient.TryCreateCubeMap cubeMapKey RenderThread renderer.VulkanContext with
             | Right cubeMap -> Some (cubeMapKey, cubeMap, ref None)
             | Left error -> Log.info ("Could not load cube map '" + asset.FilePath + "' due to: " + error); None
         | _ -> Log.info ("Could not load cube map '" + asset.FilePath + "' due to requiring exactly 6 file paths with each file path on its own line."); None
 
     static member private tryLoadModelAsset (assetClient : AssetClient) (asset : Asset) renderer =
-        GlRenderer3d.invalidateCaches renderer
-        match assetClient.SceneClient.TryCreatePhysicallyBasedModel (true, asset.FilePath, renderer.PhysicallyBasedMaterial, assetClient.TextureClient) with
+        VulkanRenderer3d.invalidateCaches renderer
+        match assetClient.SceneClient.TryCreatePhysicallyBasedModel asset.FilePath renderer.PhysicallyBasedMaterial assetClient.TextureClient (Some renderer.VulkanContext) with
         | Right model -> Some model
         | Left error -> Log.info ("Could not load model '" + asset.FilePath + "' due to: " + error); None
 
     static member private tryLoadRawAsset (asset : Asset) renderer =
-        GlRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.invalidateCaches renderer
         if File.Exists asset.FilePath
         then Some ()
         else None
 
     static member private tryLoadRenderAsset (assetClient : AssetClient) (asset : Asset) renderer =
-        GlRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.invalidateCaches renderer
         match PathF.GetExtensionLower asset.FilePath with
         | RawExtension _ ->
-            match GlRenderer3d.tryLoadRawAsset asset renderer with
+            match VulkanRenderer3d.tryLoadRawAsset asset renderer with
             | Some () -> Some RawAsset
             | None -> None
         | ImageExtension _ ->
-            match GlRenderer3d.tryLoadTextureAsset assetClient asset renderer with
+            match VulkanRenderer3d.tryLoadTextureAsset assetClient asset renderer with
             | Some texture -> Some (TextureAsset texture)
             | None -> None
         | CubeMapExtension _ ->
-            match GlRenderer3d.tryLoadCubeMapAsset assetClient asset renderer with
+            match VulkanRenderer3d.tryLoadCubeMapAsset assetClient asset renderer with
             | Some (cubeMapKey, cubeMap, opt) -> Some (CubeMapAsset (cubeMapKey, cubeMap, opt))
             | None -> None
         | ModelExtension _ ->
-            match GlRenderer3d.tryLoadModelAsset assetClient asset renderer with
+            match VulkanRenderer3d.tryLoadModelAsset assetClient asset renderer with
             | Some model ->
                 if model.Animated
                 then Some (AnimatedModelAsset model)
@@ -1454,15 +1424,20 @@ type [<ReferenceEquality>] GlRenderer3d =
         | _ -> None
 
     static member private freeRenderAsset renderAsset renderer =
-        GlRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.invalidateCaches renderer
         match renderAsset with
         | RawAsset -> () // nothing to do
-        | TextureAsset texture -> texture.Destroy ()
+        | TextureAsset texture -> Texture.destroy texture renderer.VulkanContext
         | FontAsset (_, font) -> SDL3_ttf.TTF_CloseFont font
-        | CubeMapAsset (_, cubeMap, _) -> cubeMap.Destroy ()
-        | StaticModelAsset (_, model) -> OpenGL.PhysicallyBased.DestroyPhysicallyBasedModel model
-        | AnimatedModelAsset model -> OpenGL.PhysicallyBased.DestroyPhysicallyBasedModel model
-        OpenGL.Hl.Assert ()
+        | CubeMapAsset (_, cubeMap, irradianceAndEnvironmentMapOptRef) ->
+            Texture.destroy cubeMap renderer.VulkanContext
+            match irradianceAndEnvironmentMapOptRef.Value with
+            | Some (irradiance, environment) -> 
+                Texture.destroy irradiance renderer.VulkanContext
+                Texture.destroy environment renderer.VulkanContext
+            | None -> ()
+        | StaticModelAsset (_, model) -> PhysicallyBased.destroyPhysicallyBasedModel model renderer.VulkanContext
+        | AnimatedModelAsset model -> PhysicallyBased.destroyPhysicallyBasedModel model renderer.VulkanContext
 
     static member private tryLoadRenderPackage packageName renderer =
 
@@ -1489,9 +1464,9 @@ type [<ReferenceEquality>] GlRenderer3d =
                 | None ->
                     let assetClient =
                         AssetClient
-                            (OpenGL.Texture.TextureClient (Some renderer.LazyTextureQueues),
-                                OpenGL.CubeMap.CubeMapClient (),
-                                OpenGL.PhysicallyBased.PhysicallyBasedSceneClient ())
+                            (TextureClient (Some renderer.LazyTextureQueues),
+                             CubeMapClient (),
+                             PhysicallyBasedSceneClient ())
                     let renderPackage = { Assets = dictPlus StringComparer.Ordinal []; PackageState = assetClient }
                     renderer.RenderPackages[packageName] <- renderPackage
                     renderPackage
@@ -1520,7 +1495,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                 | FontAsset _ -> ()
                 | CubeMapAsset (cubeMapKey, _, _) -> renderPackage.PackageState.CubeMapClient.CubeMaps.Remove cubeMapKey |> ignore<bool>
                 | StaticModelAsset _ | AnimatedModelAsset _ -> ()
-                GlRenderer3d.freeRenderAsset renderAsset renderer
+                VulkanRenderer3d.freeRenderAsset renderAsset renderer
 
             // categorize assets to load
             let assetsToLoad = HashSet ()
@@ -1529,12 +1504,12 @@ type [<ReferenceEquality>] GlRenderer3d =
                     assetsToLoad.Add asset |> ignore<bool>
 
             // preload assets
-            renderPackage.PackageState.PreloadAssets (false, assetsToLoad)
+            renderPackage.PackageState.PreloadAssets (false, assetsToLoad, renderer.VulkanContext)
 
             // load assets
             let assetsLoaded = Dictionary ()
             for asset in assetsToLoad do
-                match GlRenderer3d.tryLoadRenderAsset renderPackage.PackageState asset renderer with
+                match VulkanRenderer3d.tryLoadRenderAsset renderPackage.PackageState asset renderer with
                 | Some renderAsset ->
                     let lastWriteTime =
                         try DateTimeOffset (File.GetLastWriteTime asset.FilePath)
@@ -1558,7 +1533,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                                 let surfaces =
                                     [|for surface in staticModel.Surfaces do
                                         let material = scene.Materials[surface.SurfaceMaterialIndex]
-                                        let (_, material) = OpenGL.PhysicallyBased.CreatePhysicallyBasedMaterial (true, dirPath, renderer.PhysicallyBasedMaterial, renderPackage.PackageState.TextureClient, material)
+                                        let (_, material) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient material (Some renderer.VulkanContext)
                                         { surface with SurfaceMaterial = material }|]
                                 StaticModelAsset (userDefined, { staticModel with Surfaces = surfaces })
                             | Some _ | None -> renderAsset
@@ -1568,7 +1543,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                                 let surfaces =
                                     [|for surface in animatedModel.Surfaces do
                                         let material = scene.Materials[surface.SurfaceMaterialIndex]
-                                        let (_, material) = OpenGL.PhysicallyBased.CreatePhysicallyBasedMaterial (true, dirPath, renderer.PhysicallyBasedMaterial, renderPackage.PackageState.TextureClient, material)
+                                        let (_, material) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient material (Some renderer.VulkanContext)
                                         { surface with SurfaceMaterial = material }|]
                                 AnimatedModelAsset { animatedModel with Surfaces = surfaces }
                             | None -> renderAsset
@@ -1599,7 +1574,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                 renderer.RenderAssetCached.CachedAssetTagOpt <- assetTag
                 renderer.RenderAssetCached.CachedRenderAsset <- asset
                 ValueSome asset
-            else GlRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
+            else VulkanRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
         else
             match Dictionary.tryFind assetTag.PackageName renderer.RenderPackages with
             | Some package ->
@@ -1609,10 +1584,10 @@ type [<ReferenceEquality>] GlRenderer3d =
                     renderer.RenderAssetCached.CachedAssetTagOpt <- assetTag
                     renderer.RenderAssetCached.CachedRenderAsset <- asset
                     ValueSome asset
-                else GlRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
+                else VulkanRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
             | None ->
                 Log.info ("Loading Render3d package '" + assetTag.PackageName + "' for asset '" + assetTag.AssetName + "' on the fly.")
-                GlRenderer3d.tryLoadRenderPackage assetTag.PackageName renderer
+                VulkanRenderer3d.tryLoadRenderPackage assetTag.PackageName renderer
                 match renderer.RenderPackages.TryGetValue assetTag.PackageName with
                 | (true, package) ->
                     renderer.RenderPackageCachedOpt <- { CachedPackageName = assetTag.PackageName; CachedPackageAssets = package.Assets }
@@ -1621,187 +1596,8 @@ type [<ReferenceEquality>] GlRenderer3d =
                         renderer.RenderAssetCached.CachedAssetTagOpt <- assetTag
                         renderer.RenderAssetCached.CachedRenderAsset <- asset
                         ValueSome asset
-                    else GlRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
+                    else VulkanRenderer3d.logRenderAssetUnavailableOnce assetTag; ValueNone
                 | (false, _) -> ValueNone
-
-    static member private tryGetFilePath (assetTag : AssetTag) renderer =
-        match GlRenderer3d.tryGetRenderAsset assetTag renderer with
-        | ValueSome _ ->
-            match renderer.RenderPackages.TryGetValue assetTag.PackageName with
-            | (true, package) ->
-                match package.Assets.TryGetValue assetTag.AssetName with
-                | (true, (_, asset, _)) -> Some asset.FilePath
-                | (false, _) -> None
-            | (false, _) -> None
-        | ValueNone -> None
-
-    static member private tryGetTextureData minimal (assetTag : Image AssetTag) renderer =
-        match GlRenderer3d.tryGetFilePath assetTag renderer with
-        | Some filePath ->
-            match OpenGL.Texture.TryCreateTextureData (minimal, filePath) with
-            | Some textureData ->
-                let metadata = textureData.Metadata
-                let (compressed, bytes) = textureData.Bytes
-                textureData.Dispose ()
-                Some (metadata, compressed, bytes)
-            | None -> None
-        | None -> None
-
-    static member private tryGetHeightMapResolution heightMap renderer =
-        match heightMap with
-        | ImageHeightMap image ->
-            match GlRenderer3d.tryGetRenderAsset image renderer with
-            | ValueSome renderAsset ->
-                match renderAsset with
-                | TextureAsset texture ->
-                    let metadata = texture.TextureMetadata
-                    Some (metadata.TextureWidth, metadata.TextureHeight)
-                | _ -> None
-            | ValueNone -> None
-        | RawHeightMap map -> Some (map.Resolution.X, map.Resolution.Y)
-
-    static member private tryDestroyUserDefinedStaticModel assetTag renderer =
-
-        // ensure target package is loaded if possible
-        if not (renderer.RenderPackages.ContainsKey assetTag.PackageName) then
-            GlRenderer3d.tryLoadRenderPackage assetTag.PackageName renderer
-
-        // free any existing user-created static model, also determining if target asset can be user-created
-        match renderer.RenderPackages.TryGetValue assetTag.PackageName with
-        | (true, package) ->
-            match package.Assets.TryGetValue assetTag.AssetName with
-            | (true, (_, _, asset)) ->
-                match asset with
-                | StaticModelAsset (userDefined, _) when userDefined -> GlRenderer3d.freeRenderAsset asset renderer
-                | _ -> ()
-            | (false, _) -> ()
-        | (false, _) -> ()
-
-    static member private tryCreateUserDefinedStaticModel surfaceDescriptors bounds (assetTag : StaticModel AssetTag) renderer =
-
-        // ensure target package is loaded if possible
-        if not (renderer.RenderPackages.ContainsKey assetTag.PackageName) then
-            GlRenderer3d.tryLoadRenderPackage assetTag.PackageName renderer
-
-        // determine if target asset can be created
-        let canCreateUserDefinedStaticModel =
-            match renderer.RenderPackages.TryGetValue assetTag.PackageName with
-            | (true, package) -> not (package.Assets.ContainsKey assetTag.AssetName)
-            | (false, _) -> true
-
-        // ensure the user can create the static model
-        if canCreateUserDefinedStaticModel then
-
-            // create surfaces
-            let surfaces = List ()
-            for (surfaceDescriptor : StaticModelSurfaceDescriptor) in surfaceDescriptors do
-
-                // get albedo metadata and texture
-                let albedoTexture =
-                    match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.AlbedoImage renderer with
-                    | ValueSome (TextureAsset texture) -> texture
-                    | _ -> renderer.PhysicallyBasedMaterial.AlbedoTexture
-
-                // make material properties
-                let properties : OpenGL.PhysicallyBased.PhysicallyBasedMaterialProperties =
-                    { Albedo = surfaceDescriptor.MaterialProperties.Albedo
-                      Roughness = surfaceDescriptor.MaterialProperties.Roughness
-                      Metallic = surfaceDescriptor.MaterialProperties.Metallic
-                      AmbientOcclusion = surfaceDescriptor.MaterialProperties.AmbientOcclusion
-                      Emission = surfaceDescriptor.MaterialProperties.Emission
-                      Height = surfaceDescriptor.MaterialProperties.Height
-                      IgnoreLightMaps = surfaceDescriptor.MaterialProperties.IgnoreLightMaps
-                      OpaqueDistance = surfaceDescriptor.MaterialProperties.OpaqueDistance
-                      FinenessOffset = surfaceDescriptor.MaterialProperties.FinenessOffset
-                      ScatterType = surfaceDescriptor.MaterialProperties.ScatterType
-                      SpecularScalar = surfaceDescriptor.MaterialProperties.SpecularScalar
-                      SubsurfaceCutoff = surfaceDescriptor.MaterialProperties.SubsurfaceCutoff
-                      SubsurfaceCutoffMargin = surfaceDescriptor.MaterialProperties.SubsurfaceCutoffMargin
-                      RefractiveIndex = surfaceDescriptor.MaterialProperties.RefractiveIndex
-                      ClearCoat = surfaceDescriptor.MaterialProperties.ClearCoat
-                      ClearCoatRoughness = surfaceDescriptor.MaterialProperties.ClearCoatRoughness }
-
-                // make material
-                let material : OpenGL.PhysicallyBased.PhysicallyBasedMaterial =
-                    { AlbedoTexture = albedoTexture
-                      RoughnessTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.RoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.RoughnessTexture
-                      MetallicTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.MetallicImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.MetallicTexture
-                      AmbientOcclusionTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.AmbientOcclusionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture
-                      EmissionTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.EmissionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.EmissionTexture
-                      NormalTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.NormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.NormalTexture
-                      HeightTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.HeightImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.HeightTexture
-                      SubdermalTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.SubdermalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.SubdermalTexture
-                      FinenessTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.FinenessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.FinenessTexture
-                      ScatterTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.ScatterImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ScatterTexture
-                      ClearCoatTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatTexture
-                      ClearCoatRoughnessTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatRoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatRoughnessTexture
-                      ClearCoatNormalTexture = match GlRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatNormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatNormalTexture
-                      TwoSided = surfaceDescriptor.TwoSided
-                      Clipped = surfaceDescriptor.Clipped
-                      Names = "" }
-
-                // create vertex data, truncating it when required
-                let vertexCount = surfaceDescriptor.Positions.Length
-                let elementCount = vertexCount * 8
-                if  renderer.UserDefinedStaticModelFields.Length < elementCount then
-                    renderer.UserDefinedStaticModelFields <- Array.zeroCreate elementCount // TODO: grow this by power of two.
-                let vertexData = renderer.UserDefinedStaticModelFields.AsMemory (0, elementCount)
-                let mutable i = 0
-                try
-                    let vertexData = vertexData.Span
-                    while i < vertexCount do
-                        let u = i * 8
-                        vertexData[u] <- surfaceDescriptor.Positions[i].X
-                        vertexData[u+1] <- surfaceDescriptor.Positions[i].Y
-                        vertexData[u+2] <- surfaceDescriptor.Positions[i].Z
-                        vertexData[u+3] <- surfaceDescriptor.TexCoordses[i].X
-                        vertexData[u+4] <- surfaceDescriptor.TexCoordses[i].Y
-                        vertexData[u+5] <- surfaceDescriptor.Normals[i].X
-                        vertexData[u+6] <- surfaceDescriptor.Normals[i].Y
-                        vertexData[u+7] <- surfaceDescriptor.Normals[i].Z
-                        i <- inc i
-                with :? IndexOutOfRangeException ->
-                    Log.info "Vertex data truncated due to an unequal count among surface descriptor Positions, TexCoordses, and Normals."
-
-                // create index data
-                let indexData = surfaceDescriptor.Indices.AsMemory ()
-
-                // create geometry
-                let geometry = OpenGL.PhysicallyBased.CreatePhysicallyBasedStaticGeometry (true, OpenGL.PrimitiveType.Triangles, vertexData, indexData, surfaceDescriptor.Bounds) // TODO: consider letting user specify primitive drawing type.
-
-                // create surface
-                let surface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, surfaceDescriptor.ModelMatrix, surfaceDescriptor.Bounds, properties, material, -1, Assimp.Node.Empty, geometry)
-                surfaces.Add surface
-
-            // create user-defined static model
-            let surfaces = Seq.toArray surfaces
-            let hierarchy = TreeNode (Array.map OpenGL.PhysicallyBased.PhysicallyBasedSurface surfaces)
-            let model : OpenGL.PhysicallyBased.PhysicallyBasedModel =
-                { Animated = false
-                  Bounds = bounds
-                  LightProbes = [||]
-                  Lights = [||]
-                  Surfaces = surfaces
-                  SceneOpt = None
-                  PhysicallyBasedHierarchy = hierarchy }
-
-            // assign model as appropriate render package asset
-            match renderer.RenderPackages.TryGetValue assetTag.PackageName with
-            | (true, package) ->
-                let asset = Asset.make assetTag "" [] (Set.singleton Constants.Associations.Render3d)
-                package.Assets[assetTag.AssetName] <- (DateTimeOffset.MinValue.DateTime, asset, StaticModelAsset (true, model))
-            | (false, _) ->
-                let assetClient =
-                    AssetClient
-                        (OpenGL.Texture.TextureClient (Some renderer.LazyTextureQueues),
-                         OpenGL.CubeMap.CubeMapClient (),
-                         OpenGL.PhysicallyBased.PhysicallyBasedSceneClient ())
-                let asset = Asset.make assetTag "" [] (Set.singleton Constants.Associations.Render3d)
-                let package = { Assets = Dictionary.singleton StringComparer.Ordinal assetTag.AssetName (DateTimeOffset.MinValue.DateTime, asset, StaticModelAsset (true, model)); PackageState = assetClient }
-                renderer.RenderPackages[assetTag.PackageName] <- package
-
-        // attempted to replace a loaded asset
-        else Log.info ("Cannot replace a loaded asset '" + scstring assetTag + "' with a user-created static model.")
 
     static member private getRenderTasks renderPass renderer =
         let mutable renderTasks = Unchecked.defaultof<RenderTasks> // OPTIMIZATION: seems like TryGetValue allocates here if we use the tupling idiom (this may only be the case in Debug builds tho).
@@ -1825,10 +1621,10 @@ type [<ReferenceEquality>] GlRenderer3d =
             renderTasks
 
     static member private getLastSkyBoxOpt renderPass renderer =
-        let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
+        let renderTasks = VulkanRenderer3d.getRenderTasks renderPass renderer
         match Seq.tryLast renderTasks.SkyBoxes with
         | Some (lightAmbientColor, lightAmbientBrightness, cubeMapColor, cubeMapBrightness, cubeMapAsset) ->
-            match GlRenderer3d.tryGetRenderAsset cubeMapAsset renderer with
+            match VulkanRenderer3d.tryGetRenderAsset cubeMapAsset renderer with
             | ValueSome asset ->
                 match asset with
                 | CubeMapAsset (_, cubeMap, cubeMapIrradianceAndEnvironmentMapOptRef) ->
@@ -1841,266 +1637,61 @@ type [<ReferenceEquality>] GlRenderer3d =
                 Log.info "Could not utilize sky box due to non-existent cube map asset."
                 (lightAmbientColor, lightAmbientBrightness, None)
         | None -> (Color.White, 1.0f, None)
-        
-    static member private tryComputeTerrainPatches (geometryDescriptor : TerrainGeometryDescriptor) (heightMapMetadata : HeightMapMetadata) =
-
-        // clamp patch count and validate terrain resolution
-        let patches = geometryDescriptor.Patches
-        let patches = v2i (max 1 patches.X) (max 1 patches.Y)
-        let patches = v2i (min 64 patches.X) (min 64 patches.Y)
-        let terrainBounds = geometryDescriptor.Bounds
-        let terrainResolution = heightMapMetadata.Resolution
-        if  dec terrainResolution.X >= 1 &&
-            dec terrainResolution.Y >= 1 then
-
-            // compute patch resolution
-            let patchResolution =
-                if  patches.X >= dec terrainResolution.X ||
-                    patches.Y >= dec terrainResolution.Y then
-                    v2iDup 2
-                else
-                    let patchResolutionX = single (dec terrainResolution.X) / single patches.X |> ceil |> int |> inc
-                    let patchResolutionY = single (dec terrainResolution.Y) / single patches.Y |> ceil |> int |> inc
-                    v2i patchResolutionX patchResolutionY
-
-            // handle single patch case
-            if  patchResolution.X > terrainResolution.X ||
-                patchResolution.Y > terrainResolution.Y ||
-                patchResolution = terrainResolution then
-                [|{ PatchId = v2iZero
-                    PatchBounds = geometryDescriptor.Bounds
-                    PatchOffset = v2iZero
-                    PatchResolution = terrainResolution }|] |> Some
-            
-            // otherwise, handle multi-patch case
-            else
-
-                // compute patch cell size
-                let cellSize =
-                    v3
-                        (terrainBounds.Size.X / single terrainResolution.X)
-                        terrainBounds.Size.Y
-                        (terrainBounds.Size.Z / single terrainResolution.Y)
-
-                // compute full patch size (without underflow taken into account)
-                let patchSizeFull =
-                    v3
-                        (single terrainResolution.X * cellSize.X)
-                        terrainBounds.Size.Y
-                        (single terrainResolution.Y * cellSize.Z)
-
-                // compute patches
-                [|for patchY in 0 .. dec patches.Y do
-                    for patchX in 0 .. dec patches.X do
-
-                        // compute patch min
-                        let patchOffset =
-                            v2i
-                                (patchX * dec patchResolution.X)
-                                (patchY * dec patchResolution.Y)
-                        let patchMin =
-                            v3
-                                (terrainBounds.Min.X + single patchOffset.X * cellSize.X)
-                                terrainBounds.Min.Y
-                                (terrainBounds.Min.Z + single patchOffset.Y * cellSize.Z)
-
-                        // compute patch size
-                        let patchOverflow =
-                            v2i
-                                (patchOffset.X + patchResolution.X - terrainResolution.X |> max 0)
-                                (patchOffset.Y + patchResolution.Y - terrainResolution.Y |> max 0)
-                        let patchResolution =
-                            patchResolution - patchOverflow
-                        let patchSize =
-                            v3
-                                (single patchResolution.X * cellSize.X)
-                                patchSizeFull.Y
-                                (single patchResolution.Y * cellSize.Z)
-
-                        // fin
-                        { PatchId = v2i patchX patchY
-                          PatchResolution = patchResolution
-                          PatchBounds = box3 patchMin patchSize
-                          PatchOffset = patchOffset }|] |> Some
-
-        // invalid terrain resolution
-        else Log.error "Terrain resolution must be at least 2x2."; None
-
-    static member private createPhysicallyBasedTerrainNormals (resolution : Vector2i) (positionsAndTexCoordses : struct (Vector3 * Vector2) array) =
-        [|for y in 0 .. dec resolution.Y do
-            for x in 0 .. dec resolution.X do
-                if x > 0 && y > 0 && x < dec resolution.X && y < dec resolution.Y then
-                    let v  = fst' positionsAndTexCoordses[resolution.X * y + x]
-                    let n  = fst' positionsAndTexCoordses[resolution.X * dec y + x]
-                    let ne = fst' positionsAndTexCoordses[resolution.X * dec y + inc x]
-                    let e  = fst' positionsAndTexCoordses[resolution.X * y + inc x]
-                    let s  = fst' positionsAndTexCoordses[resolution.X * inc y + x]
-                    let sw = fst' positionsAndTexCoordses[resolution.X * inc y + dec x]
-                    let w  = fst' positionsAndTexCoordses[resolution.X * y + dec x]
-                    let normalSum =
-                        Vector3.Cross (ne - v, n - v) +
-                        Vector3.Cross (e - v,  ne - v) +
-                        Vector3.Cross (s - v,  e - v) +
-                        Vector3.Cross (sw - v, s - v) +
-                        Vector3.Cross (w - v,  sw - v) +
-                        Vector3.Cross (n - v,  w - v)
-                    let normal = normalSum.Normalized
-                    normal
-                else v3Up|]
-
-    static member private tryCreatePhysicallyBasedTerrainGeometryData (geometryDescriptor : TerrainGeometryDescriptor) (heightMapMetadata : HeightMapMetadata) renderer =
-
-        // compute normals
-        let resolution = heightMapMetadata.Resolution
-        let positionsAndTexCoordses = heightMapMetadata.PositionsAndTexCoordses
-        let normalsOpt =
-            match geometryDescriptor.NormalImageOpt with
-            | Some normalImage ->
-                match GlRenderer3d.tryGetTextureData false normalImage renderer with
-                | Some (metadata, compressed, bytes) ->
-                    if metadata.TextureWidth * metadata.TextureHeight = positionsAndTexCoordses.Length then
-                        if not compressed then
-                            let scalar = 1.0f / single Byte.MaxValue
-                            bytes
-                            |> Array.map (fun b -> single b * scalar)
-                            |> Array.chunkBySize 4
-                            |> Array.map (fun b ->
-                                let tangent = (v3 b[2] b[1] b[0] * 2.0f - v3One).Normalized
-                                let normal = v3 tangent.X tangent.Z -tangent.Y
-                                normal)
-                            |> Some
-                        else Log.info "Block-compressed images not supported for terrain normal images."; None
-                    else Log.info "Normal image resolution does not match terrain resolution."; None
-                | None -> Some (GlRenderer3d.createPhysicallyBasedTerrainNormals resolution positionsAndTexCoordses)
-            | None -> Some (GlRenderer3d.createPhysicallyBasedTerrainNormals resolution positionsAndTexCoordses)
-
-        // compute tint
-        let tintOpt =
-            match geometryDescriptor.TintImageOpt with
-            | Some tintImage ->
-                match GlRenderer3d.tryGetTextureData false tintImage renderer with
-                | Some (metadata, compressed, bytes) ->
-                    if metadata.TextureWidth * metadata.TextureHeight = positionsAndTexCoordses.Length then
-                        if not compressed then
-                            let scalar = 1.0f / single Byte.MaxValue
-                            bytes
-                            |> Array.map (fun b -> single b * scalar)
-                            |> Array.chunkBySize 4
-                            |> Array.map (fun b -> v3 b[2] b[1] b[0])
-                            |> Some
-                        else Log.info "Block-compressed images not supported for terrain tint images."; None
-                    else Log.info "Tint image resolution does not match terrain resolution."; None
-                | None -> Some (Array.init positionsAndTexCoordses.Length (fun _ -> v3One))
-            | _ -> Some (Array.init positionsAndTexCoordses.Length (fun _ -> v3One))
-
-        // compute blendses, logging if more than the safe number of terrain layers is utilized
-        // NOTE: there are 8 blends, each of which we account for regardless of TerrainLayersMax.
-        let blendses = Array2D.zeroCreate<single> positionsAndTexCoordses.Length 8
-        match geometryDescriptor.Material with
-        | BlendMaterial blendMaterial ->
-            if blendMaterial.TerrainLayers.Length > Constants.Render.TerrainLayersMax then
-                Log.infoOnce
-                    ("Terrain has more than " +
-                     string Constants.Render.TerrainLayersMax +
-                     " layers which references more than the number of supported fragment shader textures.")
-            match blendMaterial.BlendMap with
-            | RgbaMap rgbaMap ->
-                match GlRenderer3d.tryGetTextureData false rgbaMap renderer with
-                | Some (metadata, compressed, bytes) ->
-                    if metadata.TextureWidth * metadata.TextureHeight = positionsAndTexCoordses.Length then
-                        if not compressed then
-                            let scalar = 1.0f / single Byte.MaxValue
-                            for i in 0 .. dec positionsAndTexCoordses.Length do
-                                // ARGB reverse byte order, from Drawing.Bitmap (windows).
-                                // TODO: confirm it is the same for SDL (linux).
-                                blendses[i, 0] <- single bytes[i * 4 + 2] * scalar
-                                blendses[i, 1] <- single bytes[i * 4 + 1] * scalar
-                                blendses[i, 2] <- single bytes[i * 4 + 0] * scalar
-                                blendses[i, 3] <- single bytes[i * 4 + 3] * scalar
-                        else Log.info "Block-compressed images not supported for terrain blend iamges."
-                    else Log.info "Blend image resolution does not match terrain resolution."
-                | None -> Log.info ("Could not locate texture data for blend image '" + scstring rgbaMap + "'.")
-            | RedsMap reds ->
-                let scalar = 1.0f / single Byte.MaxValue
-                for i in 0 .. dec (min reds.Length 8) do
-                    let red = reds[i]
-                    match GlRenderer3d.tryGetTextureData false red renderer with
-                    | Some (metadata, compressed, bytes) ->
-                        if metadata.TextureWidth * metadata.TextureHeight = positionsAndTexCoordses.Length then
-                            if not compressed then
-                                for j in 0 .. dec positionsAndTexCoordses.Length do
-                                    blendses[j, i] <- single bytes[j * 4 + 2] * scalar
-                            else Log.info "Block-compressed images not supported for terrain blend images."
-                        else Log.info "Blend image resolution does not match terrain resolution."
-                    | None -> Log.info ("Could not locate texture data for blend image '" + scstring red + "'.")
-        | FlatMaterial _ ->
-            for i in 0 .. dec positionsAndTexCoordses.Length do
-                blendses[i,0] <- 1.0f
-
-        // ensure we've got usable input data
-        match (normalsOpt, tintOpt) with
-        | (Some normals, Some tint) ->
-                
-            // provide data necessary for creating geometry
-            Some (positionsAndTexCoordses, normals, blendses, tint)
-
-        // error
-        | (_, _) -> None
 
     static member private makeBillboardMaterial (properties : MaterialProperties inref, material : Material inref, renderer) =
         let albedoTexture =
-            match GlRenderer3d.tryGetRenderAsset material.AlbedoImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.AlbedoImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.AlbedoTexture
         let roughnessTexture =
-            match GlRenderer3d.tryGetRenderAsset material.RoughnessImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.RoughnessImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.RoughnessTexture
         let metallicTexture =
-            match GlRenderer3d.tryGetRenderAsset material.MetallicImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.MetallicImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.MetallicTexture
         let ambientOcclusionTexture =
-            match GlRenderer3d.tryGetRenderAsset material.AmbientOcclusionImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.AmbientOcclusionImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture
         let emissionTexture =
-            match GlRenderer3d.tryGetRenderAsset material.EmissionImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.EmissionImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.EmissionTexture
         let normalTexture =
-            match GlRenderer3d.tryGetRenderAsset material.NormalImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.NormalImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.NormalTexture
         let heightTexture =
-            match GlRenderer3d.tryGetRenderAsset material.HeightImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.HeightImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.HeightTexture
         let subdermalTexture =
-            match GlRenderer3d.tryGetRenderAsset material.SubdermalImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.SubdermalImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.SubdermalTexture
         let finenessTexture =
-            match GlRenderer3d.tryGetRenderAsset material.FinenessImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.FinenessImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.FinenessTexture
         let scatterTexture =
-            match GlRenderer3d.tryGetRenderAsset material.ScatterImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.ScatterImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.ScatterTexture
         let clearCoatTexture =
-            match GlRenderer3d.tryGetRenderAsset material.ClearCoatImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.ClearCoatImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.ClearCoatTexture
         let clearCoatRoughnessTexture =
-            match GlRenderer3d.tryGetRenderAsset material.ClearCoatRoughnessImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.ClearCoatRoughnessImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.ClearCoatRoughnessTexture
         let clearCoatNormalTexture =
-            match GlRenderer3d.tryGetRenderAsset material.ClearCoatNormalImage renderer with
+            match VulkanRenderer3d.tryGetRenderAsset material.ClearCoatNormalImage renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.ClearCoatNormalTexture
-        let properties : OpenGL.PhysicallyBased.PhysicallyBasedMaterialProperties =
+        let properties : PhysicallyBasedMaterialProperties =
             { Albedo = properties.Albedo
               Roughness = properties.Roughness
               Metallic = properties.Metallic
@@ -2117,7 +1708,7 @@ type [<ReferenceEquality>] GlRenderer3d =
               RefractiveIndex = properties.RefractiveIndex
               ClearCoat = properties.ClearCoat
               ClearCoatRoughness = properties.ClearCoatRoughness }
-        let material : OpenGL.PhysicallyBased.PhysicallyBasedMaterial =
+        let material : PhysicallyBasedMaterial =
             { AlbedoTexture = albedoTexture
               RoughnessTexture = roughnessTexture
               MetallicTexture = metallicTexture
@@ -2136,95 +1727,95 @@ type [<ReferenceEquality>] GlRenderer3d =
               Names = "" }
         struct (properties, material)
 
-    static member private applySurfaceMaterial (material : Material inref, surfaceMaterial : OpenGL.PhysicallyBased.PhysicallyBasedMaterial inref, renderer) =
+    static member private applySurfaceMaterial (material : Material inref, surfaceMaterial : PhysicallyBasedMaterial inref, renderer) =
         let albedoTexture =
             match material.AlbedoImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.AlbedoTexture
             | ValueNone -> surfaceMaterial.AlbedoTexture
         let roughnessTexture =
             match material.RoughnessImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.RoughnessTexture
             | ValueNone -> surfaceMaterial.RoughnessTexture
         let metallicTexture =
             match material.MetallicImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.MetallicTexture
             | ValueNone -> surfaceMaterial.MetallicTexture
         let ambientOcclusionTexture =
             match material.AmbientOcclusionImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.AmbientOcclusionTexture
             | ValueNone -> surfaceMaterial.AmbientOcclusionTexture
         let emissionTexture =
             match material.EmissionImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.EmissionTexture
             | ValueNone -> surfaceMaterial.EmissionTexture
         let normalTexture =
             match material.NormalImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.NormalTexture
             | ValueNone -> surfaceMaterial.NormalTexture
         let heightTexture =
             match material.HeightImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.HeightTexture
             | ValueNone -> surfaceMaterial.HeightTexture
         let finenessTexture =
             match material.FinenessImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.FinenessTexture
             | ValueNone -> surfaceMaterial.FinenessTexture
         let subdermalTexture =
             match material.SubdermalImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.SubdermalTexture
             | ValueNone -> surfaceMaterial.SubdermalTexture
         let scatterTexture =
             match material.ScatterImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.ScatterTexture
             | ValueNone -> surfaceMaterial.ScatterTexture
         let clearCoatTexture =
             match material.ClearCoatImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.ClearCoatTexture
             | ValueNone -> surfaceMaterial.ClearCoatTexture
         let clearCoatRoughnessTexture =
             match material.ClearCoatRoughnessImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.ClearCoatRoughnessTexture
             | ValueNone -> surfaceMaterial.ClearCoatRoughnessTexture
         let clearCoatNormalTexture =
             match material.ClearCoatNormalImageOpt with
             | ValueSome image ->
-                match GlRenderer3d.tryGetRenderAsset image renderer with
+                match VulkanRenderer3d.tryGetRenderAsset image renderer with
                 | ValueSome (TextureAsset texture) -> texture
                 | _ -> surfaceMaterial.ClearCoatNormalTexture
             | ValueNone -> surfaceMaterial.ClearCoatNormalTexture
@@ -2236,7 +1827,7 @@ type [<ReferenceEquality>] GlRenderer3d =
             match material.ClippedOpt with
             | ValueSome clipped -> clipped
             | ValueNone -> surfaceMaterial.Clipped
-        let surfaceMaterial : OpenGL.PhysicallyBased.PhysicallyBasedMaterial =
+        let surfaceMaterial : PhysicallyBasedMaterial =
             { AlbedoTexture = albedoTexture
               RoughnessTexture = roughnessTexture
               MetallicTexture = metallicTexture
@@ -2256,42 +1847,36 @@ type [<ReferenceEquality>] GlRenderer3d =
         surfaceMaterial
 
     static member private handleReloadShaders renderer =
-        renderer.SkyBoxShader <- OpenGL.SkyBox.CreateSkyBoxShader Constants.Paths.SkyBoxShaderFilePath
-        OpenGL.Hl.Assert ()
-        renderer.IrradianceShader <- OpenGL.CubeMap.CreateCubeMapShader Constants.Paths.IrradianceShaderFilePath
-        OpenGL.Hl.Assert ()
-        renderer.EnvironmentFilterShader <- OpenGL.LightMap.CreateEnvironmentFilterShader Constants.Paths.EnvironmentFilterShaderFilePath
-        OpenGL.Hl.Assert ()
-        renderer.FilterShaders <- OpenGL.Filter.CreateFilterShaders ()
-        OpenGL.Hl.Assert ()
-        renderer.PhysicallyBasedShaders <- OpenGL.PhysicallyBased.CreatePhysicallyBasedShaders (Constants.Render.LightMapsMaxDeferred, Constants.Render.LightsMaxDeferred)
-        OpenGL.Hl.Assert ()
-
+        Pipeline.reloadShaders renderer.SkyBoxPipeline.Pipeline renderer.VulkanContext
+        Pipeline.reloadShaders renderer.IrradiancePipeline.Pipeline renderer.VulkanContext
+        Pipeline.reloadShaders renderer.EnvironmentFilterPipeline.Pipeline renderer.VulkanContext
+        PhysicallyBased.reloadPhysicallyBasedShaders renderer.PhysicallyBasedPipelines renderer.VulkanContext
+    
     static member private handleLoadRenderPackage hintPackageName renderer =
-        GlRenderer3d.tryLoadRenderPackage hintPackageName renderer
+        VulkanRenderer3d.tryLoadRenderPackage hintPackageName renderer
 
     static member private handleUnloadRenderPackage hintPackageName renderer =
-        GlRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.invalidateCaches renderer
         match Dictionary.tryFind hintPackageName renderer.RenderPackages with
         | Some package ->
-            for (_, _, asset) in package.Assets.Values do GlRenderer3d.freeRenderAsset asset renderer
+            for (_, _, asset) in package.Assets.Values do VulkanRenderer3d.freeRenderAsset asset renderer
             let mutable unused = Unchecked.defaultof<_>
             renderer.LazyTextureQueues.Remove (package.PackageState.TextureClient.LazyTextureQueue, &unused) |> ignore<bool>
             renderer.RenderPackages.Remove hintPackageName |> ignore
         | None -> ()
 
     static member private handleReloadRenderAssets renderer =
-        GlRenderer3d.invalidateCaches renderer
-        GlRenderer3d.clearRenderPasses renderer // invalidate render task keys that now contain potentially stale data
-        GlRenderer3d.handleReloadShaders renderer
+        VulkanRenderer3d.invalidateCaches renderer
+        VulkanRenderer3d.clearRenderPasses renderer // invalidate render task keys that now contain potentially stale data
+        VulkanRenderer3d.handleReloadShaders renderer // waits for renders to complete, relevant to all asset reload
         for packageName in renderer.RenderPackages |> Seq.map (fun entry -> entry.Key) |> Array.ofSeq do
-            GlRenderer3d.tryLoadRenderPackage packageName renderer
-
+            VulkanRenderer3d.tryLoadRenderPackage packageName renderer
+    
     static member private sortForwardSurfaces
         eyeCenter
-        (surfaces : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest) List)
-        (forwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int)>)
-        (forwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int) List) =
+        (surfaces : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest) List)
+        (forwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest * single * int)>)
+        (forwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest * single * int) List) =
         for i in 0 .. dec surfaces.Count do
             let struct (subsort, sort, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) = surfaces[i]
             forwardSurfacesSortBuffer.Add struct (subsort, sort, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest, (model.Translation - eyeCenter).MagnitudeSquared, i)
@@ -2305,17 +1890,17 @@ type [<ReferenceEquality>] GlRenderer3d =
          castShadow : bool,
          presence : Presence,
          insetOpt : Box2 option,
-         albedoMetadata : OpenGL.Texture.TextureMetadata,
+         albedoMetadata : TextureMetadata,
          properties,
          orientUp,
          planar,
          shadowOffset,
-         billboardSurface : OpenGL.PhysicallyBased.PhysicallyBasedSurface,
+         billboardSurface : PhysicallyBasedSurface,
          depthTest,
          renderType,
          renderPass,
          renderTasks,
-         _ : GlRenderer3d) =
+         _ : VulkanRenderer3d) =
 
         // compute tex coords offset
         let texCoordsOffset =
@@ -2429,7 +2014,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          presence : Presence,
          insetOpt : Box2 voption inref,
          properties : MaterialProperties inref,
-         surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface,
+         surface : PhysicallyBasedSurface,
          depthTest : DepthTest,
          renderType : RenderType,
          renderPass : RenderPass,
@@ -2454,7 +2039,7 @@ type [<ReferenceEquality>] GlRenderer3d =
         let renderTasks =
             match renderTasksOpt with
             | ValueSome renderTasks -> renderTasks
-            | ValueNone -> GlRenderer3d.getRenderTasks renderPass renderer
+            | ValueNone -> VulkanRenderer3d.getRenderTasks renderPass renderer
         
         // render as appropriate
         match renderType with
@@ -2485,7 +2070,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          renderType : RenderType,
          renderPass : RenderPass,
          renderer) =
-        match GlRenderer3d.tryGetRenderAsset staticModel renderer with
+        match VulkanRenderer3d.tryGetRenderAsset staticModel renderer with
         | ValueSome renderAsset ->
             match renderAsset with
             | StaticModelAsset (_, modelAsset) ->
@@ -2493,10 +2078,10 @@ type [<ReferenceEquality>] GlRenderer3d =
                     let surface = modelAsset.Surfaces[surfaceIndex]
                     let surface = // OPTIMIZATION: apply surface material only if effective.
                         if material <> Material.empty then
-                            let surfaceMaterial = GlRenderer3d.applySurfaceMaterial (&material, &surface.SurfaceMaterial, renderer)
+                            let surfaceMaterial = VulkanRenderer3d.applySurfaceMaterial (&material, &surface.SurfaceMaterial, renderer)
                             { surface with SurfaceMaterial = surfaceMaterial }
                         else surface
-                    GlRenderer3d.categorizeStaticModelSurface (&model, castShadow, presence, &insetOpt, &properties, surface, depthTest, renderType, renderPass, ValueNone, renderer)
+                    VulkanRenderer3d.categorizeStaticModelSurface (&model, castShadow, presence, &insetOpt, &properties, surface, depthTest, renderType, renderPass, ValueNone, renderer)
             | _ -> Log.infoOnce ("Cannot render static model surface with a non-static model asset for '" + scstring staticModel + "'.")
         | ValueNone -> Log.infoOnce ("Cannot render static model surface due to unloadable asset(s) for '" + scstring staticModel + "'.")
 
@@ -2514,7 +2099,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          renderPass : RenderPass,
          renderTasks : RenderTasks,
          renderer) =
-        match GlRenderer3d.tryGetRenderAsset staticModel renderer with
+        match VulkanRenderer3d.tryGetRenderAsset staticModel renderer with
         | ValueSome renderAsset ->
             match renderAsset with
             | StaticModelAsset (_, modelAsset) ->
@@ -2522,7 +2107,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                     let surface = modelAsset.Surfaces[surfaceIndex]
                     let surface = // OPTIMIZATION: apply surface material only if effective.
                         if material <> Material.empty then
-                            let surfaceMaterial = GlRenderer3d.applySurfaceMaterial (&material, &surface.SurfaceMaterial, renderer)
+                            let surfaceMaterial = VulkanRenderer3d.applySurfaceMaterial (&material, &surface.SurfaceMaterial, renderer)
                             { surface with SurfaceMaterial = surfaceMaterial }
                         else surface
                     match renderType with
@@ -2565,7 +2150,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          renderTasks : RenderTasks,
          renderer) =
         let renderStyle = match renderType with DeferredRenderType -> Deferred | ForwardRenderType (subsort, sort) -> Forward (subsort, sort)
-        match GlRenderer3d.tryGetRenderAsset staticModel renderer with
+        match VulkanRenderer3d.tryGetRenderAsset staticModel renderer with
         | ValueSome renderAsset ->
             match renderAsset with
             | StaticModelAsset (_, modelAsset) ->
@@ -2605,14 +2190,14 @@ type [<ReferenceEquality>] GlRenderer3d =
                         else surface
                     let surfaceMatrix = if surface.SurfaceMatrixIsIdentity then model else surface.SurfaceMatrix * model
                     let surfaceBounds = surface.SurfaceBounds.Transform surfaceMatrix
-                    let presence = OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.extractPresence presence modelAsset.SceneOpt surface
-                    let renderStyle = OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.extractRenderStyle renderStyle modelAsset.SceneOpt surface
+                    let presence = PhysicallyBasedSurface.extractPresence presence modelAsset.SceneOpt surface
+                    let renderStyle = PhysicallyBasedSurface.extractRenderStyle renderStyle modelAsset.SceneOpt surface
                     let renderType = match renderStyle with Deferred -> DeferredRenderType | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
-                    let ignoreLightMaps = OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.extractIgnoreLightMaps properties.IgnoreLightMaps modelAsset.SceneOpt surface
+                    let ignoreLightMaps = PhysicallyBasedSurface.extractIgnoreLightMaps properties.IgnoreLightMaps modelAsset.SceneOpt surface
                     let properties = if ignoreLightMaps <> properties.IgnoreLightMaps then { properties with IgnoreLightMapsOpt = ValueSome ignoreLightMaps } else properties
-                    let finenessOffset = OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.extractFinenessOffset properties.FinenessOffset modelAsset.SceneOpt surface
+                    let finenessOffset = PhysicallyBasedSurface.extractFinenessOffset properties.FinenessOffset modelAsset.SceneOpt surface
                     let properties = if finenessOffset <> properties.FinenessOffset then { properties with FinenessOffsetOpt = ValueSome finenessOffset } else properties
-                    let scatterType = OpenGL.PhysicallyBased.PhysicallyBasedSurfaceFns.extractScatterType properties.ScatterType modelAsset.SceneOpt surface
+                    let scatterType = PhysicallyBasedSurface.extractScatterType properties.ScatterType modelAsset.SceneOpt surface
                     let properties = if scatterType <> properties.ScatterType then { properties with ScatterTypeOpt = ValueSome scatterType } else properties
                     let unculled =
                         match renderPass with
@@ -2623,7 +2208,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                         | ReflectionPass (_, reflFrustum) -> Presence.intersects3d ValueNone reflFrustum reflFrustum false presence surfaceBounds
                         | NormalPass -> Presence.intersects3d (ValueSome frustumInterior) frustumExterior frustumImposter false presence surfaceBounds
                     if unculled then
-                        GlRenderer3d.categorizeStaticModelSurface (&surfaceMatrix, castShadow, presence, &insetOpt, &properties, surface, depthTest, renderType, renderPass, ValueSome renderTasks, renderer)
+                        VulkanRenderer3d.categorizeStaticModelSurface (&surfaceMatrix, castShadow, presence, &insetOpt, &properties, surface, depthTest, renderType, renderPass, ValueSome renderTasks, renderer)
             | _ -> Log.infoOnce ("Cannot render static model with a non-static model asset for '" + scstring staticModel + "'.")
         | ValueNone -> Log.infoOnce ("Cannot render static model due to unloadable asset(s) for '" + scstring staticModel + "'.")
 
@@ -2643,7 +2228,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          renderer) =
 
         // ensure we have the required animated model
-        match GlRenderer3d.tryGetRenderAsset animatedModel renderer with
+        match VulkanRenderer3d.tryGetRenderAsset animatedModel renderer with
         | ValueSome renderAsset ->
             match renderAsset with
             | AnimatedModelAsset modelAsset ->
@@ -2706,7 +2291,7 @@ type [<ReferenceEquality>] GlRenderer3d =
          renderer) =
 
         // ensure we have the required animated model
-        match GlRenderer3d.tryGetRenderAsset animatedModel renderer with
+        match VulkanRenderer3d.tryGetRenderAsset animatedModel renderer with
         | ValueSome renderAsset ->
             match renderAsset with
             | AnimatedModelAsset modelAsset ->
@@ -2757,122 +2342,6 @@ type [<ReferenceEquality>] GlRenderer3d =
             | _ -> Log.infoOnce ("Cannot render animated model with a non-animated model asset '" + scstring animatedModel + "'.")
         | ValueNone -> Log.infoOnce ("Cannot render animated model due to unloadable asset(s) for '" + scstring animatedModel + "'.")
 
-    static member private categorizeTerrain
-        (visible : bool,
-         terrainDescriptor : TerrainDescriptor,
-         renderTasks : RenderTasks,
-         renderer) =
-
-        // attempt to create terrain geometry when not already cached
-        let geometryDescriptor = terrainDescriptor.TerrainGeometryDescriptor
-        if not (renderer.PhysicallyBasedTerrainGeometries.ContainsKey geometryDescriptor) then
-
-            // attempt to get height map metadata to compute patches
-            let heightMapMetadataOpt =
-                HeightMap.tryGetMetadata
-                    (fun assetTag -> GlRenderer3d.tryGetFilePath assetTag renderer)
-                    terrainDescriptor.Bounds
-                    terrainDescriptor.Tiles
-                    terrainDescriptor.HeightMap
-
-            // attempt to extract height map metadata for geometry creation
-            match heightMapMetadataOpt with
-            | ValueSome heightMapMetadata ->
-
-                // attempt to create geometry data for the entire terrain
-                match GlRenderer3d.tryCreatePhysicallyBasedTerrainGeometryData geometryDescriptor heightMapMetadata renderer with
-                | Some (positionsAndTexCoordses, normals, blendses, tint) ->
-
-                    // attempt to compute patches for the terrain
-                    match GlRenderer3d.tryComputeTerrainPatches geometryDescriptor heightMapMetadata with
-                    | Some patches ->
-
-                        // create geometry for each patch
-                        for patchDescriptor in patches do
-
-                            // extract positions and texture coordinates for this patch
-                            let patchResolution = patchDescriptor.PatchResolution
-                            let patchOffset = patchDescriptor.PatchOffset
-                            let patchPositionsAndTexCoordses =
-                                [|for y in 0 .. dec patchResolution.Y do
-                                    for x in 0 .. dec patchResolution.X do
-                                        let i = (patchOffset.Y + y) * heightMapMetadata.Resolution.X + (patchOffset.X + x)
-                                        positionsAndTexCoordses[i]|]
-
-                            // extract normals
-                            let patchNormals =
-                                [|for y in 0 .. dec patchResolution.Y do
-                                    for x in 0 .. dec patchResolution.X do
-                                        let i = (patchOffset.Y + y) * heightMapMetadata.Resolution.X + (patchOffset.X + x)
-                                        normals[i]|]
-
-                            // extract blendses
-                            let patchBlendses =
-                                [|for y in 0 .. dec patchResolution.Y do
-                                    for x in 0 .. dec patchResolution.X do
-                                        let i = (patchOffset.Y + y) * heightMapMetadata.Resolution.X + (patchOffset.X + x)
-                                        [|for j in 0 .. dec 8 do blendses[i, j]|]|]
-
-                            // extract tint
-                            let patchTint =
-                                [|for y in 0 .. dec patchResolution.Y do
-                                    for x in 0 .. dec patchResolution.X do
-                                        let i = (patchOffset.Y + y) * heightMapMetadata.Resolution.X + (patchOffset.X + x)
-                                        tint[i]|]
-
-                            // compute vertices
-                            let vertices =
-                                [|for i in 0 .. dec patchPositionsAndTexCoordses.Length do
-                                    let struct (p, tc) = patchPositionsAndTexCoordses[i]
-                                    let n = patchNormals[i]
-                                    let s = patchBlendses
-                                    let t = patchTint[i]
-                                    yield!
-                                        [|p.X; p.Y; p.Z
-                                          tc.X; tc.Y
-                                          n.X; n.Y; n.Z
-                                          t.X; t.Y; t.Z
-                                          s[i][0]; s[i][1]; s[i][2]; s[i][3]; s[i][4]; s[i][5]; s[i][6]; s[i][7]|]|]
-
-                            // compute indices, splitting quad along the standard orientation (as used by World Creator, AFAIK).
-                            let indices =
-                                [|for y in 0 .. dec patchResolution.Y - 1 do
-                                    for x in 0 .. dec patchResolution.X - 1 do
-                                        yield patchResolution.X * y + x
-                                        yield patchResolution.X * inc y + x
-                                        yield patchResolution.X * y + inc x
-                                        yield patchResolution.X * inc y + x
-                                        yield patchResolution.X * inc y + inc x
-                                        yield patchResolution.X * y + inc x|]
-
-                            // create the actual geometry
-                            let geometry = OpenGL.PhysicallyBased.CreatePhysicallyBasedTerrainGeometry (true, OpenGL.PrimitiveType.Triangles, vertices.AsMemory (), indices.AsMemory (), geometryDescriptor.Bounds)
-                            match renderer.PhysicallyBasedTerrainGeometries.TryGetValue geometryDescriptor with
-                            | (true, existingGeometry) -> existingGeometry.Add (patchDescriptor, geometry)
-                            | (false, _) -> renderer.PhysicallyBasedTerrainGeometries.Add (geometryDescriptor, dictPlus HashIdentity.Structural [(patchDescriptor, geometry)])
-
-                    // could not create geometry
-                    | None -> ()
-
-                // could not compute patches
-                | None -> ()
-
-            // could not extract height map metadata
-            | ValueNone -> ()
-
-        // attempt to add patch to appropriate render list when visible
-        if visible then
-            match renderer.PhysicallyBasedTerrainGeometries.TryGetValue geometryDescriptor with
-            | (true, patchGeometries) ->
-                for entry in patchGeometries do
-                    let patchDescriptor = entry.Key
-                    let patchGeometry = entry.Value
-                    renderTasks.DeferredTerrains.Add struct (terrainDescriptor, patchDescriptor, patchGeometry)
-            | (false, _) -> ()
-
-        // mark patch geometry as utilized regardless of visibility (to keep it from being destroyed)
-        renderer.PhysicallyBasedTerrainGeometriesUtilized.Add geometryDescriptor |> ignore<bool>
-
     static member private categorize
         frustumInterior
         frustumExterior
@@ -2884,25 +2353,25 @@ type [<ReferenceEquality>] GlRenderer3d =
         let userDefinedStaticModelsToDestroy = SList.make ()
         for message in renderMessages do
             match message with
-            | CreateUserDefinedStaticModel cudsm ->
-                GlRenderer3d.tryCreateUserDefinedStaticModel cudsm.StaticModelSurfaceDescriptors cudsm.Bounds cudsm.StaticModel renderer
-            | DestroyUserDefinedStaticModel dudsm ->
-                userDefinedStaticModelsToDestroy.Add dudsm.StaticModel 
+            //| CreateUserDefinedStaticModel cudsm ->
+            //    VulkanRenderer3d.tryCreateUserDefinedStaticModel cudsm.StaticModelSurfaceDescriptors cudsm.Bounds cudsm.StaticModel renderer
+            //| DestroyUserDefinedStaticModel dudsm ->
+            //    userDefinedStaticModelsToDestroy.Add dudsm.StaticModel 
             | RenderSkyBox rsb ->
-                let renderTasks = GlRenderer3d.getRenderTasks rsb.RenderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks rsb.RenderPass renderer
                 renderTasks.SkyBoxes.Add (rsb.AmbientColor, rsb.AmbientBrightness, rsb.CubeMapColor, rsb.CubeMapBrightness, rsb.CubeMap)
             | RenderLightProbe3d rlp ->
-                let renderTasks = GlRenderer3d.getRenderTasks rlp.RenderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks rlp.RenderPass renderer
                 if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
                     Log.warnOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
                     renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
                 renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
             | RenderLightMap3d rlm ->
-                let renderTasks = GlRenderer3d.getRenderTasks rlm.RenderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks rlm.RenderPass renderer
                 renderTasks.LightMapRenders.Add rlm.LightProbeId |> ignore<bool>
             | RenderLight3d rl ->
                 let direction = rl.Rotation.Down
-                let renderTasks = GlRenderer3d.getRenderTasks rl.RenderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks rl.RenderPass renderer
                 let coneOuter = match rl.LightType with SpotLight (_, coneOuter) -> min coneOuter MathF.TWO_PI | _ -> MathF.TWO_PI
                 let coneInner = match rl.LightType with SpotLight (coneInner, _) -> min coneInner coneOuter | _ -> MathF.TWO_PI
                 let light =
@@ -2925,19 +2394,19 @@ type [<ReferenceEquality>] GlRenderer3d =
                 if rl.DesireShadows then
                     renderer.LightsDesiringShadows[rl.LightId] <- light
             | RenderBillboard rb ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rb.MaterialProperties, &rb.Material, renderer)
-                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f 0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                let renderTasks = GlRenderer3d.getRenderTasks rb.RenderPass renderer
-                GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.DepthTest, rb.RenderType, rb.RenderPass, renderTasks, renderer)
+                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial (&rb.MaterialProperties, &rb.Material, renderer)
+                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f 0.5f -0.5f) v3One) billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                let renderTasks = VulkanRenderer3d.getRenderTasks rb.RenderPass renderer
+                VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.DepthTest, rb.RenderType, rb.RenderPass, renderTasks, renderer)
             | RenderBillboards rbs ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbs.MaterialProperties, &rbs.Material, renderer)
-                let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3 (v3 -0.5f -0.5f -0.5f) v3One, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                let renderTasks = GlRenderer3d.getRenderTasks rbs.RenderPass renderer
+                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial (&rbs.MaterialProperties, &rbs.Material, renderer)
+                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f -0.5f -0.5f) v3One) billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                let renderTasks = VulkanRenderer3d.getRenderTasks rbs.RenderPass renderer
                 for (model, castShadow, presence, insetOpt, orientUp, planar) in rbs.Billboards do
-                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.DepthTest, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
+                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.DepthTest, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
             | RenderBillboardParticles rbps ->
-                let struct (billboardProperties, billboardMaterial) = GlRenderer3d.makeBillboardMaterial (&rbps.MaterialProperties, &rbps.Material, renderer)
-                let renderTasks = GlRenderer3d.getRenderTasks rbps.RenderPass renderer
+                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial (&rbps.MaterialProperties, &rbps.Material, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks rbps.RenderPass renderer
                 for particle in rbps.Particles do
                     let billboardMatrix =
                         Matrix4x4.CreateAffine
@@ -2945,54 +2414,51 @@ type [<ReferenceEquality>] GlRenderer3d =
                              particle.Transform.Rotation,
                              particle.Transform.Size * particle.Transform.Scale)
                     let billboardProperties = { billboardProperties with Albedo = billboardProperties.Albedo * particle.Color; Emission = particle.Emission.R }
-                    let billboardSurface = OpenGL.PhysicallyBased.CreatePhysicallyBasedSurface (Array.empty, m4Identity, box3Zero, billboardProperties, billboardMaterial, -1, Assimp.Node.Empty, renderer.BillboardGeometry)
-                    GlRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.DepthTest, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
+                    let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity box3Zero billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.DepthTest, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
             | RenderStaticModelSurface rsms ->
                 let insetOpt = Option.toValueOption rsms.InsetOpt
-                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, &rsms.MaterialProperties, &rsms.Material, rsms.StaticModel, rsms.SurfaceIndex, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderer)
+                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, &rsms.MaterialProperties, &rsms.Material, rsms.StaticModel, rsms.SurfaceIndex, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderer)
             | RenderStaticModelSurfacePreBatch rsmsb ->
                 let renderPass = rsmsb.RenderPass
-                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
-                GlRenderer3d.categorizeStaticModelSurfacePreBatch (rsmsb.StaticModelSurfacePreBatch.PreBatchId, rsmsb.StaticModelSurfacePreBatch.StaticModelSurfaces, rsmsb.StaticModelSurfacePreBatch.Material, rsmsb.StaticModelSurfacePreBatch.StaticModel, rsmsb.StaticModelSurfacePreBatch.SurfaceIndex, rsmsb.StaticModelSurfacePreBatch.DepthTest, rsmsb.StaticModelSurfacePreBatch.RenderType, frustumInterior, frustumExterior, frustumImposter, renderPass, renderTasks, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks renderPass renderer
+                VulkanRenderer3d.categorizeStaticModelSurfacePreBatch (rsmsb.StaticModelSurfacePreBatch.PreBatchId, rsmsb.StaticModelSurfacePreBatch.StaticModelSurfaces, rsmsb.StaticModelSurfacePreBatch.Material, rsmsb.StaticModelSurfacePreBatch.StaticModel, rsmsb.StaticModelSurfacePreBatch.SurfaceIndex, rsmsb.StaticModelSurfacePreBatch.DepthTest, rsmsb.StaticModelSurfacePreBatch.RenderType, frustumInterior, frustumExterior, frustumImposter, renderPass, renderTasks, renderer)
             | RenderStaticModelSurfacePreBatches rsmsbs ->
                 let renderPass = rsmsbs.RenderPass
-                let renderTasks = GlRenderer3d.getRenderTasks renderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks renderPass renderer
                 for preBatch in rsmsbs.StaticModelSurfacePreBatches do
-                    GlRenderer3d.categorizeStaticModelSurfacePreBatch (preBatch.PreBatchId, preBatch.StaticModelSurfaces, preBatch.Material, preBatch.StaticModel, preBatch.SurfaceIndex, preBatch.DepthTest, preBatch.RenderType, frustumInterior, frustumExterior, frustumImposter, renderPass, renderTasks, renderer)
+                    VulkanRenderer3d.categorizeStaticModelSurfacePreBatch (preBatch.PreBatchId, preBatch.StaticModelSurfaces, preBatch.Material, preBatch.StaticModel, preBatch.SurfaceIndex, preBatch.DepthTest, preBatch.RenderType, frustumInterior, frustumExterior, frustumImposter, renderPass, renderTasks, renderer)
             | RenderStaticModel rsm ->
                 let insetOpt = Option.toValueOption rsm.InsetOpt
-                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.StaticModel, rsm.Clipped, rsm.DepthTest, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks rsm.RenderPass renderer
+                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.StaticModel, rsm.Clipped, rsm.DepthTest, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
             | RenderStaticModels rsms ->
-                let renderTasks = GlRenderer3d.getRenderTasks rsms.RenderPass renderer
+                let renderTasks = VulkanRenderer3d.getRenderTasks rsms.RenderPass renderer
                 for (model, castShadow, presence, insetOpt, properties) in rsms.StaticModels do // TODO: see if these should be struct tuples.
                     let insetOpt = Option.toValueOption insetOpt
-                    GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &model, castShadow, presence, &insetOpt, &properties, rsms.StaticModel, rsms.Clipped, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderTasks, renderer)
-            | RenderCachedStaticModel csmm ->
-                let renderTasks = GlRenderer3d.getRenderTasks csmm.CachedStaticModelRenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, &csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModel, csmm.CachedStaticModelClipped, csmm.CachedStaticModelDepthTest, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
+                    VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &model, castShadow, presence, &insetOpt, &properties, rsms.StaticModel, rsms.Clipped, rsms.DepthTest, rsms.RenderType, rsms.RenderPass, renderTasks, renderer)
             | RenderCachedStaticModelSurface csmsm ->
-                GlRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, &csmsm.CachedStaticModelSurfaceMaterialProperties, &csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceDepthTest, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
-            | RenderUserDefinedStaticModel rudsm ->
-                let insetOpt = Option.toValueOption rudsm.InsetOpt
-                let assetTag = asset Assets.Default.PackageName Gen.name // TODO: see if we should instead use a specialized package for temporary assets like these.
-                GlRenderer3d.tryCreateUserDefinedStaticModel rudsm.StaticModelSurfaceDescriptors rudsm.Bounds assetTag renderer
-                let renderTasks = GlRenderer3d.getRenderTasks rudsm.RenderPass renderer
-                GlRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, &rudsm.MaterialProperties, assetTag, rudsm.Clipped, rudsm.DepthTest, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
-                userDefinedStaticModelsToDestroy.Add assetTag
+                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, &csmsm.CachedStaticModelSurfaceMaterialProperties, &csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceDepthTest, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
+            | RenderCachedStaticModel csmm ->
+                let renderTasks = VulkanRenderer3d.getRenderTasks csmm.CachedStaticModelRenderPass renderer
+                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, &csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModel, csmm.CachedStaticModelClipped, csmm.CachedStaticModelDepthTest, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
+            //| RenderUserDefinedStaticModel rudsm ->
+            //    let insetOpt = Option.toValueOption rudsm.InsetOpt
+            //    let assetTag = asset Assets.Default.PackageName Gen.name // TODO: see if we should instead use a specialized package for temporary assets like these.
+            //    VulkanRenderer3d.tryCreateUserDefinedStaticModel rudsm.StaticModelSurfaceDescriptors rudsm.Bounds assetTag renderer
+            //    let renderTasks = VulkanRenderer3d.getRenderTasks rudsm.RenderPass renderer
+            //    VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, &rudsm.MaterialProperties, assetTag, rudsm.Clipped, rudsm.DepthTest, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
+            //    userDefinedStaticModelsToDestroy.Add assetTag
             | RenderAnimatedModel rsm ->
                 let insetOpt = Option.toValueOption rsm.InsetOpt
-                let renderTasks = GlRenderer3d.getRenderTasks rsm.RenderPass renderer
-                GlRenderer3d.categorizeAnimatedModel (&rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.BoneTransforms, rsm.AnimatedModel, rsm.SubsortOffsets, rsm.DualRenderedSurfaceIndices, rsm.DepthTest, rsm.RenderType, renderTasks, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks rsm.RenderPass renderer
+                VulkanRenderer3d.categorizeAnimatedModel (&rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, &rsm.MaterialProperties, rsm.BoneTransforms, rsm.AnimatedModel, rsm.SubsortOffsets, rsm.DualRenderedSurfaceIndices, rsm.DepthTest, rsm.RenderType, renderTasks, renderer)
             | RenderAnimatedModels rams ->
-                let renderTasks = GlRenderer3d.getRenderTasks rams.RenderPass renderer
-                GlRenderer3d.categorizeAnimatedModels (rams.AnimatedModels, rams.BoneTransforms, rams.AnimatedModel, rams.SubsortOffsets, rams.DualRenderedSurfaceIndices, rams.DepthTest, rams.RenderType, renderTasks, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks rams.RenderPass renderer
+                VulkanRenderer3d.categorizeAnimatedModels (rams.AnimatedModels, rams.BoneTransforms, rams.AnimatedModel, rams.SubsortOffsets, rams.DualRenderedSurfaceIndices, rams.DepthTest, rams.RenderType, renderTasks, renderer)
             | RenderCachedAnimatedModel camm ->
-                let renderTasks = GlRenderer3d.getRenderTasks camm.CachedAnimatedModelRenderPass renderer
-                GlRenderer3d.categorizeAnimatedModel (&camm.CachedAnimatedModelMatrix, camm.CachedAnimatedModelCastShadow, camm.CachedAnimatedModelPresence, &camm.CachedAnimatedModelInsetOpt, &camm.CachedAnimatedModelMaterialProperties, camm.CachedAnimatedModelBoneTransforms, camm.CachedAnimatedModel, camm.CachedAnimatedModelSubsortOffsets, camm.CachedAnimatedModelDualRenderedSurfaceIndices, camm.CachedAnimatedModelDepthTest, camm.CachedAnimatedModelRenderType, renderTasks, renderer)
-            | RenderTerrain rt ->
-                let renderTasks = GlRenderer3d.getRenderTasks rt.RenderPass renderer
-                GlRenderer3d.categorizeTerrain (rt.Visible, rt.TerrainDescriptor, renderTasks, renderer)
+                let renderTasks = VulkanRenderer3d.getRenderTasks camm.CachedAnimatedModelRenderPass renderer
+                VulkanRenderer3d.categorizeAnimatedModel (&camm.CachedAnimatedModelMatrix, camm.CachedAnimatedModelCastShadow, camm.CachedAnimatedModelPresence, &camm.CachedAnimatedModelInsetOpt, &camm.CachedAnimatedModelMaterialProperties, camm.CachedAnimatedModelBoneTransforms, camm.CachedAnimatedModel, camm.CachedAnimatedModelSubsortOffsets, camm.CachedAnimatedModelDualRenderedSurfaceIndices, camm.CachedAnimatedModelDepthTest, camm.CachedAnimatedModelRenderType, renderTasks, renderer)
             | ConfigureLighting3d l3c ->
                 if renderer.LightingConfig <> l3c then renderer.LightingConfigChanged <- true
                 renderer.LightingConfig <- l3c
@@ -3000,16 +2466,21 @@ type [<ReferenceEquality>] GlRenderer3d =
                 if renderer.RendererConfig <> r3c then renderer.RendererConfigChanged <- true
                 renderer.RendererConfig <- r3c
             | LoadRenderPackage3d packageName ->
-                GlRenderer3d.handleLoadRenderPackage packageName renderer
+                VulkanRenderer3d.handleLoadRenderPackage packageName renderer
             | UnloadRenderPackage3d packageName ->
-                GlRenderer3d.handleUnloadRenderPackage packageName renderer
+                VulkanRenderer3d.handleUnloadRenderPackage packageName renderer
             | ReloadRenderAssets3d ->
                 renderer.ReloadAssetsRequested <- true
         userDefinedStaticModelsToDestroy
+    
+    static member private beginPhysicallyBasedShadowSurfaces
+        eyeCenter viewProjection lightShadowExponent resolution colorClearValue colorAttachments depthAttachment renderPassIndex pipeline renderer =
+        PhysicallyBased.beginPhysicallyBasedShadowSurfaces
+            eyeCenter viewProjection lightShadowExponent resolution colorClearValue colorAttachments depthAttachment renderPassIndex pipeline renderer.VulkanContext
 
-    static member private renderPhysicallyBasedDepthSurfaces
-        batchPhase eyeCenter viewArray projectionArray viewProjectionArray bonesArray (parameters : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List)
-        (surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface) shader vao vertexSize renderer =
+    static member private renderPhysicallyBasedShadowSurfaces
+        bones (parameters : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List) (surface : PhysicallyBasedSurface)
+        uniformsDescriptorSet pipeline renderer =
 
         // ensure we have a large enough instance fields array
         let mutable length = renderer.InstanceFields.Length
@@ -3022,15 +2493,17 @@ type [<ReferenceEquality>] GlRenderer3d =
             let struct (model, _, _, _, _) = parameters[i]
             model.ToArray (renderer.InstanceFields, i * Constants.Render.InstanceFieldCount)
 
-        // draw surfaces
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDepthSurfaces
-            (batchPhase, eyeCenter, viewArray, projectionArray, viewProjectionArray, bonesArray, parameters.Count,
-             renderer.InstanceFields, renderer.LightingConfig.LightShadowExponent, surface.SurfaceMaterial, surface.PhysicallyBasedGeometry, shader, vao, vertexSize)
+        // draw deferred surfaces
+        PhysicallyBased.drawPhysicallyBasedShadowSurfaces
+            bones parameters.Count renderer.InstanceFields surface.SurfaceMaterial surface.PhysicallyBasedGeometry
+            uniformsDescriptorSet pipeline renderer.VulkanContext
 
-    static member private renderPhysicallyBasedDepthSurfacePreBatch
-        shadowLightType shadowFrustum
-        eyeCenter viewArray projectionArray viewProjectionArray bonesArray (parameters : (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)
-        (surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface) shader vao vertexSize renderer =
+        // track geometry instancing
+        renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
+
+    static member private renderPhysicallyBasedShadowSurfacePreBatch
+        shadowLightType shadowFrustum bones (parameters : (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array) (surface : PhysicallyBasedSurface)
+        uniformsDescriptorSet pipeline renderer =
 
         // ensure we have a large enough instance fields array
         let mutable length = renderer.InstanceFields.Length
@@ -3038,7 +2511,7 @@ type [<ReferenceEquality>] GlRenderer3d =
         if renderer.InstanceFields.Length < length then
             renderer.InstanceFields <- Array.zeroCreate<single> length
 
-        // blit unculled parameters to instance fields
+        // blit parameters to instance fields
         let mutable i = 0
         for j in 0 .. dec parameters.Length do
             let (model, castShadow, presence, _, _, bounds) = parameters[j]
@@ -3050,14 +2523,25 @@ type [<ReferenceEquality>] GlRenderer3d =
                 model.ToArray (renderer.InstanceFields, i * Constants.Render.InstanceFieldCount)
                 i <- inc i
 
-        // draw surfaces
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDepthSurfaces
-            (SingletonPhase, eyeCenter, viewArray, projectionArray, viewProjectionArray, bonesArray, i,
-             renderer.InstanceFields, renderer.LightingConfig.LightShadowExponent, surface.SurfaceMaterial, surface.PhysicallyBasedGeometry, shader, vao, vertexSize)
+        // draw shadow surfaces
+        PhysicallyBased.drawPhysicallyBasedShadowSurfaces
+            bones i renderer.InstanceFields surface.SurfaceMaterial surface.PhysicallyBasedGeometry
+            uniformsDescriptorSet pipeline renderer.VulkanContext
+
+        // track geometry instancing
+        renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
+
+    static member private endPhysicallyBasedShadowSurfaces pipeline vkc =
+        PhysicallyBased.endPhysicallyBasedShadowSurfaces pipeline vkc
+
+    static member private beginPhysicallyBasedDeferredSurfaces
+        eyeCenter view projection filteredSampler colorAttachments depthAttachment viewport renderPassIndex pipeline renderer =
+        PhysicallyBased.beginPhysicallyBasedDeferredSurfaces
+            eyeCenter view projection filteredSampler colorAttachments depthAttachment viewport renderPassIndex pipeline renderer.VulkanContext
 
     static member private renderPhysicallyBasedDeferredSurfaces
-        batchPhase viewArray projectionArray viewProjectionArray bonesArray eyeCenter (parameters : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List)
-        lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity (surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface) shader vao vertexSize renderer =
+        bones (parameters : struct (Matrix4x4 * bool * Presence * Box2 * MaterialProperties) List) (surface : PhysicallyBasedSurface)
+        eyeDescriptorSet samplerDescriptorSet pipeline renderer =
                                                                       
         // ensure we have a large enough instance fields array
         let mutable length = renderer.InstanceFields.Length
@@ -3104,14 +2588,19 @@ type [<ReferenceEquality>] GlRenderer3d =
             renderer.InstanceFields[i * Constants.Render.InstanceFieldCount + 37] <- clearCoatRoughness
 
         // draw deferred surfaces
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredSurfaces
-            (batchPhase, viewArray, projectionArray, viewProjectionArray, bonesArray, eyeCenter,
-             parameters.Count, renderer.InstanceFields, lightShadowSamples, lightShadowBias, lightShadowSampleScalar, lightShadowExponent, lightShadowDensity, surface.SurfaceMaterial, surface.PhysicallyBasedGeometry, shader, vao, vertexSize)
+        PhysicallyBased.drawPhysicallyBasedDeferredSurfaces
+            bones parameters.Count renderer.InstanceFields surface.SurfaceMaterial surface.PhysicallyBasedGeometry
+            eyeDescriptorSet samplerDescriptorSet pipeline renderer.VulkanContext
+
+        // track geometry instancing
+        renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
+
+    static member private endPhysicallyBasedDeferredSurfaces pipeline vkc =
+        PhysicallyBased.endPhysicallyBasedDeferredSurfaces pipeline vkc
 
     static member private renderPhysicallyBasedDeferredSurfacePreBatch
-        frustumInterior frustumExterior frustumImposter renderPass
-        viewArray projectionArray viewProjectionArray bonesArray eyeCenter (parameters : (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array)
-        lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity (surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface) shader vao vertexSize renderer =
+        frustumInterior frustumExterior frustumImposter renderPass bones (parameters : (Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Box3) array) (surface : PhysicallyBasedSurface)
+        eyeDescriptorSet samplerDescriptorSet pipeline renderer =
 
         // ensure we have a large enough instance fields array
         let mutable length = renderer.InstanceFields.Length
@@ -3169,28 +2658,27 @@ type [<ReferenceEquality>] GlRenderer3d =
                 i <- inc i
 
         // draw deferred surfaces
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredSurfaces
-            (SingletonPhase, viewArray, projectionArray, viewProjectionArray, bonesArray, eyeCenter,
-             i, renderer.InstanceFields, lightShadowSamples, lightShadowBias, lightShadowSampleScalar, lightShadowExponent, lightShadowDensity, surface.SurfaceMaterial, surface.PhysicallyBasedGeometry, shader, vao, vertexSize)
+        PhysicallyBased.drawPhysicallyBasedDeferredSurfaces
+            bones i renderer.InstanceFields surface.SurfaceMaterial surface.PhysicallyBasedGeometry
+            eyeDescriptorSet samplerDescriptorSet pipeline renderer.VulkanContext
 
-    static member private beginPhysicallyBasedForwardShader
-        viewArray projectionArray viewProjectionArray eyeCenter viewInverseArray projectionInverseArray
-        lightCutoffMargin lightAmbientColor lightAmbientBrightness lightAmbientBoostCutoff lightAmbientBoostScalar lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
-        fogEnabled fogType fogStart fogFinish fogDensity fogColor ssvfEnabled ssvfIntensity ssvfSteps ssvfAsymmetry ssrrEnabled ssrrIntensity ssrrDetail ssrrRefinementsMax ssrrRayThickness ssrrDistanceCutoff ssrrDistanceCutoffMargin ssrrEdgeHorizontalMargin ssrrEdgeVerticalMargin
-        depthTexture colorTexture brdfTexture irradianceMap environmentFilterMap irradianceMaps shader vao =
+        // track geometry instancing
+        renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
 
-        // begin shader
-        OpenGL.PhysicallyBased.BeginPhysicallyBasedForwardShader
-            (viewArray, projectionArray, viewProjectionArray, eyeCenter, viewInverseArray, projectionInverseArray,
-             lightCutoffMargin, lightAmbientColor, lightAmbientBrightness, lightAmbientBoostCutoff, lightAmbientBoostScalar, lightShadowSamples, lightShadowBias, lightShadowSampleScalar, lightShadowExponent, lightShadowDensity,
-             fogEnabled, fogType, fogStart, fogFinish, fogDensity, fogColor, ssvfEnabled, ssvfIntensity, ssvfSteps, ssvfAsymmetry, ssrrEnabled, ssrrIntensity, ssrrDetail, ssrrRefinementsMax, ssrrRayThickness, ssrrDistanceCutoff, ssrrDistanceCutoffMargin, ssrrEdgeHorizontalMargin, ssrrEdgeVerticalMargin,
-             depthTexture, colorTexture, brdfTexture, irradianceMap, environmentFilterMap, irradianceMaps, shader, vao)
+    static member private beginPhysicallyBasedForwardSurfaces
+        eyeCenter view projection lightCutoffMargin lightAmbientColor lightAmbientBrightness lightAmbientBoostCutoff lightAmbientBoostScalar lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
+        fogEnabled fogType fogStart fogFinish fogDensity fogColor ssvfEnabled ssvfIntensity ssvfSteps ssvfAsymmetry ssrrEnabled ssrrIntensity ssrrDetail ssrrRefinementsMax ssrrRayThickness ssrrDistanceCutoff ssrrDistanceCutoffMargin ssrrEdgeHorizontalMargin ssrrEdgeVerticalMargin shadowNear
+        depthTexture colorTexture brdfTexture irradianceMap environmentFilterMap filteredSampler cubeMapSampler shadowSampler colorSampler depthSampler brdfSampler colorAttachment depthAttachment viewport renderPass pipeline vkc =
+        PhysicallyBased.beginPhysicallyBasedForwardSurfaces
+            eyeCenter view projection lightCutoffMargin lightAmbientColor lightAmbientBrightness lightAmbientBoostCutoff lightAmbientBoostScalar lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
+            fogEnabled fogType fogStart fogFinish fogDensity fogColor ssvfEnabled ssvfIntensity ssvfSteps ssvfAsymmetry ssrrEnabled ssrrIntensity ssrrDetail ssrrRefinementsMax ssrrRayThickness ssrrDistanceCutoff ssrrDistanceCutoffMargin ssrrEdgeHorizontalMargin ssrrEdgeVerticalMargin shadowNear
+            depthTexture colorTexture brdfTexture irradianceMap environmentFilterMap filteredSampler cubeMapSampler shadowSampler colorSampler depthSampler brdfSampler colorAttachment depthAttachment viewport renderPass pipeline vkc
 
     static member private renderPhysicallyBasedForwardSurfaces
         bonesArrays (parameters : struct (Matrix4x4 * Presence * Box2 * MaterialProperties) SList)
         irradianceMaps environmentFilterMaps shadowTextureArray shadowMaps shadowCascades lightMapOrigins lightMapMins lightMapSizes lightMapAmbientColors lightMapAmbientBrightnesses lightMapsCount lightMapSingletonBlendMargin
         lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices lightsCount shadowMatrices
-        (surface : OpenGL.PhysicallyBased.PhysicallyBasedSurface) depthTest blending shader vao vertexSize renderer =
+        (surface : PhysicallyBasedSurface) depthTest blending uniformsDescriptorSet samplersDescriptorSet pipeline renderer =
 
         // ensure we have a large enough instance fields array
         let mutable length = renderer.InstanceFields.Length
@@ -3237,393 +2725,199 @@ type [<ReferenceEquality>] GlRenderer3d =
             renderer.InstanceFields[i * Constants.Render.InstanceFieldCount + 36] <- 0.0f // free
             renderer.InstanceFields[i * Constants.Render.InstanceFieldCount + 37] <- 0.0f // free
 
+        // make these bindings mutable for passing by ref
+        let mutable (uniformsDescriptorSet, samplersDescriptorSet) =
+            (uniformsDescriptorSet, samplersDescriptorSet)
+
         // draw forward surfaces
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedForwardSurfaces
-            (bonesArrays, parameters.Length, renderer.InstanceFields,
-             irradianceMaps, environmentFilterMaps, shadowTextureArray, shadowMaps, shadowCascades, lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapsCount, lightMapSingletonBlendMargin,
-             lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs, lightShadowIndices, lightsCount, shadowMatrices,
-             surface.SurfaceMaterial, surface.PhysicallyBasedGeometry, depthTest, blending, shader, vao, vertexSize)
+        PhysicallyBased.drawPhysicallyBasedForwardSurfaces
+            bonesArrays parameters.Length renderer.InstanceFields
+            irradianceMaps environmentFilterMaps shadowTextureArray shadowMaps shadowCascades lightMapOrigins lightMapMins lightMapSizes lightMapAmbientColors lightMapAmbientBrightnesses lightMapsCount lightMapSingletonBlendMargin
+            lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices lightsCount shadowMatrices
+            surface.SurfaceMaterial surface.PhysicallyBasedGeometry depthTest blending uniformsDescriptorSet samplersDescriptorSet pipeline renderer.VulkanContext
+             
+        // track geometry instancing
+        renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
 
-    static member private endPhysicallyBasedForwardShader shader vao =
-
-        // end shader
-        OpenGL.PhysicallyBased.EndPhysicallyBasedForwardShader (shader, vao)
-
-    // TODO: apply intention blocks to this function.
-    static member private renderPhysicallyBasedTerrain
-        viewArray projectionArray viewProjectionArray eyeCenter
-        lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
-        (terrainDescriptor : TerrainDescriptor) geometry shader vao renderer =
-        let terrainMaterialProperties = terrainDescriptor.MaterialProperties
-        let materialProperties : OpenGL.PhysicallyBased.PhysicallyBasedMaterialProperties =
-            { Albedo = Option.defaultValue Constants.Render.AlbedoDefault terrainMaterialProperties.AlbedoOpt
-              Roughness = Option.defaultValue Constants.Render.RoughnessDefault terrainMaterialProperties.RoughnessOpt
-              Metallic = Constants.Render.MetallicDefault
-              AmbientOcclusion = Option.defaultValue Constants.Render.AmbientOcclusionDefault terrainMaterialProperties.AmbientOcclusionOpt
-              Emission = Constants.Render.EmissionDefault
-              Height = Option.defaultValue Constants.Render.HeightDefault terrainMaterialProperties.HeightOpt
-              IgnoreLightMaps = Option.defaultValue Constants.Render.IgnoreLightMapsDefault terrainMaterialProperties.IgnoreLightMapsOpt
-              OpaqueDistance = Constants.Render.OpaqueDistanceDefault
-              FinenessOffset = Constants.Render.FinenessOffsetDefault
-              ScatterType = Constants.Render.ScatterTypeDefault
-              SpecularScalar = Constants.Render.SpecularScalarDefault
-              SubsurfaceCutoff = Constants.Render.SubsurfaceCutoffDefault
-              SubsurfaceCutoffMargin = Constants.Render.SubsurfaceCutoffMarginDefault
-              RefractiveIndex = Constants.Render.RefractiveIndexDefault
-              ClearCoat = Constants.Render.ClearCoatDefault
-              ClearCoatRoughness = Constants.Render.ClearCoatRoughnessDefault }
-        let (texelWidth, texelHeight, materials) =
-            match terrainDescriptor.Material with
-            | BlendMaterial blendMaterial ->
-                let mutable texelWidth = Single.MaxValue
-                let mutable texelHeight = Single.MaxValue
-                let materials =
-                    [|for i in 0 .. dec blendMaterial.TerrainLayers.Length do
-                        let layer =
-                            blendMaterial.TerrainLayers[i]
-                        let defaultMaterial =
-                            renderer.PhysicallyBasedMaterial
-                        let albedoTexture =
-                            match GlRenderer3d.tryGetRenderAsset layer.AlbedoImage renderer with
-                            | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.AlbedoTexture
-                            | ValueNone -> defaultMaterial.AlbedoTexture
-                        let roughnessTexture =
-                            match GlRenderer3d.tryGetRenderAsset layer.RoughnessImage renderer with
-                            | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.RoughnessTexture
-                            | ValueNone -> defaultMaterial.RoughnessTexture
-                        let ambientOcclusionTexture =
-                            match GlRenderer3d.tryGetRenderAsset layer.AmbientOcclusionImage renderer with
-                            | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.AmbientOcclusionTexture
-                            | ValueNone -> defaultMaterial.AmbientOcclusionTexture
-                        let normalTexture =
-                            match GlRenderer3d.tryGetRenderAsset layer.NormalImage renderer with
-                            | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.NormalTexture
-                            | ValueNone -> defaultMaterial.NormalTexture
-                        let heightTexture =
-                            match GlRenderer3d.tryGetRenderAsset layer.HeightImage renderer with
-                            | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.HeightTexture
-                            | ValueNone -> defaultMaterial.HeightTexture
-                        let albedoMetadata = albedoTexture.TextureMetadata
-                        texelWidth <- min texelWidth albedoMetadata.TextureTexelWidth
-                        texelHeight <- min texelHeight albedoMetadata.TextureTexelHeight
-                        { defaultMaterial with
-                            AlbedoTexture = albedoTexture
-                            RoughnessTexture = roughnessTexture
-                            AmbientOcclusionTexture = ambientOcclusionTexture
-                            NormalTexture = normalTexture
-                            HeightTexture = heightTexture }|]
-                (texelWidth, texelHeight, materials)
-            | FlatMaterial flatMaterial ->
-                let defaultMaterial =
-                    renderer.PhysicallyBasedMaterial
-                let albedoTexture =
-                    match GlRenderer3d.tryGetRenderAsset flatMaterial.AlbedoImage renderer with
-                    | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.AlbedoTexture
-                    | ValueNone -> defaultMaterial.AlbedoTexture
-                let roughnessTexture =
-                    match GlRenderer3d.tryGetRenderAsset flatMaterial.RoughnessImage renderer with
-                    | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.RoughnessTexture
-                    | ValueNone -> defaultMaterial.RoughnessTexture
-                let ambientOcclusionTexture =
-                    match GlRenderer3d.tryGetRenderAsset flatMaterial.AmbientOcclusionImage renderer with
-                    | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.AmbientOcclusionTexture
-                    | ValueNone -> defaultMaterial.AmbientOcclusionTexture
-                let normalTexture =
-                    match GlRenderer3d.tryGetRenderAsset flatMaterial.NormalImage renderer with
-                    | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.NormalTexture
-                    | ValueNone -> defaultMaterial.NormalTexture
-                let heightTexture =
-                    match GlRenderer3d.tryGetRenderAsset flatMaterial.HeightImage renderer with
-                    | ValueSome renderAsset -> match renderAsset with TextureAsset texture -> texture | _ -> defaultMaterial.HeightTexture
-                    | ValueNone -> defaultMaterial.HeightTexture
-                let material =
-                    { defaultMaterial with
-                        AlbedoTexture = albedoTexture
-                        RoughnessTexture = roughnessTexture
-                        AmbientOcclusionTexture = ambientOcclusionTexture
-                        NormalTexture = normalTexture
-                        HeightTexture = heightTexture }
-                let albedoMetadata = albedoTexture.TextureMetadata
-                (albedoMetadata.TextureTexelWidth, albedoMetadata.TextureTexelHeight, [|material|])
-        let texCoordsOffset =
-            match terrainDescriptor.InsetOpt with
-            | Some inset ->
-                let texelWidth = texelWidth
-                let texelHeight = texelHeight
-                let px = inset.Min.X * texelWidth
-                let py = (inset.Min.Y + inset.Size.Y) * texelHeight
-                let sx = inset.Size.X * texelWidth
-                let sy = -inset.Size.Y * texelHeight
-                Box2 (px, py, sx, sy)
-            | None -> box2 v2Zero v2Zero
-        let instanceFields = Array.zeroCreate Constants.Render.InstanceFieldCount
-        m4Identity.ToArray (instanceFields, 0)
-        instanceFields[16] <- texCoordsOffset.Min.X
-        instanceFields[17] <- texCoordsOffset.Min.Y
-        instanceFields[18] <- texCoordsOffset.Min.X + texCoordsOffset.Size.X
-        instanceFields[19] <- texCoordsOffset.Min.Y + texCoordsOffset.Size.Y
-        instanceFields[20] <- materialProperties.Albedo.R
-        instanceFields[21] <- materialProperties.Albedo.G
-        instanceFields[22] <- materialProperties.Albedo.B
-        instanceFields[23] <- materialProperties.Albedo.A
-        instanceFields[24] <- materialProperties.Roughness
-        instanceFields[25] <- materialProperties.Metallic
-        instanceFields[26] <- materialProperties.AmbientOcclusion
-        instanceFields[27] <- materialProperties.Emission
-        instanceFields[28] <- texelHeight * materialProperties.Height
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedTerrain
-            (viewArray, projectionArray, viewProjectionArray, eyeCenter,
-             instanceFields, lightShadowSamples, lightShadowBias, lightShadowSampleScalar, lightShadowExponent, lightShadowDensity,
-             materials, geometry, shader, vao)
+    static member private endPhysicallyBasedForwardSurfaces pipeline vkc =
+        PhysicallyBased.endPhysicallyBasedForwardSurfaces pipeline vkc
 
     static member private renderShadow
         lightOrigin
-        (lightView : Matrix4x4)
-        (lightProjection : Matrix4x4)
         (lightViewProjection : Matrix4x4)
         lightFrustum
         lightType
+        lightCutoff
+        resolution
+        colorAttachments
+        depthAttachment
         renderTasks
         renderer =
 
-        // compute matrix arrays
-        let lightViewArray = lightView.ToArray ()
-        let lightProjectionArray = lightProjection.ToArray ()
-        let lightViewProjectionArray = lightViewProjection.ToArray ()
-
         // grab appropriate shaders
-        let (shadowStaticShader, shadowAnimatedShader, shadowTerrainShader) =
+        let (shadowStaticPipeline, shadowAnimatedPipeline, shadowTerrainPipeline) =
             match lightType with
             | PointLight ->
-                (renderer.PhysicallyBasedShaders.ShadowStaticPointShader,
-                 renderer.PhysicallyBasedShaders.ShadowAnimatedPointShader,
-                 renderer.PhysicallyBasedShaders.ShadowTerrainPointShader)
+                (renderer.PhysicallyBasedPipelines.ShadowStaticPointPipeline,
+                 renderer.PhysicallyBasedPipelines.ShadowAnimatedPointPipeline,
+                 Unchecked.defaultof<_>)//renderer.PhysicallyBasedPipelines.ShadowTerrainPointPipeline)
             | SpotLight (_, _) ->
-                (renderer.PhysicallyBasedShaders.ShadowStaticSpotShader,
-                 renderer.PhysicallyBasedShaders.ShadowAnimatedSpotShader,
-                 renderer.PhysicallyBasedShaders.ShadowTerrainSpotShader)
+                (renderer.PhysicallyBasedPipelines.ShadowStaticSpotPipeline,
+                 renderer.PhysicallyBasedPipelines.ShadowAnimatedSpotPipeline,
+                 Unchecked.defaultof<_>)//renderer.PhysicallyBasedPipelines.ShadowTerrainSpotPipeline)
             | DirectionalLight _ | CascadedLight ->
-                (renderer.PhysicallyBasedShaders.ShadowStaticDirectionalShader,
-                 renderer.PhysicallyBasedShaders.ShadowAnimatedDirectionalShader,
-                 renderer.PhysicallyBasedShaders.ShadowTerrainDirectionalShader)
+                (renderer.PhysicallyBasedPipelines.ShadowStaticDirectionalPipeline,
+                 renderer.PhysicallyBasedPipelines.ShadowAnimatedDirectionalPipeline,
+                 Unchecked.defaultof<_>)//renderer.PhysicallyBasedPipelines.ShadowTerrainDirectionalPipeline)
+
+        // compute appropriate color clear value
+        let colorClearValue =
+            match lightType with
+            | PointLight -> VkClearValue (lightCutoff, 0.0f, 0.0f, 0.0f)
+            | SpotLight _ | DirectionalLight _ -> VkClearValue (1.0f, Single.MaxValue, 0.0f, 0.0f)
+
+        // begin shadow static rendering
+        let uniformsDescriptorSet =
+            VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
+                lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
 
         // deferred render static surface shadows
-        let mutable i = 0
         for entry in renderTasks.DeferredStatic do
-            let batchPhase =
-                match renderTasks.DeferredStatic.Count with
-                | 1 -> SingletonPhase
-                | count -> if i = 0 then StartingPhase elif i = dec count then StoppingPhase else ResumingPhase
-            GlRenderer3d.renderPhysicallyBasedDepthSurfaces
-                batchPhase lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray [||] entry.Value
-                entry.Key shadowStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
-            i <- inc i
+            VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
+                [||] entry.Value entry.Key uniformsDescriptorSet shadowStaticPipeline renderer
 
         // deferred render static surface pre-batches shadows
         for entry in renderTasks.DeferredStaticPreBatches do
             let struct (surface, preBatch) = entry.Value
-            GlRenderer3d.renderPhysicallyBasedDepthSurfacePreBatch
-                lightType lightFrustum lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray [||] preBatch
-                surface shadowStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch
+                lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
 
         // deferred render static surface clipped shadows (TODO: consider implementing clipped shadow rendering.)
-        let mutable i = 0
         for entry in renderTasks.DeferredStaticClipped do
-            let batchPhase =
-                match renderTasks.DeferredStaticClipped.Count with
-                | 1 -> SingletonPhase
-                | count -> if i = 0 then StartingPhase elif i = dec count then StoppingPhase else ResumingPhase
-            GlRenderer3d.renderPhysicallyBasedDepthSurfaces
-                batchPhase lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray [||] entry.Value
-                entry.Key shadowStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
-            i <- inc i
+            VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
+                [||] entry.Value entry.Key uniformsDescriptorSet shadowStaticPipeline renderer
 
         // deferred render static surface pre-batches clipped shadows (TODO: consider implementing clipped shadow rendering.)
         for entry in renderTasks.DeferredStaticClippedPreBatches do
             let struct (surface, preBatch) = entry.Value
-            GlRenderer3d.renderPhysicallyBasedDepthSurfacePreBatch
-                lightType lightFrustum lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray [||] preBatch
-                surface shadowStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch
+                lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
+
+        // end shadow static rendering
+        VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+
+        // begin shadow animated rendering
+        let uniformsDescriptorSet =
+            VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
+                lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowAnimatedPipeline renderer
 
         // deferred render animated surface shadows
         for entry in renderTasks.DeferredAnimated do
             let surfaceKey = entry.Key
             let parameters = entry.Value
-            let boneArrays = List ()
-            let bonesArrays = Array.zeroCreate surfaceKey.BoneTransforms.Length
-            for i in 0 .. dec surfaceKey.BoneTransforms.Length do
-                let boneArray = surfaceKey.BoneTransforms[i].ToArray ()
-                boneArrays.Add boneArray
-                bonesArrays[i] <- boneArray
-            GlRenderer3d.renderPhysicallyBasedDepthSurfaces
-                SingletonPhase lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray bonesArrays parameters
-                surfaceKey.AnimatedSurface shadowAnimatedShader renderer.PhysicallyBasedAnimatedVao OpenGL.PhysicallyBased.AnimatedVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
+                surfaceKey.BoneTransforms parameters surfaceKey.AnimatedSurface uniformsDescriptorSet shadowAnimatedPipeline renderer
 
-        // attempt to deferred render terrain shadows
-        for struct (descriptor, patchDescriptor, geometry) in renderTasks.DeferredTerrains do
-            if lightFrustum.Intersects patchDescriptor.PatchBounds then
-                GlRenderer3d.renderPhysicallyBasedTerrain
-                    lightViewArray lightProjectionArray lightViewProjectionArray lightOrigin
-                    renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                    descriptor geometry shadowTerrainShader renderer.PhysicallyBasedTerrainVao renderer
+        // end shadow animated pipeline
+        VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowAnimatedPipeline renderer.VulkanContext
+
+        // TODO: P0: implement terrain shadows.
+        //// begin shadow terrain pipeline
+        //let uniformsDescriptorSet =
+        //    VulkanRenderer3d.beginPhysicallyBasedShadowPipeline
+        //        lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent renderer.RenderPassIndex shadowTerrainPipeline renderer
+        //
+        //// attempt to deferred render terrain shadows
+        //for struct (descriptor, patchDescriptor, geometry) in renderTasks.DeferredTerrains do
+        //    if lightFrustum.Intersects patchDescriptor.PatchBounds then
+        //        VulkanRenderer3d.renderPhysicallyBasedTerrain
+        //            lightViewArray lightProjectionArray lightViewProjectionArray lightOrigin
+        //            renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
+        //            descriptor geometry shadowTerrainShader renderer.PhysicallyBasedTerrainVao renderer
+        //
+        //// end shadow terrain pipeline
+        //VulkanRenderer3d.endPhysicallyBasedShadowPipeline shadowTerrainPipeline
 
         // forward render surface shadows
         for struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, _) in renderTasks.ForwardSorted do
             if castShadow then
                 match boneTransformsOpt with
                 | ValueSome boneTransforms ->
-                    let bonesArrays = Array.zeroCreate boneTransforms.Length
-                    for i in 0 .. dec boneTransforms.Length do
-                        let boneArray = boneTransforms[i].ToArray ()
-                        bonesArrays[i] <- boneArray
-                    GlRenderer3d.renderPhysicallyBasedDepthSurfaces
-                        SingletonPhase lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray bonesArrays (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
-                        surface shadowAnimatedShader renderer.PhysicallyBasedAnimatedVao OpenGL.PhysicallyBased.AnimatedVertexSize renderer
-                    OpenGL.Hl.Assert ()
+
+                    // begin shadow animated rendering
+                    let uniformsDescriptorSet =
+                        VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
+                            lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowAnimatedPipeline renderer
+
+                    // actually render surfaces
+                    VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
+                        boneTransforms (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
+                        surface uniformsDescriptorSet shadowAnimatedPipeline renderer
+
+                    // end shadow animated rendering
+                    VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowAnimatedPipeline renderer.VulkanContext
+
                 | ValueNone ->
-                    GlRenderer3d.renderPhysicallyBasedDepthSurfaces
-                        SingletonPhase lightOrigin lightViewArray lightProjectionArray lightViewProjectionArray [||] (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
-                        surface shadowStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-                    OpenGL.Hl.Assert ()
+
+                    // begin shadow static rendering
+                    let uniformsDescriptorSet =
+                        VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
+                            lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
+
+                    // actually render surfaces
+                    VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
+                        [||] (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
+                        surface uniformsDescriptorSet shadowStaticPipeline renderer
+
+                    // end shadow static rendering
+                    VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+
+        // advance render pass index
+        renderer.RenderPassIndex <- inc renderer.RenderPassIndex
 
     static member private renderShadowTexture
         renderTasks
         renderer
         (lightOrigin : Vector3)
-        (lightView : Matrix4x4)
-        (lightProjection : Matrix4x4)
         (lightViewProjection : Matrix4x4)
         (lightFrustum : Frustum)
         (lightType : LightType)
-        (shadowTextureIndex : int)
+        (lightCutoff : single)
         (shadowResolution : Vector2i)
-        (shadowTextureArray : OpenGL.Texture.Texture)
-        (renderbuffer : uint)
-        (framebuffer : uint) =
+        (colorAttachments : VkImageView array)
+        (depthAttachments : Texture) =
 
         // send forward surfaces directly to sorted buffer since no sorting is needed for shadows
         for struct (_, _, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) in renderTasks.Forward do
             renderTasks.ForwardSorted.Add struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest)
 
-        // setup shadow buffer and viewport
-        OpenGL.Gl.Viewport (0, 0, shadowResolution.X, shadowResolution.Y)
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, renderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, framebuffer)
-        OpenGL.Hl.Assert ()
-
-        // setup shadow texture layer for rendering
-        OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, shadowTextureArray.TextureId, 0, shadowTextureIndex)
-        OpenGL.Gl.ClearColor (1.0f, Single.MaxValue, 0.0f, 0.0f)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit)
-        OpenGL.Hl.Assert ()
-
         // actually render shadow
-        GlRenderer3d.renderShadow lightOrigin lightView lightProjection lightViewProjection lightFrustum lightType renderTasks renderer
-        OpenGL.Hl.Assert ()
-
-        // unbind shadow texture layer
-        OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, 0u, 0, shadowTextureIndex)
-        OpenGL.Hl.Assert ()
-
-        // unbind shadow mapping frame buffer
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, 0u)
+        VulkanRenderer3d.renderShadow lightOrigin lightViewProjection lightFrustum lightType lightCutoff shadowResolution colorAttachments depthAttachments renderTasks renderer
 
     static member private renderShadowMapFace
         renderTasks
         renderer
         (lightOrigin : Vector3)
         (lightCutoff : single)
-        (shadowFace : int)
-        (shadowView : Matrix4x4)
-        (shadowProjection : Matrix4x4)
         (shadowViewProjection : Matrix4x4)
         (shadowFrustum : Frustum)
         (shadowResolution : Vector2i)
-        (shadowMap : OpenGL.Texture.Texture)
-        (renderbuffer : uint)
-        (framebuffer : uint) =
+        (colorAttachments : VkImageView array)
+        (depthAttachment : Texture) =
 
         // send forward surfaces directly to sorted buffer since no sorting is needed for shadows
         for struct (_, _, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) in renderTasks.Forward do
             renderTasks.ForwardSorted.Add struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest)
 
-        // setup shadow frame buffer and viewport
-        OpenGL.Gl.Viewport (0, 0, shadowResolution.X, shadowResolution.Y)
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, renderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, framebuffer)
-        OpenGL.Hl.Assert ()
-
-        // setup shadow cube map face for rendering
-        let target = LanguagePrimitives.EnumOfValue (int OpenGL.TextureTarget.TextureCubeMapPositiveX + shadowFace)
-        OpenGL.Gl.FramebufferTexture2D (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, target, shadowMap.TextureId, 0)
-        OpenGL.Gl.ClearColor (lightCutoff, 0.0f, 0.0f, 0.0f)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit)
-        OpenGL.Hl.Assert ()
-        
-        // render to shadow cube map face
-        GlRenderer3d.renderShadow lightOrigin shadowView shadowProjection shadowViewProjection shadowFrustum PointLight renderTasks renderer
-        OpenGL.Hl.Assert ()
-        
-        // unbind shadow cube map face
-        OpenGL.Gl.FramebufferTexture2D (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, target, 0u, 0)
-        OpenGL.Hl.Assert ()
-        
-        // unbind shadow frame buffer
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, 0u)
-
-    static member private renderShadowCascade
-        renderTasks
-        renderer
-        (lightOrigin : Vector3)
-        (lightCutoff : single)
-        (shadowCascadeLevel : int)
-        (shadowView : Matrix4x4)
-        (shadowProjection : Matrix4x4)
-        (shadowViewProjection : Matrix4x4)
-        (shadowFrustum : Frustum)
-        (shadowResolution : Vector2i)
-        (shadowCascade : OpenGL.Texture.Texture)
-        (renderbuffer : uint)
-        (framebuffer : uint) =
-
-        // send forward surfaces directly to sorted buffer since no sorting is needed for shadows
-        for struct (_, _, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) in renderTasks.Forward do
-            renderTasks.ForwardSorted.Add struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest)
-
-        // setup shadow frame buffer and viewport
-        OpenGL.Gl.Viewport (0, 0, shadowResolution.X, shadowResolution.Y)
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, renderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, framebuffer)
-        OpenGL.Hl.Assert ()
-
-        // setup shadow cascade layer for rendering
-        OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, shadowCascade.TextureId, 0, shadowCascadeLevel)
-        OpenGL.Gl.ClearColor (lightCutoff, 0.0f, 0.0f, 0.0f)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit)
-        OpenGL.Hl.Assert ()
-
-        // render to shadow cascade
-        GlRenderer3d.renderShadow lightOrigin shadowView shadowProjection shadowViewProjection shadowFrustum CascadedLight renderTasks renderer
-        OpenGL.Hl.Assert ()
-
-        // unbind shadow cascade layer
-        OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, 0u, 0, shadowCascadeLevel)
-        OpenGL.Hl.Assert ()
-
-        // unbind shadow frame buffer
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, 0u)
+        // actually render to shadow cube map face
+        VulkanRenderer3d.renderShadow lightOrigin shadowViewProjection shadowFrustum PointLight lightCutoff shadowResolution colorAttachments depthAttachment renderTasks renderer
 
     static member private renderGeometry
         frustumInterior
         frustumExterior
         frustumImposter
         renderPass
-        renderTasks
+        (renderTasks : RenderTasks)
         renderer
         topLevelRender
         lightAmbientOverride
@@ -3632,43 +2926,29 @@ type [<ReferenceEquality>] GlRenderer3d =
         (viewSkyBox : Matrix4x4)
         (geometryFrustum : Frustum)
         (geometryProjection : Matrix4x4)
-        (geometryViewProjection : Matrix4x4)
-        (windowInset : Box2i)
         (windowProjection : Matrix4x4)
-        (framebuffer : uint) =
-
-        // compute matrix arrays
-        let viewArray = view.ToArray ()
-        let viewInverse = view.Inverted
-        let viewInverseArray = viewInverse.ToArray ()
-        let viewSkyBoxArray = viewSkyBox.ToArray ()
-        let geometryProjectionArray = geometryProjection.ToArray ()
-        let geometryProjectionInverse = geometryProjection.Inverted
-        let geometryProjectionInverseArray = geometryProjectionInverse.ToArray ()
-        let geometryViewProjectionArray = geometryViewProjection.ToArray ()
-        let windowProjectionArray = windowProjection.ToArray ()
-        let windowProjectionInverse = windowProjection.Inverted
-        let windowProjectionInverseArray = windowProjectionInverse.ToArray ()
-        let windowViewProjectionSkyBox = viewSkyBox * windowProjection
-        let windowViewProjectionSkyBoxArray = windowViewProjectionSkyBox.ToArray ()
+        targetBounds
+        targetLayer
+        targetImage =
 
         // get ambient lighting, sky box opt, and fallback light map
-        let (lightAmbientColor, lightAmbientBrightness, skyBoxOpt) = GlRenderer3d.getLastSkyBoxOpt renderPass renderer
+        let (lightAmbientColor, lightAmbientBrightness, skyBoxOpt) = VulkanRenderer3d.getLastSkyBoxOpt renderPass renderer
         let (lightAmbientColor, lightAmbientBrightness) = Option.defaultValue (lightAmbientColor, lightAmbientBrightness) lightAmbientOverride
         let lightMapFallback =
             match skyBoxOpt with
-            | Some (ambientColor, ambientBrightness, _, (irradianceAndEnvironmentMapsOptRef : (OpenGL.Texture.Texture * OpenGL.Texture.Texture) option ref)) ->
+            | Some (ambientColor, ambientBrightness, _, (irradianceAndEnvironmentMapsOptRef : (Texture * Texture) option ref)) ->
                 let (irradianceMap, environmentFilterMap) =
                     match irradianceAndEnvironmentMapsOptRef.Value with
                     | Some irradianceAndEnvironmentMaps -> irradianceAndEnvironmentMaps
                     | None -> (renderer.IrradianceMap, renderer.EnvironmentFilterMap)
-                OpenGL.LightMap.CreateLightMap true v3Zero ambientColor ambientBrightness box3Zero irradianceMap environmentFilterMap
-            | None -> OpenGL.LightMap.CreateLightMap true v3Zero Color.White 1.0f box3Zero renderer.IrradianceMap renderer.EnvironmentFilterMap
-
+                LightMap.createLightMap true v3Zero ambientColor ambientBrightness box3Zero irradianceMap environmentFilterMap
+            | None -> LightMap.createLightMap true v3Zero Color.White 1.0f box3Zero renderer.IrradianceMap renderer.EnvironmentFilterMap
+        
         // destroy cached light maps whose originating probe no longer exists
         for lightMapKvp in renderer.LightMaps do
             if not (renderTasks.LightProbes.ContainsKey lightMapKvp.Key) then
-                OpenGL.LightMap.DestroyLightMap lightMapKvp.Value
+                TextureDumpster.toss lightMapKvp.Value.IrradianceMap renderer.TextureDumpster
+                TextureDumpster.toss lightMapKvp.Value.EnvironmentFilterMap renderer.TextureDumpster
                 renderer.LightMaps.Remove lightMapKvp.Key |> ignore<bool>
 
         // ensure light maps are synchronized with any light probe changes
@@ -3728,15 +3008,15 @@ type [<ReferenceEquality>] GlRenderer3d =
         // sort light maps for deferred rendering relative to eye center
         let (lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapIrradianceMaps, lightMapEnvironmentFilterMaps) =
             if topLevelRender then
-                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxDeferred eyeCenter None lightMaps
+                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxDeferred eyeCenter None renderer.IrradianceMap renderer.EnvironmentFilterMap lightMaps
             else
-                (Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
-                 Array.zeroCreate (Constants.Render.LightMapsMaxDeferred * 4),
+                (Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
                  Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
-                 Array.init Constants.Render.LightMapsMaxDeferred (fun _ -> OpenGL.Texture.EmptyTexture),
-                 Array.init Constants.Render.LightMapsMaxDeferred (fun _ -> OpenGL.Texture.EmptyTexture))
+                 Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
+                 Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
+                 Array.zeroCreate Constants.Render.LightMapsMaxDeferred,
+                 Array.create Constants.Render.LightMapsMaxDeferred renderer.IrradianceMap,
+                 Array.create Constants.Render.LightMapsMaxDeferred renderer.EnvironmentFilterMap)
 
         // sort lights for deferred rendering relative to eye center
         let (lightIds, lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs) =
@@ -3747,244 +3027,124 @@ type [<ReferenceEquality>] GlRenderer3d =
             if topLevelRender
             then SortableLight.sortLightShadowIndices renderer.LightShadowIndices lightIds
             else Array.init Constants.Render.LightsMaxDeferred (constant -1)
-
+        
         // grab shadow texture array
-        let shadowTextureArray = a__ renderer.PhysicallyBasedBuffers.ShadowTextureArrayBuffers
+        let shadowTextureArray = fst renderer.PhysicallyBasedAttachments.ShadowTextureArrayAttachments
 
         // grab shadow maps
-        let shadowMaps = Array.map a__ renderer.PhysicallyBasedBuffers.ShadowMapBuffersArray
+        let shadowMaps = Array.map fst renderer.PhysicallyBasedAttachments.ShadowMapAttachmentsArray
 
         // grab shadow cascades
-        let shadowCascades = Array.map a__ renderer.PhysicallyBasedBuffers.ShadowCascadeArrayBuffersArray
+        let shadowCascades = Array.map fst renderer.PhysicallyBasedAttachments.ShadowCascadeArrayAttachmentsArray
 
         // presume shadow near plane distance as interior near plane distance
         let shadowNear = Constants.Render.NearPlaneDistanceInterior
-
-        // grab shadow matrices
-        let shadowMatrices = Array.map (fun (m : Matrix4x4) -> m.ToArray ()) renderer.ShadowMatrices
-
+        
         // sort forward surfaces from far to near
-        let forwardSurfacesSortBuffer = GlRenderer3d.sortForwardSurfaces eyeCenter renderTasks.Forward renderer.ForwardSurfacesComparer renderer.ForwardSurfacesSortBuffer
+        let forwardSurfacesSortBuffer = VulkanRenderer3d.sortForwardSurfaces eyeCenter renderTasks.Forward renderer.ForwardSurfacesComparer renderer.ForwardSurfacesSortBuffer
         for struct (_, _, model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest, _, _) in forwardSurfacesSortBuffer do
             renderTasks.ForwardSorted.Add struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest)
         forwardSurfacesSortBuffer.Clear ()
 
-        // setup geometry buffer and viewport
+        // clear geometry textures
         let geometryResolution = renderer.GeometryViewport.Bounds.Size
-        let (depthTexture, albedoTexture, materialTexture, normalPlusTexture, subdermalPlusTexture, scatterPlusTexture, clearCoatPlusTexture, geometryRenderbuffer, geometryFramebuffer) = renderer.PhysicallyBasedBuffers.GeometryBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, geometryRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, geometryFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
+        let renderArea = VkRect2D (0, 0, uint geometryResolution.X, uint geometryResolution.Y)
+        let clearColor = VkClearValue (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
+        let (depthTexture, albedoTexture, materialTexture, normalPlusTexture, subdermalPlusTexture, scatterPlusTexture, clearCoatPlusTexture, zTexture) = renderer.PhysicallyBasedAttachments.GeometryAttachments
+        let geometryTextureViews = [|depthTexture.ImageView; albedoTexture.ImageView; materialTexture.ImageView; normalPlusTexture.ImageView; subdermalPlusTexture.ImageView; scatterPlusTexture.ImageView; clearCoatPlusTexture.ImageView|]
+        let mutable renderingInfo = Hl.makeRenderingInfo geometryTextureViews (Some zTexture.ImageView) renderArea (Some clearColor)
+        Vulkan.vkCmdBeginRendering (renderer.VulkanContext.RenderCommandBuffer, asPointer &renderingInfo)
+        Vulkan.vkCmdEndRendering renderer.VulkanContext.RenderCommandBuffer
 
-        // render static surfaces deferred
+        // begin deferred static rendering
+        let (eyeDescriptorSet, samplerDescriptorSet) =
+            VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
+                eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
+                renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
+
+        // render deferred static surfaces (unbatched)
         let mutable i = 0
         for entry in renderTasks.DeferredStatic do
-            let batchPhase =
-                match renderTasks.DeferredStatic.Count with
-                | 1 -> SingletonPhase
-                | count -> if i = 0 then StartingPhase elif i = dec count then StoppingPhase else ResumingPhase
-            GlRenderer3d.renderPhysicallyBasedDeferredSurfaces
-                batchPhase viewArray geometryProjectionArray geometryViewProjectionArray [||] eyeCenter entry.Value
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                entry.Key renderer.PhysicallyBasedShaders.DeferredStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
+                [||] entry.Value entry.Key eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
             i <- inc i
 
-        // render static surface pre-batches deferred
+        // render deferred static surface pre-batches
         for entry in renderTasks.DeferredStaticPreBatches do
             let struct (surface, preBatch) = entry.Value
-            GlRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
-                frustumInterior frustumExterior frustumImposter renderPass
-                viewArray geometryProjectionArray geometryViewProjectionArray [||] eyeCenter preBatch
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                surface renderer.PhysicallyBasedShaders.DeferredStaticShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
+                frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface
+                eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
 
-        // render static surfaces clipped deferred
+        // end deferred static rendering
+        VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
+            renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
+
+        // begin deferred static clipped rendering
+        let (eyeDescriptorSet, samplerDescriptorSet) =
+            VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
+                eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
+                renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
+
+        // render deferred static surfaces clipped (unbatched)
         let mutable i = 0
-        for entry in renderTasks.DeferredStaticClipped do
-            let batchPhase =
-                match renderTasks.DeferredStaticClipped.Count with
-                | 1 -> SingletonPhase
-                | count -> if i = 0 then StartingPhase elif i = dec count then StoppingPhase else ResumingPhase
-            GlRenderer3d.renderPhysicallyBasedDeferredSurfaces
-                batchPhase viewArray geometryProjectionArray geometryViewProjectionArray [||] eyeCenter entry.Value
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                entry.Key renderer.PhysicallyBasedShaders.DeferredStaticClippedShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+        for entry in renderTasks.DeferredStatic do
+            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
+                [||] entry.Value entry.Key eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
             i <- inc i
 
-        // render static surface pre-batches clipped deferred
-        for entry in renderTasks.DeferredStaticClippedPreBatches do
+        // render deferred static surface clipped pre-batches
+        for entry in renderTasks.DeferredStaticPreBatches do
             let struct (surface, preBatch) = entry.Value
-            GlRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
-                frustumInterior frustumExterior frustumImposter renderPass
-                viewArray geometryProjectionArray geometryViewProjectionArray [||] eyeCenter preBatch
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                surface renderer.PhysicallyBasedShaders.DeferredStaticClippedShader renderer.PhysicallyBasedStaticVao OpenGL.PhysicallyBased.StaticVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
+                frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface
+                eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
+
+        // end deferred static clipped rendering
+        VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
+            renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
+
+        // begin deferred animated rendering
+        let (eyeDescriptorSet, samplerDescriptorSet) =
+            VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
+                eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
+                renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer
 
         // render animated surfaces deferred
         for entry in renderTasks.DeferredAnimated do
             let surfaceKey = entry.Key
             let parameters = entry.Value
-            let bonesArrays = Array.zeroCreate surfaceKey.BoneTransforms.Length
-            for i in 0 .. dec surfaceKey.BoneTransforms.Length do
-                let boneArray = surfaceKey.BoneTransforms[i].ToArray ()
-                bonesArrays[i] <- boneArray
-            GlRenderer3d.renderPhysicallyBasedDeferredSurfaces
-                SingletonPhase viewArray geometryProjectionArray geometryViewProjectionArray bonesArrays eyeCenter parameters
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                surfaceKey.AnimatedSurface renderer.PhysicallyBasedShaders.DeferredAnimatedShader renderer.PhysicallyBasedAnimatedVao OpenGL.PhysicallyBased.AnimatedVertexSize renderer
-            OpenGL.Hl.Assert ()
+            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
+                surfaceKey.BoneTransforms parameters surfaceKey.AnimatedSurface
+                eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer
 
-        // render terrains deferred
-        for struct (descriptor, _, geometry) in renderTasks.DeferredTerrains do
-            GlRenderer3d.renderPhysicallyBasedTerrain
-                viewArray geometryProjectionArray geometryViewProjectionArray eyeCenter
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowDensity
-                descriptor geometry renderer.PhysicallyBasedShaders.DeferredTerrainShader renderer.PhysicallyBasedTerrainVao renderer
+        // end deferred animated rendering
+        VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
+            renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer.VulkanContext
 
-        // run light mapping pass
-        let lightMappingTexture =
+        // transition deferred geometry attachments to sampling
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead depthTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead albedoTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead materialTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead normalPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead subdermalPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead scatterPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead clearCoatPlusTexture renderer.VulkanContext.RenderCommandBuffer
 
-            // but only when desired
-            if renderer.RendererConfig.LightMappingEnabled then
+        // make shadows readable
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead shadowTextureArray renderer.VulkanContext.RenderCommandBuffer
+        for i in 0 .. dec shadowMaps.Length do Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead shadowMaps[i] renderer.VulkanContext.RenderCommandBuffer
+        for i in 0 .. dec shadowCascades.Length do Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead shadowCascades[i] renderer.VulkanContext.RenderCommandBuffer
 
-                // setup light mapping buffer and viewport
-                let (lightMappingTexture, lightMappingRenderbuffer, lightMappingFramebuffer) = renderer.PhysicallyBasedBuffers.LightMappingBuffers
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, lightMappingRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, lightMappingFramebuffer)
-                OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-                OpenGL.Hl.Assert ()
-
-                // deferred render light mapping quad
-                OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredLightMappingSurface
-                    (eyeCenter, viewInverseArray, windowProjectionInverseArray,
-                     depthTexture, normalPlusTexture,
-                     lightMapOrigins, lightMapMins, lightMapSizes, min lightMapEnvironmentFilterMaps.Length renderTasks.LightMaps.Count, renderer.LightingConfig.LightMapSingletonBlendMargin,
-                     renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredLightMappingShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
-                lightMappingTexture
-
-            // just use black texture
-            else renderer.BlackTexture
-
-        // setup ambient buffer and viewport
-        let (ambientTexture, ambientRenderbuffer, ambientFramebuffer) = renderer.PhysicallyBasedBuffers.AmbientBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, ambientRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, ambientFramebuffer)
-        OpenGL.Gl.ClearColor (1.0f, 1.0f, 1.0f, 1.0f) // NOTE: white ambient value.
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // deferred render ambient quad
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredAmbientSurface
-            (eyeCenter, viewInverseArray, windowProjectionInverseArray,
-             depthTexture, lightMappingTexture,
-             lightAmbientColor, lightAmbientBrightness, lightMapAmbientColors, lightMapAmbientBrightnesses,
-             renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredAmbientShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // setup irradiance buffer and viewport
-        let (irradianceTexture, irradianceRenderbuffer, irradianceFramebuffer) = renderer.PhysicallyBasedBuffers.IrradianceBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, irradianceRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, irradianceFramebuffer)
-        OpenGL.Gl.ClearColor (1.0f, 1.0f, 1.0f, 1.0f) // NOTE: white irradiance value.
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // deferred render irradiance quad
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredIrradianceSurface
-            (eyeCenter, viewInverseArray, windowProjectionInverseArray,
-             depthTexture, normalPlusTexture, lightMappingTexture,
-             lightMapFallback.IrradianceMap, lightMapIrradianceMaps,
-             renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredIrradianceShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // setup environment filter buffer and viewport
-        let (environmentFilterTexture, environmentFilterRenderbuffer, environmentFilterFramebuffer) = renderer.PhysicallyBasedBuffers.EnvironmentFilterBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, environmentFilterRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, environmentFilterFramebuffer)
-        OpenGL.Gl.ClearColor (1.0f, 1.0f, 1.0f, 1.0f) // NOTE: white environment filter value.
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // deferred render environment filter quad
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredEnvironmentFilterSurface
-            (eyeCenter, viewInverseArray, windowProjectionInverseArray,
-             depthTexture, materialTexture, normalPlusTexture, clearCoatPlusTexture, lightMappingTexture,
-             lightMapFallback.EnvironmentFilterMap, lightMapEnvironmentFilterMaps, lightMapOrigins, lightMapMins, lightMapSizes,
-             renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredEnvironmentFilterShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // run ssao pass
-        let ssaoTextureFiltered =
-
-            // but only when desired
-            if renderer.RendererConfig.SsaoEnabled && renderer.LightingConfig.SsaoEnabled then
-
-                // setup unfiltered ssao buffer and viewport
-                let ssaoResolution = renderer.GeometryViewport.SsaoResolution
-                let (ssaoTextureUnfiltered, ssaoRenderbuffer, ssaoFramebuffer) = renderer.PhysicallyBasedBuffers.SsaoBuffersUnfiltered
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, ssaoRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, ssaoFramebuffer)
-                OpenGL.Gl.ClearColor (1.0f, 1.0f, 1.0f, 1.0f) // NOTE: white ssao value.
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, ssaoResolution.X, ssaoResolution.Y)
-                OpenGL.Hl.Assert ()
-
-                // deferred render ssao quad
-                OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredSsaoSurface
-                    (eyeCenter, viewArray, viewInverseArray, geometryProjectionArray, geometryProjectionInverseArray, geometryViewProjectionArray,
-                     depthTexture, normalPlusTexture, [|ssaoResolution.X; ssaoResolution.Y|],
-                     renderer.LightingConfig.SsaoIntensity, renderer.LightingConfig.SsaoBias, renderer.LightingConfig.SsaoRadius, renderer.LightingConfig.SsaoDistanceMax, renderer.RendererConfig.SsaoSampleCount,
-                     renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredSsaoShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
-
-                // setup filtered ssao buffer and viewport
-                let (ssaoTextureFiltered, ssaoFilteredRenderbuffer, ssaoFilteredFramebuffer) = renderer.PhysicallyBasedBuffers.SsaoBuffersFiltered
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, ssaoFilteredRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, ssaoFilteredFramebuffer)
-                OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, ssaoResolution.X, ssaoResolution.Y)
-                OpenGL.Hl.Assert ()
-
-                // deferred render filtered ssao quad
-                OpenGL.PhysicallyBased.DrawFilterBoxSurface (ssaoTextureUnfiltered, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBox1dShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
-                ssaoTextureFiltered
-
-            // just use white texture
-            else renderer.WhiteTexture
-
-        // setup lighting buffers and viewport
-        let (lightAccumTexture, lightingRenderbuffer, lightingFramebuffer) = renderer.PhysicallyBasedBuffers.LightingBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, lightingRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, lightingFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // deferred render quad to lighting buffers
+        // deferred render quad to light accum texture
+        let lightAccumTexture = renderer.PhysicallyBasedAttachments.LightingAttachment
         let sssEnabled = if renderer.RendererConfig.SssEnabled && renderer.LightingConfig.SssEnabled then 1 else 0
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredLightingSurface
-            (eyeCenter, viewArray, viewInverseArray, geometryProjectionArray, geometryProjectionInverseArray, renderer.LightingConfig.LightCutoffMargin,
-             renderer.LightingConfig.LightShadowSamples, renderer.LightingConfig.LightShadowBias, renderer.LightingConfig.LightShadowSampleScalar, renderer.LightingConfig.LightShadowExponent, renderer.LightingConfig.LightShadowDensity, sssEnabled,
-             depthTexture, albedoTexture, materialTexture, normalPlusTexture, subdermalPlusTexture, scatterPlusTexture, clearCoatPlusTexture, shadowTextureArray, shadowMaps, shadowCascades,
-             lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightShadowIndices, min lightIds.Length renderTasks.Lights.Count, shadowNear, shadowMatrices,
-             renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredLightingShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
+        PhysicallyBased.drawPhysicallyBasedDeferredLightingSurface
+            eyeCenter view geometryProjection renderer.LightingConfig.LightCutoffMargin renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity sssEnabled
+            depthTexture albedoTexture materialTexture normalPlusTexture subdermalPlusTexture scatterPlusTexture clearCoatPlusTexture shadowTextureArray shadowMaps shadowCascades
+            lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count) shadowNear renderer.ShadowMatrices
+            renderer.GeometrySampler renderer.ShadowSampler renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry lightAccumTexture renderer.PhysicallyBasedPipelines.DeferredLightingPipeline renderer.VulkanContext
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead lightAccumTexture renderer.VulkanContext.RenderCommandBuffer
 
         // setup fogging buffers and viewport
         let ssvfEnabled = if renderer.RendererConfig.SsvfEnabled && renderer.LightingConfig.SsvfEnabled then 1 else 0
@@ -3993,382 +3153,173 @@ type [<ReferenceEquality>] GlRenderer3d =
             // but only when desired
             if topLevelRender && ssvfEnabled = 1 then
 
-                let (fogAccumTexture, foggingRenderbuffer, foggingFramebuffer) = renderer.PhysicallyBasedBuffers.FoggingBuffers
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, foggingRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, foggingFramebuffer)
-                OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-                OpenGL.Hl.Assert ()
-
                 // deferred render quad to fogging buffers
-                OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredFoggingSurface
-                    (eyeCenter, viewArray, viewInverseArray, geometryProjectionArray, geometryProjectionInverseArray, renderer.LightingConfig.LightCutoffMargin,
-                     ssvfEnabled, renderer.LightingConfig.SsvfIntensity, renderer.LightingConfig.SsvfSteps, renderer.LightingConfig.SsvfAsymmetry, depthTexture, shadowTextureArray, shadowMaps, shadowCascades,
-                     lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs, lightShadowIndices, min lightIds.Length renderTasks.Lights.Count, shadowMatrices,
-                     renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredFoggingShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
+                let fogAccumTexture = renderer.PhysicallyBasedAttachments.FoggingAttachment
+                PhysicallyBased.drawPhysicallyBasedDeferredFoggingSurface
+                    eyeCenter view geometryProjection renderer.LightingConfig.LightCutoffMargin ssvfEnabled renderer.LightingConfig.SsvfIntensity renderer.LightingConfig.SsvfSteps renderer.LightingConfig.SsvfAsymmetry
+                    depthTexture shadowTextureArray shadowMaps shadowCascades (min lightMapEnvironmentFilterMaps.Length renderTasks.LightMaps.Count) renderer.LightingConfig.LightMapSingletonBlendMargin
+                    lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count)
+                    renderer.ShadowMatrices renderer.ColorSampler renderer.ShadowSampler fogAccumTexture renderer.GeometryViewport renderer.RenderPassIndex
+                    renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredFoggingPipeline renderer.VulkanContext
+                Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead fogAccumTexture renderer.VulkanContext.RenderCommandBuffer
                 fogAccumTexture
 
             // just use black texture
             else renderer.BlackTexture
 
-        // setup coloring buffers and viewport
-        let (colorTexture, depthTexture2, coloringRenderbuffer, coloringFramebuffer) = renderer.PhysicallyBasedBuffers.ColoringBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, coloringRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, coloringFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // deferred render quad to coloring buffers
-        let ssrlEnabled = if renderer.RendererConfig.SsrlEnabled && renderer.LightingConfig.SsrlEnabled then 1 else 0
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredColoringSurface
-            (eyeCenter, viewArray, viewInverseArray, geometryProjectionArray, geometryProjectionInverseArray, renderer.LightingConfig.LightAmbientBoostCutoff, renderer.LightingConfig.LightAmbientBoostScalar,
-             ssrlEnabled, renderer.LightingConfig.SsrlIntensity, renderer.LightingConfig.SsrlDetail, renderer.LightingConfig.SsrlRefinementsMax, renderer.LightingConfig.SsrlRayThickness, renderer.LightingConfig.SsrlTowardEyeCutoff,
-             renderer.LightingConfig.SsrlDepthCutoff, renderer.LightingConfig.SsrlDepthCutoffMargin, renderer.LightingConfig.SsrlDistanceCutoff, renderer.LightingConfig.SsrlDistanceCutoffMargin, renderer.LightingConfig.SsrlRoughnessCutoff, renderer.LightingConfig.SsrlRoughnessCutoffMargin,
-             renderer.LightingConfig.SsrlSlopeCutoff, renderer.LightingConfig.SsrlSlopeCutoffMargin, renderer.LightingConfig.SsrlEdgeHorizontalMargin, renderer.LightingConfig.SsrlEdgeVerticalMargin,
-             depthTexture, albedoTexture, materialTexture, normalPlusTexture, clearCoatPlusTexture, lightAccumTexture, renderer.BrdfTexture, ambientTexture, irradianceTexture, environmentFilterTexture, ssaoTextureFiltered,
-             renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredColoringShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // run fog accum blur pass
-        let fogAccumBlurTexture =
+        // run light mapping pass
+        let lightMappingTexture =
 
             // but only when desired
-            if renderer.LightingConfig.SsvfEnabled then
-
-                // setup fog accum down-sample buffers and viewport
-                let (fogAccumDownSampleTexture, depthDownSampleTexture, fogAccumDownSampleRenderbuffer, fogAccumDownSampleFramebuffer) = renderer.PhysicallyBasedBuffers.FogAccumDownSampleBuffers
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, fogAccumDownSampleRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, fogAccumDownSampleFramebuffer)
-                OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, geometryResolution.X / 2, geometryResolution.Y / 2)
-                OpenGL.Hl.Assert ()
-
-                // deferred render fog accum quad to down-sample buffers
-                // NOTE: the depthTexture gets rendered redundantly here, but we're ignoring that inefficiency for now.
-                // TODO: P1: let's see if we can remember why we're rendering depth here and potentially avoid it for
-                // efficiency.
-                OpenGL.PhysicallyBased.DrawFilterBilateralDownSampleSurface (fogAccumTexture, depthTexture2, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBilateralDownSample4dShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
-
-                // setup fog accum up-sample buffers and viewport
-                let (fogAccumUpSampleTexture, fogAccumUpSampleRenderbuffer, fogAccumUpSampleFramebuffer) = renderer.PhysicallyBasedBuffers.FogAccumUpSampleBuffers
-                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, fogAccumUpSampleRenderbuffer)
-                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, fogAccumUpSampleFramebuffer)
-                OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-                OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-                OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-                OpenGL.Hl.Assert ()
-
-                // deferred render fog accum quad to up-sample buffers
-                OpenGL.PhysicallyBased.DrawFilterBilateralUpSampleSurface (fogAccumDownSampleTexture, depthDownSampleTexture, depthTexture2, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBilateralUpSample4dShader, renderer.PhysicallyBasedStaticVao)
-                OpenGL.Hl.Assert ()
-                fogAccumUpSampleTexture
+            if renderer.RendererConfig.LightMappingEnabled then
+                let lightMappingTexture = renderer.PhysicallyBasedAttachments.LightMappingAttachment
+                PhysicallyBased.drawPhysicallyBasedDeferredLightMappingSurface
+                    eyeCenter view geometryProjection lightMapOrigins lightMapMins lightMapSizes lightMapAmbientColors lightMapAmbientBrightnesses
+                    (min lightMapEnvironmentFilterMaps.Length renderTasks.LightMaps.Count) renderer.LightingConfig.LightMapSingletonBlendMargin
+                    renderTasks.Lights.Count depthTexture normalPlusTexture renderer.ColorSampler lightMappingTexture
+                    renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredLightMappingPipeline renderer.VulkanContext
+                Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead lightMappingTexture renderer.VulkanContext.RenderCommandBuffer
+                lightMappingTexture
 
             // just use black texture
             else renderer.BlackTexture
 
-        // setup composition buffers and viewport
-        let (compositionTexture, compositionRenderbuffer, compositionFramebuffer) = renderer.PhysicallyBasedBuffers.CompositionBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, compositionRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, compositionFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
+        // run ambient pass
+        let ambientTexture = renderer.PhysicallyBasedAttachments.AmbientAttachment
+        PhysicallyBased.drawPhysicallyBasedDeferredAmbientSurface
+            eyeCenter view geometryProjection lightMapFallback.AmbientColor lightMapFallback.AmbientBrightness lightMapAmbientColors lightMapAmbientBrightnesses depthTexture lightMappingTexture renderer.ColorSampler ambientTexture
+            renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredAmbientPipeline renderer.VulkanContext
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead ambientTexture renderer.VulkanContext.RenderCommandBuffer
 
-        // deferred render composition quad to composition buffers
+        // run irradiance pass
+        let irradianceTexture = renderer.PhysicallyBasedAttachments.IrradianceAttachment
+        PhysicallyBased.drawPhysicallyBasedDeferredIrradianceSurface
+            eyeCenter view geometryProjection depthTexture normalPlusTexture lightMappingTexture lightMapFallback.IrradianceMap lightMapIrradianceMaps renderer.ColorSampler renderer.CubeMapSampler irradianceTexture
+            renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredIrradiancePipeline renderer.VulkanContext
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead irradianceTexture renderer.VulkanContext.RenderCommandBuffer
+
+        // run environment filter pass
+        let environmentFilterTexture = renderer.PhysicallyBasedAttachments.EnvironmentFilterAttachment
+        PhysicallyBased.drawPhysicallyBasedDeferredEnvironmentFilterSurface
+            eyeCenter view geometryProjection lightMapOrigins lightMapMins lightMapSizes lightMapAmbientColors lightMapAmbientBrightnesses
+            depthTexture materialTexture normalPlusTexture clearCoatPlusTexture lightMappingTexture lightMapFallback.EnvironmentFilterMap lightMapEnvironmentFilterMaps renderer.ColorSampler renderer.CubeMapSampler environmentFilterTexture
+            renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredEnvironmentFilterPipeline renderer.VulkanContext
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead environmentFilterTexture renderer.VulkanContext.RenderCommandBuffer
+
+        // run ssao pass
+        let ssaoTextureFiltered =
+
+            // but only when desired
+            if renderer.RendererConfig.SsaoEnabled && renderer.LightingConfig.SsaoEnabled then
+
+                // TODO: DJL: implement.
+                renderer.WhiteTexture
+
+            // just use white texture
+            else renderer.WhiteTexture
+
+        // setup coloring attachments
+        let ssrlEnabled = if renderer.RendererConfig.SsrlEnabled && renderer.LightingConfig.SsrlEnabled then 1 else 0
+        let (colorTexture, depthTexture2) = renderer.PhysicallyBasedAttachments.ColoringAttachments
+        PhysicallyBased.drawPhysicallyBasedDeferredColoringSurface
+            eyeCenter view geometryProjection renderer.LightingConfig.LightAmbientBoostCutoff renderer.LightingConfig.LightAmbientBoostScalar
+            ssrlEnabled renderer.LightingConfig.SsrlIntensity renderer.LightingConfig.SsrlDetail renderer.LightingConfig.SsrlRefinementsMax renderer.LightingConfig.SsrlRayThickness renderer.LightingConfig.SsrlTowardEyeCutoff
+            renderer.LightingConfig.SsrlDepthCutoff renderer.LightingConfig.SsrlDepthCutoffMargin renderer.LightingConfig.SsrlDistanceCutoff renderer.LightingConfig.SsrlDistanceCutoffMargin
+            renderer.LightingConfig.SsrlRoughnessCutoff renderer.LightingConfig.SsrlRoughnessCutoffMargin renderer.LightingConfig.SsrlSlopeCutoff renderer.LightingConfig.SsrlSlopeCutoffMargin
+            renderer.LightingConfig.SsrlEdgeHorizontalMargin renderer.LightingConfig.SsrlEdgeVerticalMargin
+            depthTexture albedoTexture materialTexture normalPlusTexture clearCoatPlusTexture lightAccumTexture renderer.BrdfTexture ambientTexture irradianceTexture environmentFilterTexture ssaoTextureFiltered
+            renderer.ColorSampler renderer.BrdfSampler colorTexture depthTexture2 renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredColoringPipeline renderer.VulkanContext
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead colorTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead depthTexture2 renderer.VulkanContext.RenderCommandBuffer
+
+        // deferred render composition quad to composition attachments
         let fogEnabled = if renderer.LightingConfig.FogEnabled then 1 else 0
         let fogType = renderer.LightingConfig.FogType.Enumerate
-        OpenGL.PhysicallyBased.DrawPhysicallyBasedDeferredCompositionSurface
-            (eyeCenter, viewInverseArray, windowProjectionInverseArray, fogEnabled, fogType, renderer.LightingConfig.FogStart, renderer.LightingConfig.FogFinish, renderer.LightingConfig.FogDensity, renderer.LightingConfig.FogColor,
-             depthTexture, colorTexture, fogAccumBlurTexture, renderer.PhysicallyBasedQuad, renderer.PhysicallyBasedShaders.DeferredCompositionShader, renderer.PhysicallyBasedStaticVao)
+        let compositionTexture = renderer.PhysicallyBasedAttachments.CompositionAttachment
+        PhysicallyBased.drawPhysicallyBasedDeferredCompositionSurface
+            eyeCenter view geometryProjection fogEnabled fogType renderer.LightingConfig.FogStart renderer.LightingConfig.FogFinish renderer.LightingConfig.FogDensity renderer.LightingConfig.FogColor
+            depthTexture colorTexture fogAccumTexture renderer.ColorSampler compositionTexture
+            renderer.GeometryViewport renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredCompositionPipeline renderer.VulkanContext
 
-        // copy depths from geometry framebuffer to composition framebuffer
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, geometryFramebuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, compositionFramebuffer)
-        OpenGL.Gl.BlitFramebuffer
-            (0, 0, geometryResolution.X, geometryResolution.Y,
-             0, 0, geometryResolution.X, geometryResolution.Y,
-             OpenGL.ClearBufferMask.DepthBufferBit,
-             OpenGL.BlitFramebufferFilter.Nearest)
-        OpenGL.Hl.Assert ()
-
-        // attempt to render sky box to composition buffer
+        // attempt to render sky box to composition attachment
         match skyBoxOpt with
         | Some (cubeMapColor, cubeMapBrightness, cubeMap, _) ->
-            OpenGL.SkyBox.DrawSkyBox (viewSkyBoxArray, windowProjectionArray, windowViewProjectionSkyBoxArray, cubeMapColor, cubeMapBrightness, cubeMap, renderer.CubeMapGeometry, renderer.SkyBoxShader, renderer.CubeMapVao)
-            OpenGL.Hl.Assert ()
+            SkyBox.drawSkyBox
+                eyeCenter viewSkyBox windowProjection cubeMapColor cubeMapBrightness cubeMap renderer.CubeMapGeometry renderer.CubeMapSampler
+                renderer.GeometryViewport compositionTexture zTexture renderer.SkyBoxPipeline renderer.VulkanContext
         | None -> ()
 
-        // forward render surfaces to composition buffer
-        let ssrrEnabled =
-            if renderer.RendererConfig.SsrrEnabled && renderer.LightingConfig.SsrrEnabled then 1 else 0
-        let forwardSsvfSteps =
-            renderer.LightingConfig.SsvfSteps * 2 // HACK: need an increase in forward-rendered steps since they don't get a blur pass.
-        let forwardShaderAndVaos =
-            [(renderer.PhysicallyBasedShaders.ForwardStaticShader, renderer.PhysicallyBasedStaticVao)
-             (renderer.PhysicallyBasedShaders.ForwardAnimatedShader, renderer.PhysicallyBasedAnimatedVao)]
-        for (shader, vao) in forwardShaderAndVaos do
-            GlRenderer3d.beginPhysicallyBasedForwardShader
-                viewArray geometryProjectionArray geometryViewProjectionArray eyeCenter viewInverseArray windowProjectionInverseArray renderer.LightingConfig.LightCutoffMargin lightAmbientColor lightAmbientBrightness renderer.LightingConfig.LightAmbientBoostCutoff renderer.LightingConfig.LightAmbientBoostScalar
-                renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
-                fogEnabled fogType renderer.LightingConfig.FogStart renderer.LightingConfig.FogFinish renderer.LightingConfig.FogDensity renderer.LightingConfig.FogColor ssvfEnabled renderer.LightingConfig.SsvfIntensity forwardSsvfSteps renderer.LightingConfig.SsvfAsymmetry
-                ssrrEnabled renderer.LightingConfig.SsrrIntensity renderer.LightingConfig.SsrrDetail renderer.LightingConfig.SsrrRefinementsMax renderer.LightingConfig.SsrrRayThickness renderer.LightingConfig.SsrrDistanceCutoff renderer.LightingConfig.SsrrDistanceCutoffMargin renderer.LightingConfig.SsrrEdgeHorizontalMargin renderer.LightingConfig.SsrrEdgeVerticalMargin
-                depthTexture2 colorTexture renderer.BrdfTexture lightMapFallback.IrradianceMap lightMapFallback.EnvironmentFilterMap shadowNear shader vao
+        // render forward (static and animated) surfaces to composition attachment
+        // TODO: P1: consider optimizing this such that the current forward pipeline is only ended when pipeline change
+        // is detected.
+        let ssrrEnabled = if renderer.RendererConfig.SsrrEnabled && renderer.LightingConfig.SsrrEnabled then 1 else 0
+        let forwardSsvfSteps = renderer.LightingConfig.SsvfSteps * 2 // HACK: need an increase in forward-rendered steps since they don't get a blur pass.
         for (model, _, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) in renderTasks.ForwardSorted do
             let (lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapIrradianceMaps, lightMapEnvironmentFilterMaps) =
                 let surfaceBounds = surface.SurfaceBounds.Transform model
-                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxForward model.Translation (Some surfaceBounds) lightMaps
+                SortableLightMap.sortLightMaps Constants.Render.LightMapsMaxForward model.Translation (Some surfaceBounds) lightMapFallback.IrradianceMap lightMapFallback.EnvironmentFilterMap lightMaps
             let (lightIds, lightOrigins, lightDirections, lightColors, lightBrightnesses, lightAttenuationLinears, lightAttenuationQuadratics, lightCutoffs, lightTypes, lightConeInners, lightConeOuters, lightDesireFogs) =
                 SortableLight.sortLights Constants.Render.LightsMaxForward model.Translation renderTasks.Lights
             let lightShadowIndices =
                 SortableLight.sortLightShadowIndices renderer.LightShadowIndices lightIds
-            let (bonesArray, shader, vao, vertexSize) =
+            let (bonesArray, forwardPipeline) =
                 match boneTransformsOpt with
-                | ValueSome boneTransforms ->
-                    let boneArrays = List ()
-                    let bonesArrays = Array.zeroCreate boneTransforms.Length
-                    for i in 0 .. dec boneTransforms.Length do
-                        let boneArray = boneTransforms[i].ToArray ()
-                        boneArrays.Add boneArray
-                        bonesArrays[i] <- boneArray
-                    (bonesArrays, renderer.PhysicallyBasedShaders.ForwardAnimatedShader, renderer.PhysicallyBasedAnimatedVao, OpenGL.PhysicallyBased.AnimatedVertexSize)
-                | ValueNone -> ([||], renderer.PhysicallyBasedShaders.ForwardStaticShader, renderer.PhysicallyBasedStaticVao, OpenGL.PhysicallyBased.StaticVertexSize)
-            GlRenderer3d.renderPhysicallyBasedForwardSurfaces
+                | ValueSome boneTransforms -> (boneTransforms, renderer.PhysicallyBasedPipelines.ForwardAnimatedPipeline)
+                | ValueNone -> ([||], renderer.PhysicallyBasedPipelines.ForwardStaticPipeline)
+            let (uniformsDescriptorSet, samplersDescriptorSet) =
+                VulkanRenderer3d.beginPhysicallyBasedForwardSurfaces
+                    eyeCenter view geometryProjection renderer.LightingConfig.LightCutoffMargin lightAmbientColor lightAmbientBrightness renderer.LightingConfig.LightAmbientBoostCutoff renderer.LightingConfig.LightAmbientBoostScalar
+                    renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity
+                    fogEnabled fogType renderer.LightingConfig.FogStart renderer.LightingConfig.FogFinish renderer.LightingConfig.FogDensity renderer.LightingConfig.FogColor ssvfEnabled renderer.LightingConfig.SsvfIntensity forwardSsvfSteps renderer.LightingConfig.SsvfAsymmetry
+                    ssrrEnabled renderer.LightingConfig.SsrrIntensity renderer.LightingConfig.SsrrDetail renderer.LightingConfig.SsrrRefinementsMax renderer.LightingConfig.SsrrRayThickness renderer.LightingConfig.SsrrDistanceCutoff renderer.LightingConfig.SsrrDistanceCutoffMargin renderer.LightingConfig.SsrrEdgeHorizontalMargin renderer.LightingConfig.SsrrEdgeVerticalMargin shadowNear
+                    depthTexture2 colorTexture renderer.BrdfTexture lightMapFallback.IrradianceMap lightMapFallback.EnvironmentFilterMap renderer.FilteredSampler renderer.CubeMapSampler renderer.ShadowSampler renderer.ColorSampler renderer.DepthSampler renderer.BrdfSampler compositionTexture zTexture renderer.GeometryViewport renderer.RenderPassIndex forwardPipeline renderer.VulkanContext
+            VulkanRenderer3d.renderPhysicallyBasedForwardSurfaces
                 bonesArray (SList.singleton (model, presence, texCoordsOffset, properties))
                 lightMapIrradianceMaps lightMapEnvironmentFilterMaps shadowTextureArray shadowMaps shadowCascades lightMapOrigins lightMapMins lightMapSizes lightMapAmbientColors lightMapAmbientBrightnesses (min lightMapEnvironmentFilterMaps.Length renderTasks.LightMaps.Count) renderer.LightingConfig.LightMapSingletonBlendMargin
-                lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count) shadowMatrices
-                surface depthTest true shader vao vertexSize renderer
-            OpenGL.Hl.Assert ()
-        for (shader, vao) in forwardShaderAndVaos do
-            GlRenderer3d.endPhysicallyBasedForwardShader shader vao
+                lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightCutoffs lightTypes lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count) renderer.ShadowMatrices
+                surface depthTest true uniformsDescriptorSet samplersDescriptorSet forwardPipeline renderer
+            VulkanRenderer3d.endPhysicallyBasedForwardSurfaces forwardPipeline renderer.VulkanContext
 
-        // apply bloom filter when desired
-        if topLevelRender && renderer.RendererConfig.BloomEnabled && renderer.LightingConfig.BloomEnabled then
+        // transition composition attachment to transfer
+        Texture.transitionLayoutAsync ColorAttachmentWrite ShaderRead compositionTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead TransferSrc compositionTexture renderer.VulkanContext.RenderCommandBuffer
 
-            // setup bloom extract buffers and viewport
-            let (bloomExtractTexture, bloomExtractRenderbuffer, bloomExtractFramebuffer) = renderer.PhysicallyBasedBuffers.BloomExtractBuffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, bloomExtractRenderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, bloomExtractFramebuffer)
-            OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-            OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-            OpenGL.Hl.Assert ()
+        // blit from composition attachment to target image (using VkFilter.Nearest)
+        Hl.recordTransitionLayout true 1 targetLayer 1 VkImageAspectFlags.Color ColorAttachmentWrite TransferDst targetImage renderer.VulkanContext.RenderCommandBuffer
+        let mutable blit = Hl.makeBlit 0 0 0 targetLayer (VkRect2D (0, 0, uint geometryResolution.X, uint geometryResolution.Y)) targetBounds
+        Vulkan.vkCmdBlitImage (renderer.VulkanContext.RenderCommandBuffer, compositionTexture.Image, TransferSrc.VkImageLayout, targetImage, TransferDst.VkImageLayout, 1u, asPointer &blit, VkFilter.Nearest)
+        Texture.transitionLayoutAsync TransferSrc ShaderRead compositionTexture renderer.VulkanContext.RenderCommandBuffer
+        Hl.recordTransitionLayout true 1 targetLayer 1 VkImageAspectFlags.Color TransferDst ColorAttachmentWrite targetImage renderer.VulkanContext.RenderCommandBuffer
 
-            // render bloom extract buffers
-            OpenGL.PhysicallyBased.DrawFilterBloomExtractSurface (renderer.LightingConfig.BloomThreshold, compositionTexture, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBloomExtractShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
+        // transition sampled attachments back to attachment
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite depthTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite albedoTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite materialTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite normalPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite subdermalPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite scatterPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite clearCoatPlusTexture renderer.VulkanContext.RenderCommandBuffer
+        if lightMappingTexture <> renderer.BlackTexture then
+            Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite lightMappingTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite ambientTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite irradianceTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite environmentFilterTexture renderer.VulkanContext.RenderCommandBuffer
+        if ssaoTextureFiltered <> renderer.WhiteTexture then
+            Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite ssaoTextureFiltered renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite lightAccumTexture renderer.VulkanContext.RenderCommandBuffer
+        if fogAccumTexture <> renderer.BlackTexture then
+            Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite fogAccumTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite colorTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite depthTexture2 renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite compositionTexture renderer.VulkanContext.RenderCommandBuffer
+        Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite shadowTextureArray renderer.VulkanContext.RenderCommandBuffer
+        for i in 0 .. dec shadowMaps.Length do
+            Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite shadowMaps[i] renderer.VulkanContext.RenderCommandBuffer
+        for i in 0 .. dec shadowCascades.Length do
+            Texture.transitionLayoutAsync ShaderRead ColorAttachmentWrite shadowCascades[i] renderer.VulkanContext.RenderCommandBuffer
 
-            // setup bloom sample buffers and viewport (no clearing or viewport config needed)
-            let (bloomSampleTextures, bloomSampleRenderbuffer, bloomSampleFramebuffer) = renderer.PhysicallyBasedBuffers.BloomSampleBuffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, bloomSampleRenderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, bloomSampleFramebuffer)
-            OpenGL.Hl.Assert ()
-
-            // down-sample bloom buffers
-            OpenGL.PhysicallyBased.DrawBloomDownSamplesSurface
-                (geometryResolution.X, geometryResolution.Y, Constants.Render.BloomSampleLevels, renderer.LightingConfig.BloomKarisAverageEnabled, bloomExtractTexture, bloomSampleTextures,
-                 renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBloomDownSampleShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // up-sample bloom buffers
-            OpenGL.PhysicallyBased.DrawBloomUpSamplesSurface
-                (geometryResolution.X, geometryResolution.Y, Constants.Render.BloomSampleLevels, renderer.LightingConfig.BloomFilterRadius, bloomSampleTextures,
-                 renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBloomUpSampleShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // setup bloom apply buffer and viewport
-            let (_, bloomApplyRenderbuffer, bloomApplyFramebuffer) = renderer.PhysicallyBasedBuffers.BloomApplyBuffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, bloomApplyRenderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, bloomApplyFramebuffer)
-            OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-            OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-            OpenGL.Hl.Assert ()
-
-            // render bloom apply pass
-            OpenGL.PhysicallyBased.DrawBloomApplySurface
-                (renderer.LightingConfig.BloomStrength, bloomSampleTextures[0], compositionTexture,
-                 renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterBloomApplyShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // blit bloom apply buffer to composition buffer
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, bloomApplyFramebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, compositionFramebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-        // apply depth of field when desired
-        if topLevelRender && renderer.RendererConfig.DepthOfFieldEnabled && renderer.LightingConfig.DepthOfFieldEnabled then
-
-            // blit composition buffer to half filter 0 buffer
-            let (half0Texture, half0Renderbuffer, half0Framebuffer) = renderer.PhysicallyBasedBuffers.FilterHalf0Buffers
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, compositionFramebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, half0Framebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X / 2, geometryResolution.Y / 2,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Linear)
-            OpenGL.Hl.Assert ()
-
-            // render half filter 1 on the x
-            let (half1Texture, half1Renderbuffer, half1Framebuffer) = renderer.PhysicallyBasedBuffers.FilterHalf1Buffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, half1Renderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, half1Framebuffer)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X / 2, geometryResolution.Y / 2)
-            OpenGL.PhysicallyBased.DrawFilterGaussianSurface (v2 (1.0f / single geometryResolution.X / 2.0f) 0.0f, half0Texture, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussian3dShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // render half filter 0 on the y
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, half0Renderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, half0Framebuffer)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X / 2, geometryResolution.Y / 2)
-            OpenGL.PhysicallyBased.DrawFilterGaussianSurface (v2 0.0f (1.0f / single geometryResolution.Y / 2.0f), half1Texture, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussian3dShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // render depth of field to full filter 0 buffer
-            let (_, full0Renderbuffer, full0Framebuffer) = renderer.PhysicallyBasedBuffers.FilterFull0Buffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, full0Renderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, full0Framebuffer)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-            OpenGL.PhysicallyBased.DrawFilterDepthOfFieldSurface
-                (viewInverseArray, geometryProjectionInverseArray, renderer.LightingConfig.DepthOfFieldNearDistance, renderer.LightingConfig.DepthOfFieldFarDistance, renderer.LightingConfig.DepthOfFieldFocalType.Enumerate, renderer.LightingConfig.DepthOfFieldFocalDistance, renderer.LightingConfig.DepthOfFieldFocalPoint,
-                 depthTexture, half0Texture, compositionTexture, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterDepthOfFieldShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // blit full filter 0 buffer to composition buffer
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, full0Framebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, compositionFramebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-        // setup tone mapping buffer and viewport
-        let (toneMappingTexture, toneMappingRenderbuffer, toneMappingFramebuffer) = renderer.PhysicallyBasedBuffers.ToneMappingBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, toneMappingRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, toneMappingFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // render tone mapping quad to tone mapping buffers
-        OpenGL.PhysicallyBased.DrawFilterToneMappingSurface
-            (renderer.LightingConfig.LightExposure, renderer.LightingConfig.ToneMapType.Enumerate, renderer.LightingConfig.ToneMapSlope, renderer.LightingConfig.ToneMapOffset,
-             renderer.LightingConfig.ToneMapPower, renderer.LightingConfig.ToneMapSaturation, renderer.LightingConfig.ToneMapWhitePoint, compositionTexture,
-             renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterToneMappingShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // apply fxaa filter when desired
-        if renderer.RendererConfig.FxaaEnabled then
-
-            // blit tone mapping buffer to full filter 0 buffer
-            let (full0Texture, _, full0Framebuffer) = renderer.PhysicallyBasedBuffers.FilterFull0Buffers
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, toneMappingFramebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, full0Framebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-            // setup full filter 1 buffer and viewport
-            let (_, full1Renderbuffer, full1Framebuffer) = renderer.PhysicallyBasedBuffers.FilterFull1Buffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, full1Renderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, full1Framebuffer)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-            OpenGL.Hl.Assert ()
-
-            // render full filter 1 quad via fxaa
-            OpenGL.PhysicallyBased.DrawFilterFxaaSurface
-                (renderer.RendererConfig.FxaaSpanMax, renderer.RendererConfig.FxaaReduceMinDivisor, renderer.RendererConfig.FxaaReduceMulDivisor, full0Texture,
-                 renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterFxaaShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // blit full filter 1 buffer to tone mapping buffer
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, full1Framebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, toneMappingFramebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-        // apply chromatic aberration texture when desired
-        if topLevelRender && renderer.RendererConfig.ChromaticAberrationEnabled && renderer.LightingConfig.ChromaticAberrationEnabled then
-
-            // blit tone mapping buffer to full filter 0 buffer
-            let (full0Texture, _, full0Framebuffer) = renderer.PhysicallyBasedBuffers.FilterFull0Buffers
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, toneMappingFramebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, full0Framebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-            // setup full filter 1 buffer and viewport
-            let (_, full1Renderbuffer, full1Framebuffer) = renderer.PhysicallyBasedBuffers.FilterFull1Buffers
-            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, full1Renderbuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, full1Framebuffer)
-            OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-            OpenGL.Hl.Assert ()
-
-            // render chromatic aberration quad to full filter 1 buffers
-            OpenGL.PhysicallyBased.DrawFilterChromaticAberrationSurface
-                (renderer.LightingConfig.ChromaticAberrationChannelOffsets, renderer.LightingConfig.ChromaticAberrationFocalPoint, full0Texture,
-                 renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterChromaticAberrationShader, renderer.PhysicallyBasedStaticVao)
-            OpenGL.Hl.Assert ()
-
-            // blit full filter 1 buffer to tone mapping buffer
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, full1Framebuffer)
-            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, toneMappingFramebuffer)
-            OpenGL.Gl.BlitFramebuffer
-                (0, 0, geometryResolution.X, geometryResolution.Y,
-                 0, 0, geometryResolution.X, geometryResolution.Y,
-                 OpenGL.ClearBufferMask.ColorBufferBit,
-                 OpenGL.BlitFramebufferFilter.Nearest)
-            OpenGL.Hl.Assert ()
-
-        // setup gamma correction buffer and viewport
-        let (_, gammaCorrectionRenderbuffer, gammaCorrectionFramebuffer) = renderer.PhysicallyBasedBuffers.GammaCorrectionBuffers
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, gammaCorrectionRenderbuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, gammaCorrectionFramebuffer)
-        OpenGL.Gl.ClearColor (Constants.Render.ViewportClearColor.R, Constants.Render.ViewportClearColor.G, Constants.Render.ViewportClearColor.B, Constants.Render.ViewportClearColor.A)
-        OpenGL.Gl.Clear (OpenGL.ClearBufferMask.ColorBufferBit ||| OpenGL.ClearBufferMask.DepthBufferBit ||| OpenGL.ClearBufferMask.StencilBufferBit)
-        OpenGL.Gl.Viewport (0, 0, geometryResolution.X, geometryResolution.Y)
-        OpenGL.Hl.Assert ()
-
-        // render gamma correction quad to gamma correction buffers
-        OpenGL.PhysicallyBased.DrawFilterGammaCorrectionSurface
-            (toneMappingTexture, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGammaCorrectionShader, renderer.PhysicallyBasedStaticVao)
-        OpenGL.Hl.Assert ()
-
-        // blit gamma correction buffer to window buffer
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.ReadFramebuffer, gammaCorrectionFramebuffer)
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.DrawFramebuffer, framebuffer)
-        OpenGL.Gl.BlitFramebuffer
-            (0, 0, geometryResolution.X, geometryResolution.Y,
-             windowInset.Min.X, windowInset.Min.Y, windowInset.Max.X, windowInset.Max.Y,
-             OpenGL.ClearBufferMask.ColorBufferBit,
-             OpenGL.BlitFramebufferFilter.Nearest)
-        OpenGL.Hl.Assert ()
+        // advance render pass index
+        renderer.RenderPassIndex <- inc renderer.RenderPassIndex
 
     /// Render 3d surfaces.
     static member render
@@ -4380,121 +3331,153 @@ type [<ReferenceEquality>] GlRenderer3d =
         eyeFieldOfView
         geometryViewport
         windowViewport
-        framebuffer
         (renderMessages : _ List)
-        renderer =
+        (renderer : VulkanRenderer3d) =
+        
+        /////////////////
+        // Begin Frame //
+        /////////////////
 
-        // updates viewports, recreating buffers as needed
+        // update viewports
         if renderer.GeometryViewport <> geometryViewport then
-            GlRenderer3d.invalidateCaches renderer
-            GlRenderer3d.clearRenderPasses renderer // force shadows to rerender
-            OpenGL.PhysicallyBased.DestroyPhysicallyBasedBuffers renderer.PhysicallyBasedBuffers
-            renderer.PhysicallyBasedBuffers <- OpenGL.PhysicallyBased.CreatePhysicallyBasedBuffers geometryViewport
+            VulkanRenderer3d.invalidateCaches renderer
+            VulkanRenderer3d.clearRenderPasses renderer // force shadows to rerender
             renderer.GeometryViewport <- geometryViewport
         renderer.WindowViewport <- windowViewport
 
+        // update attachment sizes (must happen every frame to cover all frames in flight)
+        PhysicallyBased.updatePhysicallyBasedAttachmentsSize
+            geometryViewport renderer.PhysicallyBasedAttachments renderer.VulkanContext
+
+        // reload render assets when requested on previous frame
+        if renderer.ReloadAssetsRequested then
+            VulkanRenderer3d.handleReloadRenderAssets renderer
+            renderer.ReloadAssetsRequested <- false
+
+        // begin texture dumpster frame
+        if renderer.VulkanContext.RenderAllowed then
+            TextureDumpster.beginFrame renderer.TextureDumpster renderer.VulkanContext
+
+        // begin instance buffer frames as requested on previous frame
+        for geometry in renderer.GeometryInstanced do
+            Buffer.beginFrame geometry.InstanceBuffer
+        renderer.GeometryInstanced.Clear ()
+
+        // begin pipeline frames
+        PhysicallyBased.beginPhysicallyBasedPipelines renderer.PhysicallyBasedPipelines
+
+        //////////////////
+        // Handle Frame //
+        //////////////////
+        
         // categorize messages
         let userDefinedStaticModelsToDestroy =
-            GlRenderer3d.categorize frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation renderMessages renderer
+            VulkanRenderer3d.categorize frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation renderMessages renderer
 
         // light map pre-passes
-        for (renderPass, renderTasks) in renderer.RenderPasses.Pairs do
+        if renderer.VulkanContext.RenderAllowed then
+            for (renderPass, renderTasks) in renderer.RenderPasses.Pairs do
+                
+                // fallback light map pre-pass
+                match VulkanRenderer3d.getLastSkyBoxOpt renderPass renderer |> __c with
+                | Some (_, _, cubeMap, irradianceAndEnvironmentMapsOptRef : (Texture * Texture) option ref) ->
 
-            // fallback light map pre-pass
-            match GlRenderer3d.getLastSkyBoxOpt renderPass renderer |> __c with
-            | Some (_, _, cubeMap, irradianceAndEnvironmentMapsOptRef : (OpenGL.Texture.Texture * OpenGL.Texture.Texture) option ref) ->
+                    // render fallback irradiance and env filter maps
+                    if Option.isNone irradianceAndEnvironmentMapsOptRef.Value then
 
-                // render fallback irradiance and env filter maps
-                if Option.isNone irradianceAndEnvironmentMapsOptRef.Value then
-
-                    // render fallback irradiance map
-                    let irradianceMap =
-                        OpenGL.LightMap.CreateIrradianceMap
-                            (Constants.Render.IrradianceMapResolution,
-                                OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
-                                renderer.IrradianceShader,
-                                renderer.CubeMapVao,
-                                renderer.IrradianceMapRenderbuffer,
-                                renderer.IrradianceMapFramebuffer)
-
-                    // render fallback env filter map
-                    let environmentFilterMap =
-                        OpenGL.LightMap.CreateEnvironmentFilterMap
-                            (Constants.Render.EnvironmentFilterResolution,
-                                OpenGL.CubeMap.CubeMapSurface.make cubeMap renderer.CubeMapGeometry,
-                                renderer.EnvironmentFilterShader,
-                                renderer.CubeMapVao,
-                                renderer.EnvironmentFilterRenderbuffer,
-                                renderer.EnvironmentFilterFramebuffer)
-
-                    // add to cache and create light map
-                    irradianceAndEnvironmentMapsOptRef.Value <- Some (irradianceMap, environmentFilterMap)
-
-                // nothing to do
-                | None -> ()
-
-            // render light map
-            match renderPass with
-            | LightMapPass (lightProbeId, _) ->
-                if renderTasks.LightMapRenders.Contains lightProbeId then
-
-                    // destroy any existing light map
-                    match renderer.LightMaps.TryGetValue lightProbeId with
-                    | (true, lightMap) ->
-                        OpenGL.LightMap.DestroyLightMap lightMap
-                        renderer.LightMaps.Remove lightProbeId |> ignore<bool>
-                    | (false, _) -> ()
-
-                    // create new light map
-                    match renderTasks.LightProbes.TryGetValue lightProbeId with
-                    | (true, struct (lightProbeEnabled, lightProbeOrigin, lightProbeAmbientColor, lightProbeAmbientBrightness, lightProbeBounds)) ->
-
-                        // create reflection map
-                        let reflectionMap =
-                            OpenGL.LightMap.CreateReflectionMap
-                                (GlRenderer3d.renderGeometry frustumInterior frustumExterior frustumImposter renderPass (GlRenderer3d.getRenderTasks renderPass renderer) renderer,
-                                 Constants.Render.ReflectionMapResolution,
-                                 lightProbeOrigin,
-                                 lightProbeAmbientColor,
-                                 lightProbeAmbientBrightness,
-                                 renderer.ReflectionRenderbuffer,
-                                 renderer.ReflectionFramebuffer)
-
-                        // create irradiance map
+                        // render fallback irradiance map
                         let irradianceMap =
-                            OpenGL.LightMap.CreateIrradianceMap
-                                (Constants.Render.IrradianceMapResolution,
-                                 OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
-                                 renderer.IrradianceShader,
-                                 renderer.CubeMapVao,
-                                 renderer.IrradianceMapRenderbuffer,
-                                 renderer.IrradianceMapFramebuffer)
+                            LightMap.createIrradianceMap
+                                Constants.Render.IrradianceMapResolution
+                                (CubeMapSurface.make cubeMap renderer.CubeMapGeometry)
+                                renderer.CubeMapSampler
+                                renderer.IrradianceMap.InternalFormat
+                                renderer.IrradiancePipeline
+                                renderer.VulkanContext.RenderCommandBuffer
+                                renderer.VulkanContext
 
-                        // create env filter map
+                        // render fallback env filter map
                         let environmentFilterMap =
-                            OpenGL.LightMap.CreateEnvironmentFilterMap
-                                (Constants.Render.EnvironmentFilterResolution,
-                                 OpenGL.CubeMap.CubeMapSurface.make reflectionMap renderer.CubeMapGeometry,
-                                 renderer.EnvironmentFilterShader,
-                                 renderer.CubeMapVao,
-                                 renderer.EnvironmentFilterRenderbuffer,
-                                 renderer.EnvironmentFilterFramebuffer)
+                            LightMap.createEnvironmentFilterMap
+                                Constants.Render.EnvironmentFilterResolution
+                                (CubeMapSurface.make cubeMap renderer.CubeMapGeometry)
+                                renderer.CubeMapSampler
+                                renderer.EnvironmentFilterMap.InternalFormat
+                                renderer.EnvironmentFilterPipeline
+                                renderer.VulkanContext.RenderCommandBuffer
+                                renderer.VulkanContext
 
-                        // destroy reflection map
-                        reflectionMap.Destroy ()
+                        // add to cache and create light map
+                        irradianceAndEnvironmentMapsOptRef.Value <- Some (irradianceMap, environmentFilterMap)
 
-                        // create light map
-                        let lightMap = OpenGL.LightMap.CreateLightMap lightProbeEnabled lightProbeOrigin lightProbeAmbientColor lightProbeAmbientBrightness lightProbeBounds irradianceMap environmentFilterMap
+                    // nothing to do
+                    | None -> ()
 
-                        // add light map to cache
-                        renderer.LightMaps[lightProbeId] <- lightMap
+                // render light map
+                match renderPass with
+                | LightMapPass (lightProbeId, _) ->
+                    if renderTasks.LightMapRenders.Contains lightProbeId then
 
-                    | (false, _) -> ()
-            | _ -> ()
+                        // destroy any existing light map
+                        match renderer.LightMaps.TryGetValue lightProbeId with
+                        | (true, lightMap) ->
+                            TextureDumpster.toss lightMap.IrradianceMap renderer.TextureDumpster
+                            TextureDumpster.toss lightMap.EnvironmentFilterMap renderer.TextureDumpster
+                            renderer.LightMaps.Remove lightProbeId |> ignore<bool>
+                        | (false, _) -> ()
+                            
+                        // create new light map
+                        match renderTasks.LightProbes.TryGetValue lightProbeId with
+                        | (true, struct (lightProbeEnabled, lightProbeOrigin, lightProbeAmbientColor, lightProbeAmbientBrightness, lightProbeBounds)) ->
+
+                            // create reflection map
+                            let reflectionMap =
+                                LightMap.createReflectionMap
+                                    (VulkanRenderer3d.renderGeometry frustumInterior frustumExterior frustumImposter renderPass (VulkanRenderer3d.getRenderTasks renderPass renderer) renderer)
+                                    Constants.Render.ReflectionMapResolution
+                                    lightProbeOrigin
+                                    lightProbeAmbientColor
+                                    lightProbeAmbientBrightness
+                                    renderer.VulkanContext.RenderCommandBuffer
+                                    renderer.VulkanContext
+
+                            // create irradiance map
+                            let irradianceMap =
+                                LightMap.createIrradianceMap
+                                    Constants.Render.IrradianceMapResolution
+                                    (CubeMapSurface.make reflectionMap renderer.CubeMapGeometry)
+                                    renderer.CubeMapSampler
+                                    renderer.IrradianceMap.InternalFormat
+                                    renderer.IrradiancePipeline
+                                    renderer.VulkanContext.RenderCommandBuffer
+                                    renderer.VulkanContext
+
+                            // create env filter map
+                            let environmentFilterMap =
+                                LightMap.createEnvironmentFilterMap
+                                    Constants.Render.EnvironmentFilterResolution
+                                    (CubeMapSurface.make reflectionMap renderer.CubeMapGeometry)
+                                    renderer.CubeMapSampler
+                                    renderer.EnvironmentFilterMap.InternalFormat
+                                    renderer.EnvironmentFilterPipeline
+                                    renderer.VulkanContext.RenderCommandBuffer
+                                    renderer.VulkanContext
+
+                            // destroy reflection map
+                            TextureDumpster.toss reflectionMap renderer.TextureDumpster
+
+                            // create light map
+                            let lightMap = LightMap.createLightMap lightProbeEnabled lightProbeOrigin lightProbeAmbientColor lightProbeAmbientBrightness lightProbeBounds irradianceMap environmentFilterMap
+
+                            // add light map to cache
+                            renderer.LightMaps[lightProbeId] <- lightMap
+
+                        | (false, _) -> ()
+                    | _ -> ()
 
         // sort spot and directional lights according to how they are utilized by shadows
         let normalPass = NormalPass
-        let normalTasks = GlRenderer3d.getRenderTasks normalPass renderer
+        let normalTasks = VulkanRenderer3d.getRenderTasks normalPass renderer
         let spotAndDirectionalLightsArray = SortableLight.sortShadowingSpotAndDirectionalLightsIntoArray Constants.Render.ShadowTexturesMax eyeCenter normalTasks.Lights
 
         // sort spot and directional lights so that shadows that have the possibility of cache reuse come to the front
@@ -4516,7 +3499,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                         lightId = shadowLightId && shadowIndexInfoOpt.IsNone && shadowTextureIndex < Constants.Render.ShadowTexturesMax ->
 
                         // attempt to set up shadow texture drawing
-                        let (shadowOrigin, shadowView, shadowProjection) =
+                        let (shadowOrigin, shadowView, shadowProjection, shadowCutoff, shadowColorAttachments, shadowDepthAttachment) =
                             match shadowLightType with
                             | SpotLight (_, _) ->
                                 let shadowForward = shadowRotation.Down
@@ -4525,14 +3508,16 @@ type [<ReferenceEquality>] GlRenderer3d =
                                 let shadowFov = max (min lightConeOuter Constants.Render.ShadowFovMax) 0.01f
                                 let shadowCutoff = max lightCutoff (Constants.Render.NearPlaneDistanceInterior * 2.0f)
                                 let shadowProjection = Matrix4x4.CreatePerspectiveFieldOfView (shadowFov, 1.0f, Constants.Render.NearPlaneDistanceInterior, shadowCutoff)
-                                (lightOrigin, shadowView, shadowProjection)
+                                let (shadowColorAttachment, shadowDepthAttachment) = renderer.PhysicallyBasedAttachments.ShadowTextureArrayAttachments
+                                (lightOrigin, shadowView, shadowProjection, shadowCutoff, [|shadowColorAttachment.LayerViews[shadowTextureIndex]|], shadowDepthAttachment)
                             | DirectionalLight _ ->
                                 let shadowForward = shadowRotation.Down
                                 let shadowUp = shadowForward.OrthonormalUp
                                 let shadowView = Matrix4x4.CreateLookAt (lightOrigin, lightOrigin + shadowForward, shadowUp)
                                 let shadowCutoff = lightCutoff
                                 let shadowProjection = Matrix4x4.CreateOrthographic (shadowCutoff * 2.0f, shadowCutoff * 2.0f, -shadowCutoff, shadowCutoff)
-                                (lightOrigin, shadowView, shadowProjection)
+                                let (shadowColorAttachment, shadowDepthAttachment) = renderer.PhysicallyBasedAttachments.ShadowTextureArrayAttachments
+                                (lightOrigin, shadowView, shadowProjection, shadowCutoff, [|shadowColorAttachment.LayerViews[shadowTextureIndex]|], shadowDepthAttachment)
                             | PointLight | CascadedLight -> failwithumf ()
 
                         // draw shadow texture when not cached
@@ -4550,23 +3535,23 @@ type [<ReferenceEquality>] GlRenderer3d =
                             // draw shadow texture
                             let shadowViewProjection = shadowView * shadowProjection
                             let shadowResolution = renderer.GeometryViewport.ShadowTextureResolution
-                            let (shadowTextureArray, shadowRenderbuffer, shadowFramebuffer) = renderer.PhysicallyBasedBuffers.ShadowTextureArrayBuffers
-                            GlRenderer3d.renderShadowTexture renderTasks renderer shadowOrigin shadowView shadowProjection shadowViewProjection shadowFrustum shadowLightType shadowTextureIndex shadowResolution shadowTextureArray shadowRenderbuffer shadowFramebuffer
+                            VulkanRenderer3d.renderShadowTexture
+                                renderTasks renderer shadowOrigin shadowViewProjection shadowFrustum
+                                shadowLightType shadowCutoff shadowResolution shadowColorAttachments shadowDepthAttachment
 
-                            // filter shadows on the x (presuming that viewport already configured correctly)
-                            let (shadowTextureFilter, shadowFilterRenderbuffer, shadowFilterFramebuffer) = renderer.PhysicallyBasedBuffers.ShadowTextureFilterBuffers
-                            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowFilterRenderbuffer)
-                            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFilterFramebuffer)
-                            OpenGL.PhysicallyBased.DrawFilterGaussianFilterSurface (v2 (1.0f / single shadowResolution.X) 0.0f, shadowTextureIndex, shadowTextureArray, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussianArray2dShader, renderer.PhysicallyBasedStaticVao)
-                            OpenGL.Hl.Assert ()
-
-                            // filter shadows on the y (presuming that viewport already configured correctly)
-                            OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowRenderbuffer)
-                            OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFramebuffer)
-                            OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, shadowTextureArray.TextureId, 0, shadowTextureIndex)
-                            OpenGL.PhysicallyBased.DrawFilterGaussianArraySurface (v2 0.0f (1.0f / single shadowResolution.Y), shadowTextureFilter, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussian2dShader, renderer.PhysicallyBasedStaticVao)
-                            OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, 0u, 0, shadowTextureIndex)
-                            OpenGL.Hl.Assert ()
+                            // TODO: P0: implement shadow filtering.
+                            //// filter shadows on the x (presuming that viewport already configured correctly)
+                            //let (shadowTextureFilter, shadowFilterRenderbuffer, shadowFilterFramebuffer) = renderer.PhysicallyBasedBuffers.ShadowTextureFilterBuffers
+                            //OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowFilterRenderbuffer)
+                            //OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFilterFramebuffer)
+                            //OpenGL.PhysicallyBased.DrawFilterGaussianFilterSurface (v2 (1.0f / single shadowResolution.X) 0.0f, shadowTextureIndex, shadowTextureArray, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussianArray2dShader, renderer.PhysicallyBasedStaticVao)
+                            //
+                            //// filter shadows on the y (presuming that viewport already configured correctly)
+                            //OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowRenderbuffer)
+                            //OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFramebuffer)
+                            //OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, shadowTextureArray.TextureId, 0, shadowTextureIndex)
+                            //OpenGL.PhysicallyBased.DrawFilterGaussianArraySurface (v2 0.0f (1.0f / single shadowResolution.Y), shadowTextureFilter, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussian2dShader, renderer.PhysicallyBasedStaticVao)
+                            //OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, 0u, 0, shadowTextureIndex)
 
                         // remember the utilized index for the next frame
                         renderTasks.ShadowBufferIndexOpt <- Some shadowTextureIndex
@@ -4608,8 +3593,8 @@ type [<ReferenceEquality>] GlRenderer3d =
                             let shadowViewProjection = shadowView * shadowProjection
 
                             // draw shadow map when not cached
-                            // NOTE: it's a tiny bit inefficient that we set up and tear down the same shadow map
-                            // once per face render here, but probably nothing worth caring about.
+                            // NOTE: it's a tiny bit inefficient that we set up and tear down the same shadow map once
+                            // per face render here, but probably nothing worth caring about.
                             let shouldDraw =
                                 match renderer.RenderPasses2.TryGetValue renderPass with
                                 | (true, renderTasksCached) ->
@@ -4620,8 +3605,8 @@ type [<ReferenceEquality>] GlRenderer3d =
                                 | (_, _) -> true
                             if shouldDraw then
                                 let shadowResolution = renderer.GeometryViewport.ShadowMapResolution
-                                let (shadowTexture, shadowRenderbuffer, shadowFramebuffer) = renderer.PhysicallyBasedBuffers.ShadowMapBuffersArray[shadowMapBufferIndex]
-                                GlRenderer3d.renderShadowMapFace renderTasks renderer lightOrigin lightCutoff shadowFace shadowView shadowProjection shadowViewProjection shadowFrustum shadowResolution shadowTexture shadowRenderbuffer shadowFramebuffer
+                                let (shadowColorAttachment, shadowDepthAttachment) = renderer.PhysicallyBasedAttachments.ShadowMapAttachmentsArray[shadowMapBufferIndex]
+                                VulkanRenderer3d.renderShadowMapFace renderTasks renderer lightOrigin lightCutoff shadowViewProjection shadowFrustum shadowResolution [|shadowColorAttachment.ImageView|] shadowDepthAttachment
 
                             // remember the utilized index for the next frame
                             renderTasks.ShadowBufferIndexOpt <- Some (shadowMapBufferIndex + Constants.Render.ShadowTexturesMax)
@@ -4637,128 +3622,34 @@ type [<ReferenceEquality>] GlRenderer3d =
                         | SpotLight (_, _) | DirectionalLight _ | CascadedLight -> failwithumf ()
                     | _ -> ()
 
-        // sort cascaded lights according to how they are utilized by shadows
-        let cascadedLightsArray = SortableLight.sortShadowingCascadedLightsIntoArray Constants.Render.ShadowCascadesMax eyeCenter normalTasks.Lights
-
-        // sort cascaded lights so that shadows that have the possibility of cache reuse come to the front
-        // NOTE: this approach has O(n^2) complexity altho perhaps it could be optimized.
-        let cascadedLightsArray =
-            Array.sortBy (fun struct (id, _, _, _, _) ->
-                renderer.RenderPasses2.Pairs
-                |> Seq.choose (fun (renderPass, renderTasks) -> match renderPass with ShadowPass (id2, indexInfoOpt, _, _, _, _) when id2 = id && indexInfoOpt.IsSome -> renderTasks.ShadowBufferIndexOpt | _ -> None)
-                |> Seq.headOrDefault Int32.MaxValue)
-                cascadedLightsArray
-
-        // shadow cascade pre-passes
-        let mutable shadowCascadeBufferIndex = 0
-        for struct (lightId, lightOrigin, lightCutoff, _, lightDesireShadows) in cascadedLightsArray do
-            if renderer.RendererConfig.LightShadowingEnabled && lightDesireShadows = 1 then
-                for (renderPass, renderTasks) in renderer.RenderPasses.Pairs do
-                    match renderPass with
-                    | ShadowPass (shadowLightId, shadowIndexInfoOpt, shadowLightType, _, _, shadowFrustum) when
-                        lightId = shadowLightId && shadowIndexInfoOpt.IsSome && shadowCascadeBufferIndex < Constants.Render.ShadowCascadesMax ->
-                        match shadowLightType with
-                        | CascadedLight ->
-
-                            // destructure shadow index info
-                            let (shadowCascadeLevel, shadowView, shadowProjection) = shadowIndexInfoOpt.Value
-                            let shadowViewProjection = shadowView * shadowProjection
-                            
-                            // draw shadow cascade when not cached
-                            // NOTE: it's a tiny bit inefficient that we set up and tear down the same shadow texture
-                            // array once per face render here, but probably nothing worth caring about.
-                            let shouldDraw =
-                                match renderer.RenderPasses2.TryGetValue renderPass with
-                                | (true, renderTasksCached) ->
-                                    if Option.contains (shadowCascadeBufferIndex + Constants.Render.ShadowTexturesMax) renderTasksCached.ShadowBufferIndexOpt then
-                                        let upToDate = RenderTasks.shadowUpToDate renderer.LightingConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
-                                        not upToDate
-                                    else true
-                                | (_, _) -> true
-                            if shouldDraw then
-
-                                // draw shadow cascade
-                                let shadowResolution = renderer.GeometryViewport.ShadowCascadeResolution
-                                let (shadowCascadeArray, shadowRenderbuffer, shadowFramebuffer) = renderer.PhysicallyBasedBuffers.ShadowCascadeArrayBuffersArray[shadowCascadeBufferIndex]
-                                GlRenderer3d.renderShadowCascade renderTasks renderer lightOrigin lightCutoff shadowCascadeLevel shadowView shadowProjection shadowViewProjection shadowFrustum shadowResolution shadowCascadeArray shadowRenderbuffer shadowFramebuffer
-                                OpenGL.Hl.Assert ()
-
-                                // filter cascade on the x (presuming that viewport already configured correctly)
-                                let (shadowCascadeFilter, shadowRenderbuffer2, shadowFramebuffer2) = renderer.PhysicallyBasedBuffers.ShadowCascadeFilterBuffersArray[shadowCascadeBufferIndex]
-                                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowRenderbuffer2)
-                                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFramebuffer2)
-                                OpenGL.PhysicallyBased.DrawFilterGaussianFilterSurface (v2 (1.0f / single shadowResolution.X) 0.0f, shadowCascadeLevel, shadowCascadeArray, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussianArray2dShader, renderer.PhysicallyBasedStaticVao)
-                                OpenGL.Hl.Assert ()
-
-                                // filter cascade on the y (presuming that viewport already configured correctly)
-                                OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, shadowRenderbuffer)
-                                OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, shadowFramebuffer)
-                                OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, shadowCascadeArray.TextureId, 0, shadowCascadeLevel)
-                                OpenGL.PhysicallyBased.DrawFilterGaussianArraySurface (v2 0.0f (1.0f / single shadowResolution.Y), shadowCascadeFilter, renderer.PhysicallyBasedQuad, renderer.FilterShaders.FilterGaussian2dShader, renderer.PhysicallyBasedStaticVao)
-                                OpenGL.Gl.FramebufferTextureLayer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.ColorAttachment0, 0u, 0, shadowCascadeLevel)
-                                OpenGL.Hl.Assert ()
-
-                            // remember the utilized index for the next frame
-                            renderTasks.ShadowBufferIndexOpt <- Some (shadowCascadeBufferIndex + Constants.Render.ShadowTexturesMax)
-
-                            // update renderer values or next shadow
-                            // NOTE: this behavior completely DEPENDS on shadow index messages for a shadow cascade
-                            // being received and processed in numerical order.
-                            renderer.ShadowMatrices.
-                                [shadowCascadeBufferIndex * Constants.Render.ShadowCascadeLevels + shadowCascadeLevel + Constants.Render.ShadowTexturesMax] <-
-                                shadowView * shadowProjection
-                            if shadowCascadeLevel = 0 then
-                                renderer.LightShadowIndices[lightId] <- shadowCascadeBufferIndex + Constants.Render.ShadowTexturesMax
-                            elif shadowCascadeLevel = dec Constants.Render.ShadowCascadeLevels then
-                                shadowCascadeBufferIndex <- inc shadowCascadeBufferIndex
-
-                        | PointLight | SpotLight (_, _) | DirectionalLight _ -> failwithumf ()
-                    | _ -> ()
-
-        // process top-level geometry pass
-        // OPTIMIZATION: we don't process rendering tasks if there are no render messages.
-        if renderMessages.Count > 0 then
+        // process top-level geometry pass. OPTIMIZATION: don't process rendering tasks when no render messages.
+        if renderer.VulkanContext.RenderAllowed && renderMessages.Count > 0 then
             let view = Viewport.getView3d eyeCenter eyeRotation
             let viewSkyBox = Matrix4x4.CreateFromQuaternion eyeRotation.Inverted
-            let frustum = Viewport.getFrustum eyeCenter eyeRotation eyeFieldOfView geometryViewport
+            let geometryFrustum = Viewport.getFrustum eyeCenter eyeRotation eyeFieldOfView geometryViewport
             let geometryProjection = Viewport.getProjection3d eyeFieldOfView geometryViewport
-            let geometryViewProjection = view * geometryProjection
             let windowProjection = Viewport.getProjection3d eyeFieldOfView windowViewport
-            let inner = windowViewport.Inner
-            GlRenderer3d.renderGeometry
-                frustumInterior frustumExterior frustumImposter normalPass normalTasks renderer
-                true None eyeCenter view viewSkyBox frustum geometryProjection geometryViewProjection inner windowProjection
-                framebuffer
+            let targetBounds =
+                VkRect2D
+                    (renderer.WindowViewport.Inner.Min.X,
+                     renderer.WindowViewport.Outer.Max.Y - renderer.WindowViewport.Inner.Max.Y,
+                     uint renderer.WindowViewport.Inner.Size.X,
+                     uint renderer.WindowViewport.Inner.Size.Y)
+                |> Hl.scaleRectToWindowPixels renderer.VulkanContext.Window
+            VulkanRenderer3d.renderGeometry
+                frustumInterior frustumExterior frustumImposter normalPass normalTasks renderer true None
+                eyeCenter view viewSkyBox geometryFrustum geometryProjection windowProjection
+                targetBounds 0 renderer.VulkanContext.SwapchainImage
+        
+        ///////////////
+        // End Frame //
+        ///////////////
 
         // clear light shadow indices
         renderer.LightShadowIndices.Clear ()
 
         // clear lights desiring shadows
         renderer.LightsDesiringShadows.Clear ()
-
-        // destroy user-defined static models
-        for staticModel in userDefinedStaticModelsToDestroy do
-            GlRenderer3d.tryDestroyUserDefinedStaticModel staticModel renderer
-
-        // destroy cached terrain geometries that weren't rendered this frame
-        for geometry in renderer.PhysicallyBasedTerrainGeometries do
-            if not (renderer.PhysicallyBasedTerrainGeometriesUtilized.Contains geometry.Key) then
-                for patchGeometry in geometry.Value do
-                    OpenGL.PhysicallyBased.DestroyPhysicallyBasedGeometry patchGeometry.Value
-                    renderer.PhysicallyBasedTerrainGeometries.Remove geometry.Key |> ignore<bool>
-
-        // reset terrain geometry book-keeping
-        renderer.PhysicallyBasedTerrainGeometriesUtilized.Clear ()
-
-        // clear config dirty flags
-        renderer.LightingConfigChanged <- false
-        renderer.RendererConfigChanged <- false
-
-        // reload render assets upon request
-        if renderer.ReloadAssetsRequested then
-            GlRenderer3d.handleReloadRenderAssets renderer
-            OpenGL.Hl.Assert ()
-            renderer.ReloadAssetsRequested <- false
 
         // swap render passes
         for renderTasks in renderer.RenderPasses.Values do RenderTasks.sweep renderTasks
@@ -4767,95 +3658,85 @@ type [<ReferenceEquality>] GlRenderer3d =
         renderer.RenderPasses <- renderer.RenderPasses2
         renderer.RenderPasses2 <- renderPasses
 
-    /// Make a GlRenderer3d.
-    static member make glContext window geometryViewport windowViewport =
-
+    /// Make a VulkanRenderer3d.
+    static member make geometryViewport windowViewport vkc =
+        
         // start lazy texture server
-        if not (SDL3.SDL_GL_MakeCurrent (window, NativePtr.nullPtr)) then Log.error "Could not clear OpenGL context current when desired."
-        let lazyTextureQueues = ConcurrentDictionary<OpenGL.Texture.LazyTexture ConcurrentQueue, OpenGL.Texture.LazyTexture ConcurrentQueue> HashIdentity.Reference
-        let textureServer = OpenGL.Texture.TextureServer (lazyTextureQueues, glContext, window)
+        let lazyTextureQueues = ConcurrentDictionary<LazyTexture ConcurrentQueue, LazyTexture ConcurrentQueue> HashIdentity.Reference
+        let textureServer = TextureServer (lazyTextureQueues, vkc)
         textureServer.Start ()
-        if not (SDL3.SDL_GL_MakeCurrent (window, glContext)) then Log.error "Could not make OpenGL context current when required."
-        OpenGL.Hl.Assert ()
-
-        // create cube map vao
-        let cubeMapVao = OpenGL.CubeMap.CreateCubeMapVao ()
-        OpenGL.Hl.Assert ()
-
-        // create sky box shader
-        let skyBoxShader = OpenGL.SkyBox.CreateSkyBoxShader Constants.Paths.SkyBoxShaderFilePath
-        OpenGL.Hl.Assert ()
-
-        // create irradiance shader
-        let irradianceShader = OpenGL.CubeMap.CreateCubeMapShader Constants.Paths.IrradianceShaderFilePath
-        OpenGL.Hl.Assert ()
-
-        // create environment filter shader
-        let environmentFilterShader = OpenGL.LightMap.CreateEnvironmentFilterShader Constants.Paths.EnvironmentFilterShaderFilePath
-        OpenGL.Hl.Assert ()
-
-        // create filter shaders
-        let filterShaders = OpenGL.Filter.CreateFilterShaders ()
-        OpenGL.Hl.Assert ()
-
-        // create physically-based static vao
-        let physicallyBasedStaticVao = OpenGL.PhysicallyBased.CreatePhysicallyBasedStaticVao ()
-        OpenGL.Hl.Assert ()
-
-        // create physically-based animated vao
-        let physicallyBasedAnimatedVao = OpenGL.PhysicallyBased.CreatePhysicallyBasedAnimatedVao ()
-        OpenGL.Hl.Assert ()
-
-        // create physically-based terrain vao
-        let physicallyBasedTerrainVao = OpenGL.PhysicallyBased.CreatePhysicallyBasedTerrainVao ()
-        OpenGL.Hl.Assert ()
-
-        // create physically-based shaders
-        let physicallyBasedShaders = OpenGL.PhysicallyBased.CreatePhysicallyBasedShaders (Constants.Render.LightMapsMaxDeferred, Constants.Render.LightsMaxDeferred)
-        OpenGL.Hl.Assert ()
+        
+        // create texture dumpster
+        let textureDumpster = TextureDumpster.create ()
+        
+        // create samplers
+        let filteredSampler = Sampler.create VkSamplerAddressMode.Repeat VkFilter.Linear VkFilter.Linear true vkc
+        let cubeMapSampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Linear VkFilter.Linear false vkc
+        let geometrySampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Nearest VkFilter.Nearest false vkc
+        let shadowSampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Linear VkFilter.Linear false vkc
+        let colorSampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Nearest VkFilter.Nearest false vkc
+        let depthSampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Linear VkFilter.Linear false vkc // using linear filtering since coloring depth attachment is the source for a down-sampling filter
+        let brdfSampler = Sampler.create VkSamplerAddressMode.ClampToEdge VkFilter.Linear VkFilter.Linear false vkc
+        
+        // create physically-based attachments using the geometry viewport
+        let physicallyBasedAttachments = PhysicallyBased.createPhysicallyBasedAttachments geometryViewport vkc
+        
+        // create sky box pipeline
+        let compositionTexture = physicallyBasedAttachments.CompositionAttachment
+        let (_, _, _, _, _, _, _, zTexture) = physicallyBasedAttachments.GeometryAttachments
+        let skyBoxPipeline = SkyBox.createSkyBoxPipeline compositionTexture.VkFormat zTexture.VkFormat vkc
+        
+        // create irradiance pipeline
+        let irradianceFormat = Rgba16f
+        let irradiancePipeline = CubeMap.createCubeMapPipeline Constants.Paths.IrradianceShaderFilePath irradianceFormat.VkFormat vkc
+        
+        // create environment filter pipeline
+        let environmentFilterFormat = Rgba16f
+        let environmentFilterPipeline = LightMap.createEnvironmentFilterPipeline Constants.Paths.EnvironmentFilterShaderFilePath environmentFilterFormat.VkFormat vkc
+        
+        // create physically-based pipelines
+        let physicallyBasedPipelines =
+            PhysicallyBased.createPhysicallyBasedPipelines
+                Constants.Render.LightMapsMaxDeferred
+                Constants.Render.LightsMaxDeferred
+                physicallyBasedAttachments
+                vkc
 
         // create shadow matrices buffer
         let shadowMatricesCount = Constants.Render.ShadowTexturesMax + Constants.Render.ShadowCascadesMax * Constants.Render.ShadowCascadeLevels
         let shadowMatrices = Array.zeroCreate<Matrix4x4> shadowMatricesCount
-
+        
         // create white cube map
         let cubeMap =
             let white = "Assets/Default/White.png"
-            match OpenGL.CubeMap.TryCreateCubeMap (white, white, white, white, white, white) with
+            match CubeMap.tryCreateCubeMap white white white white white white RenderThread vkc with
             | Right cubeMap -> cubeMap
             | Left error -> failwith error
-        OpenGL.Hl.Assert ()
-
+        
         // create cube map geometry
-        let cubeMapGeometry = OpenGL.CubeMap.CreateCubeMapGeometry true
-        OpenGL.Hl.Assert ()
+        let cubeMapGeometry = CubeMap.createCubeMapGeometry true vkc
 
         // create physically-based billboard geometry
-        let billboardGeometry = OpenGL.PhysicallyBased.CreatePhysicallyBasedBillboard true
-        OpenGL.Hl.Assert ()
+        let billboardGeometry = PhysicallyBased.createPhysicallyBasedBillboardGeometry (Some vkc)
 
         // create physically-based quad
-        let physicallyBasedQuad = OpenGL.PhysicallyBased.CreatePhysicallyBasedQuad true
-        OpenGL.Hl.Assert ()
-
+        let quadGeometry = PhysicallyBased.createPhysicallyBasedQuadGeometry (Some vkc)
+        
         // create cube map surface
-        let cubeMapSurface = OpenGL.CubeMap.CubeMapSurface.make cubeMap cubeMapGeometry
-        OpenGL.Hl.Assert ()
-
+        let cubeMapSurface = CubeMapSurface.make cubeMap cubeMapGeometry
+        
         // create white texture
         let whiteTexture =
-            match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.Uncompressed, "Assets/Default/White.png") with
-            | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+            match Hl.tryCreateTextureInternal false true Uncompressed "Assets/Default/White.png" RenderThread vkc with
+            | Right textureInternal -> EagerTexture textureInternal
             | Left error -> failwith ("Could not load white texture due to: " + error)
-        OpenGL.Hl.Assert ()
 
         // create black texture
         let blackTexture =
-            match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.Uncompressed, "Assets/Default/Black.png") with
-            | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+            match Hl.tryCreateTextureInternal false true Uncompressed "Assets/Default/Black.png" RenderThread vkc with
+            | Right textureInternal -> EagerTexture textureInternal
             | Left error -> failwith ("Could not load black texture due to: " + error)
-        OpenGL.Hl.Assert ()
-
+        
         // load or create and save brdf texture
         let brdfTexture =
             let brdfBuffer =
@@ -4868,145 +3749,102 @@ type [<ReferenceEquality>] GlRenderer3d =
                             for x in 0 .. dec Constants.Render.BrdfResolution do
                                 let nov = (single y + 0.5f) * (1.0f / single Constants.Render.BrdfResolution)
                                 let roughness = (single x + 0.5f) * (1.0f / single Constants.Render.BrdfResolution)
-                                GlRenderer3d.integrateBrdf nov roughness Constants.Render.BrdfSamples|]
+                                VulkanRenderer3d.integrateBrdf nov roughness Constants.Render.BrdfSamples|]
                         |> Array.map (fun v -> [|BitConverter.GetBytes v.X; BitConverter.GetBytes v.Y|])
                         |> Array.concat
                         |> Array.concat
                     File.WriteAllBytes (brdfFilePath, brdfBuffer)
                     brdfBuffer
-            let brdfBufferPtr = GCHandle.Alloc (brdfBuffer, GCHandleType.Pinned)
-            try let brdfMetadata = OpenGL.Texture.TextureMetadata.make Constants.Render.BrdfResolution Constants.Render.BrdfResolution
-                let brdfTextureId = OpenGL.Gl.GenTexture ()
-                OpenGL.Gl.BindTexture (OpenGL.TextureTarget.Texture2d, brdfTextureId)
-                OpenGL.Gl.TexImage2D (OpenGL.TextureTarget.Texture2d, 0, OpenGL.Hl.CheckRenderFormat OpenGL.InternalFormat.Rg32f, Constants.Render.BrdfResolution, Constants.Render.BrdfResolution, 0, OpenGL.PixelFormat.Rg, OpenGL.PixelType.Float, brdfBufferPtr.AddrOfPinnedObject ())
-                OpenGL.Hl.Assert ()
-                OpenGL.Gl.TexParameter (OpenGL.TextureTarget.Texture2d, OpenGL.TextureParameterName.TextureMinFilter, int OpenGL.TextureMinFilter.Linear)
-                OpenGL.Gl.TexParameter (OpenGL.TextureTarget.Texture2d, OpenGL.TextureParameterName.TextureMagFilter, int OpenGL.TextureMagFilter.Linear)
-                OpenGL.Gl.TexParameter (OpenGL.TextureTarget.Texture2d, OpenGL.TextureParameterName.TextureWrapS, int OpenGL.TextureWrapMode.ClampToEdge)
-                OpenGL.Gl.TexParameter (OpenGL.TextureTarget.Texture2d, OpenGL.TextureParameterName.TextureWrapT, int OpenGL.TextureWrapMode.ClampToEdge)
-                OpenGL.Gl.BindTexture (OpenGL.TextureTarget.Texture2d, 0u)
-                OpenGL.Hl.Assert ()
-                OpenGL.Texture.EagerTexture { TextureMetadata = brdfMetadata; TextureId = brdfTextureId }
-            finally brdfBufferPtr.Free ()
-        
-        // create reflection renderbuffer
-        let reflectionRenderbuffer = OpenGL.Gl.GenRenderbuffer ()
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, reflectionRenderbuffer)
-        OpenGL.Gl.RenderbufferStorage (OpenGL.RenderbufferTarget.Renderbuffer, OpenGL.Hl.CheckRenderFormat OpenGL.InternalFormat.Depth24Stencil8, Constants.Render.ReflectionMapResolution, Constants.Render.ReflectionMapResolution)
-        OpenGL.Hl.Assert ()
+            let brdfMetadata = TextureMetadata.make Constants.Render.BrdfResolution Constants.Render.BrdfResolution
+            let brdfTextureInternal = TextureInternal.create MipmapNone AttachmentNone Texture2d VkImageUsageFlags.None Rg32f Rg brdfMetadata vkc
+            TextureInternal.uploadArray brdfMetadata 0 0 brdfBuffer RenderThread brdfTextureInternal vkc
+            EagerTexture brdfTextureInternal
 
-        // create reflection framebuffer
-        let reflectionFramebuffer = OpenGL.Gl.GenFramebuffer ()
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, reflectionFramebuffer)
-        OpenGL.Gl.FramebufferRenderbuffer (OpenGL.FramebufferTarget.Framebuffer, OpenGL.FramebufferAttachment.DepthStencilAttachment, OpenGL.RenderbufferTarget.Renderbuffer, reflectionRenderbuffer)
-        OpenGL.Hl.Assert ()
-        
-        // create irradiance map renderbuffer
-        let irradianceMapRenderbuffer = OpenGL.Gl.GenRenderbuffer ()
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, irradianceMapRenderbuffer)
-        OpenGL.Gl.RenderbufferStorage (OpenGL.RenderbufferTarget.Renderbuffer, OpenGL.Hl.CheckRenderFormat OpenGL.InternalFormat.DepthComponent16, Constants.Render.IrradianceMapResolution, Constants.Render.IrradianceMapResolution)
-        OpenGL.Hl.Assert ()
-
-        // create irradiance map framebuffer
-        let irradianceMapFramebuffer = OpenGL.Gl.GenFramebuffer ()
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, irradianceMapFramebuffer)
-        OpenGL.Hl.Assert ()
-
-        // create environment filter renderbuffer
-        let environmentFilterRenderbuffer = OpenGL.Gl.GenRenderbuffer ()
-        OpenGL.Gl.BindRenderbuffer (OpenGL.RenderbufferTarget.Renderbuffer, environmentFilterRenderbuffer)
-        OpenGL.Gl.RenderbufferStorage (OpenGL.RenderbufferTarget.Renderbuffer, OpenGL.Hl.CheckRenderFormat OpenGL.InternalFormat.DepthComponent16, Constants.Render.EnvironmentFilterResolution, Constants.Render.EnvironmentFilterResolution)
-        OpenGL.Hl.Assert ()
-
-        // create environment filter framebuffer
-        let environmentFilterFramebuffer = OpenGL.Gl.GenFramebuffer ()
-        OpenGL.Gl.BindFramebuffer (OpenGL.FramebufferTarget.Framebuffer, environmentFilterFramebuffer)
-        OpenGL.Hl.Assert ()
-
-        // create default irradiance map
+        // create default irradiance map and default environment filter map and set up transiently
+        let commandBuffer = Hl.createTransientCommandBuffer vkc.TransientCommandPool vkc.Device
         let irradianceMap =
-            OpenGL.LightMap.CreateIrradianceMap
-                (Constants.Render.IrradianceMapResolution,
-                 cubeMapSurface,
-                 irradianceShader,
-                 cubeMapVao,
-                 irradianceMapRenderbuffer,
-                 irradianceMapFramebuffer)
-        OpenGL.Hl.Assert ()
-
-        // create default environment filter map
+            LightMap.createIrradianceMap
+                Constants.Render.IrradianceMapResolution
+                cubeMapSurface
+                cubeMapSampler
+                irradianceFormat
+                irradiancePipeline
+                commandBuffer
+                vkc
         let environmentFilterMap =
-            OpenGL.LightMap.CreateEnvironmentFilterMap
-                (Constants.Render.EnvironmentFilterResolution,
-                 cubeMapSurface,
-                 environmentFilterShader,
-                 cubeMapVao,
-                 environmentFilterRenderbuffer,
-                 environmentFilterFramebuffer)
-        OpenGL.Hl.Assert ()
+            LightMap.createEnvironmentFilterMap
+                Constants.Render.EnvironmentFilterResolution
+                cubeMapSurface
+                cubeMapSampler
+                environmentFilterFormat
+                environmentFilterPipeline
+                commandBuffer
+                vkc
+        let fence = Hl.createFence false vkc.Device
+        CommandQueue.executeTransient commandBuffer vkc.TransientCommandPool fence vkc.RenderQueue vkc.Device
+        Vulkan.vkDestroyFence (vkc.Device, fence, nullPtr)
 
         // compute compressed image file extension
         let ext =
             match Constants.Render.TextureBlockCompression with
             | BcCompression -> ".dds"
             | AstcCompression -> ".ktx"
-
+        
         // get albedo metadata and texture
         let albedoTexture =
-            match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialAlbedo" + ext) with
-            | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+            match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialAlbedo" + ext) RenderThread vkc with
+            | Right textureInternal -> EagerTexture textureInternal
             | Left error -> failwith ("Could not load albedo material texture due to: " + error)
-        OpenGL.Hl.Assert ()
 
         // create default physically-based material
-        let physicallyBasedMaterial : OpenGL.PhysicallyBased.PhysicallyBasedMaterial =
+        let physicallyBasedMaterial : PhysicallyBasedMaterial =
             let roughnessTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialRoughness" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialRoughness" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material roughness texture due to: " + error)
             let metallicTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialMetallic" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialMetallic" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material metallic texture due to: " + error)
             let ambientOcclusionTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialAmbientOcclusion" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialAmbientOcclusion" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material ambient occlusion texture due to: " + error)
             let emissionTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialEmission" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialEmission" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material emission texture due to: " + error)
             let normalTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.NormalCompression, "Assets/Default/MaterialNormal" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true NormalCompression ("Assets/Default/MaterialNormal" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material normal texture due to: " + error)
             let heightTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialHeight" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialHeight" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material height texture due to: " + error)
             let subdermalTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialSubdermal" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialSubdermal" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material subdermal texture due to: " + error)
             let finenessTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialFineness" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialFineness" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material fineness texture due to: " + error)
             let scatterTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialSubdermal" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialSubdermal" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material scatter texture due to: " + error)
             let clearCoatTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialClearCoat" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialClearCoat" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material clear coat texture due to: " + error)
             let clearCoatRoughnessTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.ColorCompression, "Assets/Default/MaterialClearCoatRoughness" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true ColorCompression ("Assets/Default/MaterialClearCoatRoughness" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material clear coat roughness texture due to: " + error)
             let clearCoatNormalTexture =
-                match OpenGL.Texture.TryCreateTextureGl (false, OpenGL.TextureMinFilter.LinearMipmapLinear, OpenGL.TextureMagFilter.Linear, true, true, OpenGL.Texture.NormalCompression, "Assets/Default/MaterialClearCoatNormal" + ext) with
-                | Right (metadata, textureId) -> OpenGL.Texture.EagerTexture { TextureMetadata = metadata; TextureId = textureId }
+                match Hl.tryCreateTextureInternal false true NormalCompression ("Assets/Default/MaterialClearCoatNormal" + ext) RenderThread vkc with
+                | Right textureInternal -> EagerTexture textureInternal
                 | Left error -> failwith ("Could not load material clear coat normal texture due to: " + error)
             { AlbedoTexture = albedoTexture
               RoughnessTexture = roughnessTexture
@@ -5024,14 +3862,10 @@ type [<ReferenceEquality>] GlRenderer3d =
               TwoSided = false
               Clipped = false
               Names = "" }
-
-        // create physically-based buffers using the display viewport
-        let physicallyBasedBuffers = OpenGL.PhysicallyBased.CreatePhysicallyBasedBuffers geometryViewport
-        OpenGL.Hl.Assert ()
-
+        
         // create forward surfaces comparer
         let forwardSurfacesComparer =
-            { new IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * OpenGL.PhysicallyBased.PhysicallyBasedSurface * DepthTest * single * int)> with
+            { new IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * DepthTest * single * int)> with
                 member this.Compare ((subsort, sort, _, _, _, _, _, _, _, _, distanceSquared, order), (subsort2, sort2, _, _, _, _, _, _, _, _, distanceSquared2, order2)) =
                     let sc = sort.CompareTo sort2
                     if sc <> 0 then sc
@@ -5045,48 +3879,45 @@ type [<ReferenceEquality>] GlRenderer3d =
 
         // make renderer
         let renderer =
-            { GeometryViewport = geometryViewport
+            { VulkanContext = vkc
+              GeometryViewport = geometryViewport
               WindowViewport = windowViewport
               LazyTextureQueues = lazyTextureQueues
               TextureServer = textureServer
-              CubeMapVao = cubeMapVao
-              SkyBoxShader = skyBoxShader
-              IrradianceShader = irradianceShader
-              EnvironmentFilterShader = environmentFilterShader
-              FilterShaders = filterShaders
-              PhysicallyBasedStaticVao = physicallyBasedStaticVao
-              PhysicallyBasedAnimatedVao = physicallyBasedAnimatedVao
-              PhysicallyBasedTerrainVao = physicallyBasedTerrainVao
-              PhysicallyBasedShaders = physicallyBasedShaders
+              TextureDumpster = textureDumpster
+              FilteredSampler = filteredSampler
+              CubeMapSampler = cubeMapSampler
+              GeometrySampler = geometrySampler
+              ShadowSampler = shadowSampler
+              ColorSampler = colorSampler
+              DepthSampler = depthSampler
+              BrdfSampler = brdfSampler
+              RenderPassIndex = 0
+              GeometryInstanced = hashSetPlus HashIdentity.Reference []
+              SkyBoxPipeline = skyBoxPipeline
+              IrradiancePipeline = irradiancePipeline
+              EnvironmentFilterPipeline = environmentFilterPipeline
+              PhysicallyBasedPipelines = physicallyBasedPipelines
               ShadowMatrices = shadowMatrices
               LightShadowIndices = dictPlus HashIdentity.Structural []
               LightsDesiringShadows = dictPlus HashIdentity.Structural []
               CubeMapGeometry = cubeMapGeometry
               BillboardGeometry = billboardGeometry
-              PhysicallyBasedQuad = physicallyBasedQuad
-              PhysicallyBasedTerrainGeometries = Dictionary HashIdentity.Structural
-              PhysicallyBasedTerrainGeometriesUtilized = HashSet HashIdentity.Structural
+              QuadGeometry = quadGeometry
               CubeMap = cubeMapSurface.CubeMap
               WhiteTexture = whiteTexture
               BlackTexture = blackTexture
               BrdfTexture = brdfTexture
-              ReflectionRenderbuffer = reflectionRenderbuffer
-              ReflectionFramebuffer = reflectionFramebuffer
-              IrradianceMapRenderbuffer = irradianceMapRenderbuffer
-              IrradianceMapFramebuffer = irradianceMapFramebuffer
-              EnvironmentFilterRenderbuffer = environmentFilterRenderbuffer
-              EnvironmentFilterFramebuffer = environmentFilterFramebuffer
               IrradianceMap = irradianceMap
               EnvironmentFilterMap = environmentFilterMap
               PhysicallyBasedMaterial = physicallyBasedMaterial
-              PhysicallyBasedBuffers = physicallyBasedBuffers
+              PhysicallyBasedAttachments = physicallyBasedAttachments
               LightMaps = dictPlus HashIdentity.Structural []
               LightingConfig = Lighting3dConfig.defaultConfig
               LightingConfigChanged = false
               RendererConfig = Renderer3dConfig.defaultConfig
               RendererConfigChanged = false
               InstanceFields = Array.zeroCreate<single> (Constants.Render.InstanceFieldCount * Constants.Render.InstanceBatchPrealloc)
-              UserDefinedStaticModelFields = [||]
               ForwardSurfacesComparer = forwardSurfacesComparer
               ForwardSurfacesSortBuffer = List ()
               RenderPackages = dictPlus StringComparer.Ordinal []
@@ -5094,83 +3925,72 @@ type [<ReferenceEquality>] GlRenderer3d =
               RenderPasses2 = dictPlus HashIdentity.Structural [(NormalPass, RenderTasks.make ())]
               RenderPackageCachedOpt = Unchecked.defaultof<_>
               RenderAssetCached = { CachedAssetTagOpt = Unchecked.defaultof<_>; CachedRenderAsset = Unchecked.defaultof<_> }
-              ReloadAssetsRequested = false
-              RenderMessages = List () }
+              ReloadAssetsRequested = false }
 
         // fin
         renderer
 
     interface Renderer3d with
-
+        
         member renderer.RendererConfig =
             renderer.RendererConfig
-
+        
         member renderer.Render frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation eyeFieldOfView geometryViewport windowViewport renderMessages =
-            GlRenderer3d.render frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation eyeFieldOfView geometryViewport windowViewport 0u renderMessages renderer
-
+            VulkanRenderer3d.render frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation eyeFieldOfView geometryViewport windowViewport renderMessages renderer
+        
         member renderer.CleanUp () =
-
-            OpenGL.Gl.DeleteVertexArrays [|renderer.CubeMapVao|]
-            OpenGL.Hl.Assert ()
-
-            OpenGL.Gl.DeleteProgram renderer.SkyBoxShader.SkyBoxShader
-            OpenGL.Gl.DeleteProgram renderer.IrradianceShader.CubeMapShader
-            OpenGL.Hl.Assert ()
-
-            OpenGL.Filter.DestroyFilterShaders renderer.FilterShaders
-            OpenGL.Hl.Assert ()
-
-            OpenGL.Gl.DeleteVertexArrays [|renderer.PhysicallyBasedStaticVao|]
-            OpenGL.Gl.DeleteVertexArrays [|renderer.PhysicallyBasedAnimatedVao|]
-            OpenGL.Gl.DeleteVertexArrays [|renderer.PhysicallyBasedTerrainVao|]
-            OpenGL.Hl.Assert ()
-
-            OpenGL.PhysicallyBased.DestroyPhysicallyBasedShaders renderer.PhysicallyBasedShaders
-            OpenGL.Hl.Assert ()
-
-            OpenGL.CubeMap.DestroyCubeMapGeometry renderer.CubeMapGeometry
-            OpenGL.Hl.Assert ()
-
-            OpenGL.PhysicallyBased.DestroyPhysicallyBasedGeometry renderer.BillboardGeometry
-            OpenGL.PhysicallyBased.DestroyPhysicallyBasedGeometry renderer.PhysicallyBasedQuad
-            OpenGL.Hl.Assert ()
-
-            renderer.CubeMap.Destroy ()
-            renderer.BrdfTexture.Destroy ()
-            OpenGL.Hl.Assert ()
-
-            OpenGL.Gl.DeleteRenderbuffers [|renderer.ReflectionRenderbuffer|]
-            OpenGL.Gl.DeleteFramebuffers [|renderer.ReflectionFramebuffer|]
-            OpenGL.Gl.DeleteRenderbuffers [|renderer.IrradianceMapRenderbuffer|]
-            OpenGL.Gl.DeleteFramebuffers [|renderer.IrradianceMapFramebuffer|]
-            OpenGL.Gl.DeleteRenderbuffers [|renderer.EnvironmentFilterRenderbuffer|]
-            OpenGL.Gl.DeleteFramebuffers [|renderer.EnvironmentFilterFramebuffer|]
-            OpenGL.Hl.Assert ()
-
-            renderer.IrradianceMap.Destroy ()
-            renderer.EnvironmentFilterMap.Destroy ()
-            OpenGL.Hl.Assert ()
-
-            renderer.PhysicallyBasedMaterial.AlbedoTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.RoughnessTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.MetallicTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.EmissionTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.NormalTexture.Destroy ()
-            renderer.PhysicallyBasedMaterial.HeightTexture.Destroy ()
-            OpenGL.Hl.Assert ()
-
-            OpenGL.PhysicallyBased.DestroyPhysicallyBasedBuffers renderer.PhysicallyBasedBuffers
-            OpenGL.Hl.Assert ()
-
-            for lightMap in renderer.LightMaps.Values do OpenGL.LightMap.DestroyLightMap lightMap
+            
+            Sampler.destroy renderer.FilteredSampler renderer.VulkanContext
+            Sampler.destroy renderer.CubeMapSampler renderer.VulkanContext
+            Sampler.destroy renderer.GeometrySampler renderer.VulkanContext
+            Sampler.destroy renderer.ShadowSampler renderer.VulkanContext
+            Sampler.destroy renderer.ColorSampler renderer.VulkanContext
+            Sampler.destroy renderer.DepthSampler renderer.VulkanContext
+            Sampler.destroy renderer.BrdfSampler renderer.VulkanContext
+            
+            SkyBox.destroySkyBoxPipeline renderer.SkyBoxPipeline renderer.VulkanContext
+            CubeMap.destroyCubeMapPipeline renderer.IrradiancePipeline.Pipeline renderer.VulkanContext
+            LightMap.destroyEnvironmentFilterPipeline renderer.EnvironmentFilterPipeline renderer.VulkanContext
+            PhysicallyBased.destroyPhysicallyBasedPipelines renderer.PhysicallyBasedPipelines renderer.VulkanContext
+            
+            CubeMap.destroyCubeMapGeometry renderer.CubeMapGeometry renderer.VulkanContext
+            
+            Texture.destroy renderer.CubeMap renderer.VulkanContext
+            Texture.destroy renderer.WhiteTexture renderer.VulkanContext
+            Texture.destroy renderer.BlackTexture renderer.VulkanContext
+            Texture.destroy renderer.BrdfTexture renderer.VulkanContext
+            
+            Texture.destroy renderer.IrradianceMap renderer.VulkanContext
+            Texture.destroy renderer.EnvironmentFilterMap renderer.VulkanContext
+            
+            // destroy default physically-based material
+            Texture.destroy renderer.PhysicallyBasedMaterial.AlbedoTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.RoughnessTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.MetallicTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.EmissionTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.NormalTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.HeightTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.SubdermalTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.FinenessTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.ScatterTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.ClearCoatTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.ClearCoatRoughnessTexture renderer.VulkanContext
+            Texture.destroy renderer.PhysicallyBasedMaterial.ClearCoatNormalTexture renderer.VulkanContext
+            
+            TextureDumpster.destroy renderer.TextureDumpster renderer.VulkanContext
+            
+            PhysicallyBased.destroyPhysicallyBasedAttachments renderer.PhysicallyBasedAttachments renderer.VulkanContext
+            
+            for lightMap in renderer.LightMaps.Values do LightMap.destroyLightMap lightMap renderer.VulkanContext
             renderer.LightMaps.Clear ()
-            OpenGL.Hl.Assert ()
-
+            
+            // free assets
+            // TODO: DJL: do we need to consider textures only loaded via model?
             let renderPackages = renderer.RenderPackages |> Seq.map (fun entry -> entry.Value)
             let renderAssets = renderPackages |> Seq.map (fun package -> package.Assets.Values) |> Seq.concat
-            for (_, _, asset) in renderAssets do GlRenderer3d.freeRenderAsset asset renderer
+            for (_, _, asset) in renderAssets do VulkanRenderer3d.freeRenderAsset asset renderer
             renderer.RenderPackages.Clear ()
-            OpenGL.Hl.Assert ()
-
+            
+            // terminate lazy texture server
             renderer.TextureServer.Terminate ()

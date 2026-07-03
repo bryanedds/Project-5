@@ -1269,7 +1269,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     Log.info ("Inspecting code for F# project '" + fsprojFilePath + "'...")
                     let fsprojFileLines = // TODO: P1: consider loading these references from Nu.fsproj.
                         [|"""<PackageReference Include="Aether.Physics2D" Version="2.2.0" />"""
-                          """<PackageReference Include="AstcEncoderCSharp" Version="5.3.1-alpha.0.4" />"""
+                          """<PackageReference Include="AstcEncoderCSharp" Version="5.5.0" />"""
                           """<PackageReference Include="Box2D.NET" Version="3.1.1.557" />"""
                           """<PackageReference Include="BCnEncoder.Net" Version="2.2.1" />"""
                           """<PackageReference Include="DotRecast.Recast.Toolset" Version="2026.1.1" />"""
@@ -1280,10 +1280,13 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                           """<PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />"""
                           """<PackageReference Include="System.Drawing.Common" Version="10.0.1" />"""
                           """<PackageReference Include="Twizzle.ImGui-Bundle.NET" Version="1.91.5.2" />"""
-                          """<PackageReference Include="ppy.SDL3-CS" Version="2026.302.0" />"""
-                          """<PackageReference Include="ppy.SDL3_ttf-CS" Version="2026.302.0" />"""
-                          """<PackageReference Include="ppy.SDL3_image-CS" Version="2026.302.0" />"""
-                          """<PackageReference Include="ppy.SDL3_mixer-CS" Version="2026.302.0" />"""|]
+                          """<PackageReference Include="ppy.SDL3-CS" Version="2026.512.0" />"""
+                          """<PackageReference Include="ppy.SDL3_ttf-CS" Version="2026.512.0" />"""
+                          """<PackageReference Include="ppy.SDL3_image-CS" Version="2026.512.0" />"""
+                          """<PackageReference Include="ppy.SDL3_mixer-CS" Version="2026.512.0" />"""
+                          """<PackageReference Include="Vortice.ShaderCompiler" Version="1.8.0" />"""
+                          """<PackageReference Include="Vortice.Vulkan" Version="2.1.1" />"""
+                          """<PackageReference Include="Vortice.VulkanMemoryAllocator" Version="1.6.1" />"""|]
                         |> Array.append (File.ReadAllLines fsprojFilePath)
                     let fsprojNugetPaths =
                         fsprojFileLines
@@ -1726,7 +1729,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             | Some (DragDropAsset (_, assetTag)) when
                 ImGui.IsMouseReleased ImGuiMouseButton.Left &&
                 not io.WantCaptureMouse &&
-                (*not (NativePtr.isNullPtr (ImGui.AcceptDragDropPayload "Asset").NativePtr)*)true ->
+                (*NativePtr.notNullPtr (ImGui.AcceptDragDropPayload "Asset").NativePtr*)true ->
                 match Metadata.tryGetMetadata assetTag with
                 | ValueSome metadata ->
                     match metadata with
@@ -1919,7 +1922,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         if openPopupContextItemWhenUnselected then
             ImGui.OpenPopup popupContextItemTitle
         if ImGui.BeginDragDropTarget () then
-            if not (NativePtr.isNullPtr (ImGui.AcceptDragDropPayload "Entity").NativePtr) then
+            if NativePtr.notNullPtr (ImGui.AcceptDragDropPayload "Entity").NativePtr then
                 match DragDropPayloadOpt with
                 | Some (DragDropEntity sourceEntity) ->
                     if sourceEntity.GetProtection world = Unprotected then
@@ -2863,7 +2866,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         if group.Name = selectedGroupName then ImGui.SetItemDefaultFocus ()
                     ImGui.EndCombo ()
                 if ImGui.BeginDragDropTarget () then
-                    if not (NativePtr.isNullPtr (ImGui.AcceptDragDropPayload "Entity").NativePtr) then
+                    if NativePtr.notNullPtr (ImGui.AcceptDragDropPayload "Entity").NativePtr then
                         match DragDropPayloadOpt with
                         | Some (DragDropEntity sourceEntity) ->
                             if sourceEntity.GetProtection world = Unprotected then
@@ -3152,7 +3155,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         with _ ->
                             Pasts <- pasts
                     if isPropertyAssetTag && ImGui.BeginDragDropTarget () then
-                        if not (NativePtr.isNullPtr (ImGui.AcceptDragDropPayload "Asset").NativePtr) then
+                        if NativePtr.notNullPtr (ImGui.AcceptDragDropPayload "Asset").NativePtr then
                             match DragDropPayloadOpt with
                             | Some (DragDropAsset (assetTagStr, _)) ->
                                 let pasts = Pasts
@@ -3301,6 +3304,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         "#r \"SDL3_ttf-CS.dll\"\n" +
                         "#r \"TiledSharp.dll\"\n" +
                         "#r \"Twizzle.ImGui-Bundle.NET.dll\"\n" +
+                        "#r \"Vortice.ShaderCompiler.dll\"\n" +
+                        "#r \"Vortice.Vulkan.dll\"\n" +
+                        "#r \"Vortice.VulkanMemoryAllocator.dll\"\n" +
                         "#r \"Prime.dll\"\n" +
                         "#r \"Nu.Math.dll\"\n" +
                         "#r \"Nu.dll\"\n" +
@@ -4528,8 +4534,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.LoadIniSettingsFromMemory (ImGuiIniFileStr.AsSpan ())
             ImGuiIniResetRequested <- false
 
-    let rec private runWithCleanUpAndErrorProtection firstFrame world =
-        try World.runWithoutCleanUp tautology ignore ignore imGuiRender imGuiProcess imGuiPostProcess firstFrame world
+    let rec private runWithCleanUpAndErrorProtection firstFrameCallbackOpt world =
+        try World.runWithoutCleanUp tautology ignore ignore imGuiRender imGuiProcess imGuiPostProcess firstFrameCallbackOpt world
             World.cleanUp world
             Constants.Engine.ExitCodeSuccess
         with exn ->
@@ -4544,7 +4550,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     "\nStack trace:\n" + string exn.StackTrace
                 Log.error errorMsg
                 MessageBoxOpt <- Some errorMsg
-                runWithCleanUpAndErrorProtection false world
+                runWithCleanUpAndErrorProtection None world
             else
                 let errorMsg = "Unexpected exception! Could not rewind world. Error due to: " + scstring exn
                 Log.error errorMsg
@@ -4599,7 +4605,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             let prettyPrinter = (SyntaxAttribute.defaultValue typeof<Overlay>).PrettyPrinter
             PrettyPrinter.prettyPrint extrinsicOverlaysStr prettyPrinter
         FsiSession <- Shell.FsiEvaluationSession.Create (FsiConfig, FsiArgs, FsiInStream, FsiOutStream, FsiErrorStream)
-        let result = runWithCleanUpAndErrorProtection true world
+        let result = runWithCleanUpAndErrorProtection (Some ignore) world
         (FsiSession :> IDisposable).Dispose () // not sure why we have to cast here...
         FsiErrorStream.Dispose ()
         FsiInStream.Dispose ()

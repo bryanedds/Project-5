@@ -51,6 +51,12 @@ module OpenGL =
     let [<Uniform>] mutable HlDebug = match ConfigurationManager.AppSettings["HlDebug"] with null -> false | value -> scvalue value
 
 [<RequireQualifiedAccess>]
+module Vulkan =
+
+    let [<Uniform>] MoltenVk = OperatingSystem.IsIOS () || match ConfigurationManager.AppSettings.["MoltenVk"] with null -> false | value -> scvalue value
+    let [<Literal>] DescriptorSetCountDefault = 32
+
+[<RequireQualifiedAccess>]
 module ImGui =
 
     let [<Uniform>] mutable FontSize = match ConfigurationManager.AppSettings["ImGuiFontSize"] with null -> 13.0f | value -> scvalue value
@@ -201,7 +207,10 @@ module Render =
     let [<Literal>] TexturePriorityDefault = 0.5f // higher priority than (supposed) default, but not maximum. this value is arrived at through experimenting with a Windows NVidia driver.
     let [<Uniform>] mutable TextureAnisotropyMax = match ConfigurationManager.AppSettings["TextureAnisotropyMax"] with null -> 16.0f | value -> scvalue value
     let [<Uniform>] mutable TextureMinimalMipmapIndex = match ConfigurationManager.AppSettings["TextureMinimalMipmapIndex"] with null -> 2 | value -> scvalue value
-    let [<Uniform>] mutable TextureBlockCompression = match ConfigurationManager.AppSettings["TextureBlockCompression"] with null -> BcCompression | value -> scvalue value
+    let [<Uniform>] mutable TextureBlockCompression =
+        match ConfigurationManager.AppSettings["TextureBlockCompression"] with
+        | null -> if OperatingSystem.IsMacOS () || OperatingSystem.IsAndroid () || OperatingSystem.IsIOS() then AstcCompression else BcCompression
+        | value -> scvalue value
     let [<Literal>] SpriteBatchSize = 192 // NOTE: remember to update SPRITE_BATCH_SIZE in shaders when changing this!
     let [<Literal>] SpriteBorderTexelScalar = 0.001f
     let [<Literal>] SpriteMessagesPrealloc = 256
@@ -350,6 +359,7 @@ module Render =
     let [<Literal>] Body3dSegmentRenderMagnitudeMax = 48.0f
     let [<Literal>] Body3dSegmentRenderDistanceMax = 40.0f
     let [<Literal>] Body3dRenderDistanceMax = 32.0f
+    let [<Uniform>] mutable SkipRendering3d = match ConfigurationManager.AppSettings["SkipRendering3d"] with null -> false | value -> scvalue value
 
 [<RequireQualifiedAccess>]
 module Audio =
@@ -466,47 +476,50 @@ module Effects =
 module Paths =
 
     let [<Literal>] LogFilePath = "Log.txt"
-    let [<Literal>] SpriteShaderFilePath = "Assets/Default/Sprite.glsl"
-    let [<Literal>] SpriteBatchShaderFilePath = "Assets/Default/SpriteBatch.glsl"
-    let [<Literal>] SkyBoxShaderFilePath = "Assets/Default/SkyBox.glsl"
-    let [<Literal>] IrradianceShaderFilePath = "Assets/Default/Irradiance.glsl"
-    let [<Literal>] EnvironmentFilterShaderFilePath = "Assets/Default/EnvironmentFilter.glsl"
-    let [<Literal>] FilterBox1dShaderFilePath = "Assets/Default/FilterBox1d.glsl"
-    let [<Literal>] FilterGaussian2dShaderFilePath = "Assets/Default/FilterGaussian2d.glsl"
-    let [<Literal>] FilterGaussianArray2dShaderFilePath = "Assets/Default/FilterGaussianArray2d.glsl"
-    let [<Literal>] FilterBilateralDownSample4dShaderFilePath = "Assets/Default/FilterBilateralDownSample4d.glsl"
-    let [<Literal>] FilterBilateralUpSample4dShaderFilePath = "Assets/Default/FilterBilateralUpSample4d.glsl"
-    let [<Literal>] FilterBloomExtractShaderFilePath = "Assets/Default/FilterBloomExtract.glsl"
-    let [<Literal>] FilterBloomDownSampleShaderFilePath = "Assets/Default/FilterBloomDownSample.glsl"
-    let [<Literal>] FilterBloomUpSampleShaderFilePath = "Assets/Default/FilterBloomUpSample.glsl"
-    let [<Literal>] FilterBloomApplyShaderFilePath = "Assets/Default/FilterBloomApply.glsl"
-    let [<Literal>] FilterDepthOfFieldShaderFilePath = "Assets/Default/FilterDepthOfField.glsl"
-    let [<Literal>] FilterToneMappingShaderFilePath = "Assets/Default/FilterToneMapping.glsl"
-    let [<Literal>] FilterChromaticAberrationShaderFilePath = "Assets/Default/FilterChromaticAberration.glsl"
-    let [<Literal>] FilterFxaaShaderFilePath = "Assets/Default/FilterFxaa.glsl"
-    let [<Literal>] FilterGaussian3dShaderFilePath = "Assets/Default/FilterGaussian3d.glsl"
-    let [<Literal>] FilterGammaCorrectionShaderFilePath = "Assets/Default/FilterGammaCorrection.glsl"
-    let [<Literal>] PhysicallyBasedShadowStaticPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticPoint.glsl"
-    let [<Literal>] PhysicallyBasedShadowStaticSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticSpot.glsl"
-    let [<Literal>] PhysicallyBasedShadowStaticDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticDirectional.glsl"
-    let [<Literal>] PhysicallyBasedShadowAnimatedPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedPoint.glsl"
-    let [<Literal>] PhysicallyBasedShadowAnimatedSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedSpot.glsl"
-    let [<Literal>] PhysicallyBasedShadowAnimatedDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedDirectional.glsl"
-    let [<Literal>] PhysicallyBasedShadowTerrainPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainPoint.glsl"
-    let [<Literal>] PhysicallyBasedShadowTerrainSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainSpot.glsl"
-    let [<Literal>] PhysicallyBasedShadowTerrainDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainDirectional.glsl"
-    let [<Literal>] PhysicallyBasedDeferredStaticShaderFilePath = "Assets/Default/PhysicallyBasedDeferredStatic.glsl"
-    let [<Literal>] PhysicallyBasedDeferredStaticClippedShaderFilePath = "Assets/Default/PhysicallyBasedDeferredStaticClipped.glsl"
-    let [<Literal>] PhysicallyBasedDeferredAnimatedShaderFilePath = "Assets/Default/PhysicallyBasedDeferredAnimated.glsl"
-    let [<Literal>] PhysicallyBasedDeferredTerrainShaderFilePath = "Assets/Default/PhysicallyBasedDeferredTerrain.glsl"
-    let [<Literal>] PhysicallyBasedDeferredLightMappingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredLightMapping.glsl"
-    let [<Literal>] PhysicallyBasedDeferredAmbientShaderFilePath = "Assets/Default/PhysicallyBasedDeferredAmbient.glsl"
-    let [<Literal>] PhysicallyBasedDeferredIrradianceShaderFilePath = "Assets/Default/PhysicallyBasedDeferredIrradiance.glsl"
-    let [<Literal>] PhysicallyBasedDeferredEnvironmentFilterShaderFilePath = "Assets/Default/PhysicallyBasedDeferredEnvironmentFilter.glsl"
-    let [<Literal>] PhysicallyBasedDeferredSsaoShaderFilePath = "Assets/Default/PhysicallyBasedDeferredSsao.glsl"
-    let [<Literal>] PhysicallyBasedDeferredLightingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredLighting.glsl"
-    let [<Literal>] PhysicallyBasedDeferredFoggingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredFogging.glsl"
-    let [<Literal>] PhysicallyBasedDeferredColoringShaderFilePath = "Assets/Default/PhysicallyBasedDeferredColoring.glsl"
-    let [<Literal>] PhysicallyBasedDeferredCompositionShaderFilePath = "Assets/Default/PhysicallyBasedDeferredComposition.glsl"
-    let [<Literal>] PhysicallyBasedForwardStaticShaderFilePath = "Assets/Default/PhysicallyBasedForwardStatic.glsl"
-    let [<Literal>] PhysicallyBasedForwardAnimatedShaderFilePath = "Assets/Default/PhysicallyBasedForwardAnimated.glsl"
+    // TODO: DJL: review nomenclature for extensionless file paths.
+    let [<Literal>] ImGuiShaderFilePath = "Assets/Default/ImGui"
+    let [<Literal>] SpriteShaderFilePath = "Assets/Default/Sprite"
+    let [<Literal>] SpriteBatchShaderFilePath = "Assets/Default/SpriteBatch"
+    let [<Literal>] ContourShaderFilePath = "Assets/Default/Contour"
+    let [<Literal>] SkyBoxShaderFilePath = "Assets/Default/SkyBox"
+    let [<Literal>] IrradianceShaderFilePath = "Assets/Default/Irradiance"
+    let [<Literal>] EnvironmentFilterShaderFilePath = "Assets/Default/EnvironmentFilter"
+    let [<Literal>] FilterBox1dShaderFilePath = "Assets/Default/FilterBox1d"
+    let [<Literal>] FilterGaussian2dShaderFilePath = "Assets/Default/FilterGaussian2d"
+    let [<Literal>] FilterGaussianArray2dShaderFilePath = "Assets/Default/FilterGaussianArray2d"
+    let [<Literal>] FilterBilateralDownSample4dShaderFilePath = "Assets/Default/FilterBilateralDownSample4d"
+    let [<Literal>] FilterBilateralUpSample4dShaderFilePath = "Assets/Default/FilterBilateralUpSample4d"
+    let [<Literal>] FilterBloomExtractShaderFilePath = "Assets/Default/FilterBloomExtract"
+    let [<Literal>] FilterBloomDownSampleShaderFilePath = "Assets/Default/FilterBloomDownSample"
+    let [<Literal>] FilterBloomUpSampleShaderFilePath = "Assets/Default/FilterBloomUpSample"
+    let [<Literal>] FilterBloomApplyShaderFilePath = "Assets/Default/FilterBloomApply"
+    let [<Literal>] FilterDepthOfFieldShaderFilePath = "Assets/Default/FilterDepthOfField"
+    let [<Literal>] FilterToneMappingShaderFilePath = "Assets/Default/FilterToneMapping"
+    let [<Literal>] FilterChromaticAberrationShaderFilePath = "Assets/Default/FilterChromaticAberration"
+    let [<Literal>] FilterFxaaShaderFilePath = "Assets/Default/FilterFxaa"
+    let [<Literal>] FilterGaussian3dShaderFilePath = "Assets/Default/FilterGaussian3d"
+    let [<Literal>] FilterGammaCorrectionShaderFilePath = "Assets/Default/FilterGammaCorrection"
+    let [<Literal>] PhysicallyBasedShadowStaticPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticPoint"
+    let [<Literal>] PhysicallyBasedShadowStaticSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticSpot"
+    let [<Literal>] PhysicallyBasedShadowStaticDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowStaticDirectional"
+    let [<Literal>] PhysicallyBasedShadowAnimatedPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedPoint"
+    let [<Literal>] PhysicallyBasedShadowAnimatedSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedSpot"
+    let [<Literal>] PhysicallyBasedShadowAnimatedDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowAnimatedDirectional"
+    let [<Literal>] PhysicallyBasedShadowTerrainPointShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainPoint"
+    let [<Literal>] PhysicallyBasedShadowTerrainSpotShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainSpot"
+    let [<Literal>] PhysicallyBasedShadowTerrainDirectionalShaderFilePath = "Assets/Default/PhysicallyBasedShadowTerrainDirectional"
+    let [<Literal>] PhysicallyBasedDeferredStaticShaderFilePath = "Assets/Default/PhysicallyBasedDeferredStatic"
+    let [<Literal>] PhysicallyBasedDeferredStaticClippedShaderFilePath = "Assets/Default/PhysicallyBasedDeferredStaticClipped"
+    let [<Literal>] PhysicallyBasedDeferredAnimatedShaderFilePath = "Assets/Default/PhysicallyBasedDeferredAnimated"
+    let [<Literal>] PhysicallyBasedDeferredTerrainShaderFilePath = "Assets/Default/PhysicallyBasedDeferredTerrain"
+    let [<Literal>] PhysicallyBasedDeferredLightMappingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredLightMapping"
+    let [<Literal>] PhysicallyBasedDeferredAmbientShaderFilePath = "Assets/Default/PhysicallyBasedDeferredAmbient"
+    let [<Literal>] PhysicallyBasedDeferredIrradianceShaderFilePath = "Assets/Default/PhysicallyBasedDeferredIrradiance"
+    let [<Literal>] PhysicallyBasedDeferredEnvironmentFilterShaderFilePath = "Assets/Default/PhysicallyBasedDeferredEnvironmentFilter"
+    let [<Literal>] PhysicallyBasedDeferredSsaoShaderFilePath = "Assets/Default/PhysicallyBasedDeferredSsao"
+    let [<Literal>] PhysicallyBasedDeferredLightingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredLighting"
+    let [<Literal>] PhysicallyBasedDeferredFoggingShaderFilePath = "Assets/Default/PhysicallyBasedDeferredFogging"
+    let [<Literal>] PhysicallyBasedDeferredColoringShaderFilePath = "Assets/Default/PhysicallyBasedDeferredColoring"
+    let [<Literal>] PhysicallyBasedDeferredCompositionShaderFilePath = "Assets/Default/PhysicallyBasedDeferredComposition"
+    let [<Literal>] PhysicallyBasedForwardStaticShaderFilePath = "Assets/Default/PhysicallyBasedForwardStatic"
+    let [<Literal>] PhysicallyBasedForwardAnimatedShaderFilePath = "Assets/Default/PhysicallyBasedForwardAnimated"

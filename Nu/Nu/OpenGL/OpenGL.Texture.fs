@@ -155,7 +155,7 @@ module Texture =
             if status = AstcencError.AstcencSuccess then
 
                 // attempt to compress astc image
-                let mutable astcImage = AstcencImage (dimX = image.Width, dimY = image.Height, dimZ = 1u, dataType = AstcencType.AstcencTypeU8, data = pixelBytes)
+                let mutable astcImage = AstcencImage (dimX = image.Width, dimY = image.Height, dimZ = 1u, dataType = AstcencType.AstcencTypeU8, data = [|pixelBytes|])
                 let swizzle = AstcencSwizzle (r = AstcencSwz.AstcencSwzR, g = AstcencSwz.AstcencSwzG, b = AstcencSwz.AstcencSwzB, a = AstcencSwz.AstcencSwzA)
                 let blockCountX = (uint image.Width + blockSize - 1u) / blockSize
                 let blockCountY = (uint image.Height + blockSize - 1u) / blockSize
@@ -546,7 +546,7 @@ module Texture =
                 let format = SDL_PixelFormat.SDL_PIXELFORMAT_ARGB8888 // seems to be the right format on Ubuntu...
                 let filePathSdl = PathF.GetFullPath filePath
                 let unconvertedPtr = SDL3_image.IMG_Load filePathSdl
-                if not (NativePtr.isNullPtr unconvertedPtr) then
+                if NativePtr.notNullPtr unconvertedPtr then
                     let unconverted = NativePtr.toByRef unconvertedPtr
                     let metadata = TextureMetadata.make unconverted.w unconverted.h
                     if unconverted.format <> format then
