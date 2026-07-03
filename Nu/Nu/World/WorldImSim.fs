@@ -15,6 +15,9 @@ open Nu
 [<AutoOpen>]
 module WorldImSim =
 
+    /// Instructs ImSim initializing equality (|=) to act as static equality (.=) for a frame.
+    let mutable internal Initializing = false
+
     /// Instructs ImSim static equality (.=) to act as dynamic equality (@=) for a frame.
     let mutable internal Reinitializing = false
 
@@ -60,13 +63,21 @@ module WorldImSim =
             let dispatcher = entity.GetDispatcher world
             dispatcher.TryProcess (zeroDelta,  entity, world)
 
-        /// Whether ImSim is reinitializing this frame (such as on a code reload).
-        member this.ReinitializingImSim =
-            Reinitializing
+        /// Whether ImSim is initializing this frame (such as on a code reload).
+        member this.ImSimInitializing =
+            Initializing
 
         /// Whether ImSim is reinitializing this frame (such as on a code reload).
-        static member getReinitializingImSim (world : World) =
-            world.ReinitializingImSim
+        member this.ImSimReinitializing =
+            Reinitializing
+
+        /// Whether ImSim is initializing this frame (such as on a code reload).
+        static member getImSimInitializing (world : World) =
+            world.ImSimInitializing
+
+        /// Whether ImSim is reinitializing this frame (such as on a code reload).
+        static member getImSimReinitializing (world : World) =
+            world.ImSimReinitializing
 
         /// ImSim subscribe to the given event address with a user-defined result.
         static member doSubscriptionPlus<'d, 'r> (mapResult : 'd -> 'r) name (eventAddress : 'd Address) (world : World) : 'r FQueue =
@@ -110,7 +121,7 @@ module WorldImSim =
         static member doSubscriptionCount<'d> name (eventAddress : 'd Address) (world : World) : int =
             World.doSubscriptionPlus<'d, 'd> id name eventAddress world |> FQueue.length
 
-        /// ImGui subscribe to the given screen's selection events.
+        /// ImSim subscribe to the given screen's selection events.
         static member doSubscriptionToSelectionEvents name (screen : Screen) (world : World) : SelectionEventData FQueue =
             let selects = World.doSubscriptionPlus (fun () -> (Gen.id64, Select)) name screen.SelectEvent world
             let incomingStarts = World.doSubscriptionPlus (fun () -> (Gen.id64, IncomingStart)) name screen.IncomingStartEvent world
@@ -122,7 +133,7 @@ module WorldImSim =
             results.Sort (fun (leftId, _) (rightId, _) -> leftId.CompareTo rightId)
             results |> Seq.map snd |> FQueue.ofSeq
 
-        /// ImGui subscribe to the given entity's body events.
+        /// ImSim subscribe to the given entity's body events.
         static member doSubscriptionToBodyEvents name (entity : Entity) (world : World) : BodyEventData FQueue =
             let penetrations = World.doSubscriptionPlus (fun data -> (Gen.id64, BodyPenetrationData data)) name entity.BodyPenetrationEvent world
             let separationExplicits = World.doSubscriptionPlus (fun data -> (Gen.id64, BodySeparationExplicitData data)) name entity.BodySeparationExplicitEvent world
@@ -161,10 +172,12 @@ module WorldImSim =
                 | (false, _) ->
                     World.addSimulantJournal game.GameAddress { SimulantInitializing = true; SimulantUtilized = true; InitializationTime = Core.getTimeStampUnique (); Result = () } world
                     true
+            let initializing = initializing || Initializing
+            let reinitializing = initializing || Reinitializing
             for arg in args do
                 if (match arg.ArgType with
                     | InitializingArg -> initializing
-                    | ReinitializingArg -> initializing || Reinitializing
+                    | ReinitializingArg -> reinitializing
                     | DynamicArg -> true) then
                     game.TrySetProperty arg.ArgLens.Name { PropertyType = arg.ArgLens.Type; PropertyValue = arg.ArgValue } world |> ignore
 
@@ -226,10 +239,12 @@ module WorldImSim =
                     // fin
                     true
 
+            let initializing = initializing || Initializing
+            let reinitializing = initializing || Reinitializing
             for arg in args do
                 if (match arg.ArgType with
                     | InitializingArg -> initializing
-                    | ReinitializingArg -> initializing || Reinitializing
+                    | ReinitializingArg -> reinitializing
                     | DynamicArg -> true) && group.GetExists world then
                     group.TrySetProperty arg.ArgLens.Name { PropertyType = arg.ArgLens.Type; PropertyValue = arg.ArgValue } world |> ignore
             if groupCreation && group.GetExists world && WorldModuleInternal.UpdatingSimulants && World.getGroupSelected group world then
@@ -249,8 +264,7 @@ module WorldImSim =
             let groupAddress = Address.makeFromArray (Array.add name world.ContextImSim.Names)
             World.setContext groupAddress world
             let group = Nu.Group groupAddress
-            // HACK: when group appears to exist as a placeholder created by Gaia, we destroy it so it can be made in a user-defined way.
-            if  group.Name = "Scene" &&
+            if  group.Name = "Scene" && // HACK: when group appears to exist as a placeholder created by Gaia, we destroy it so it can be made in a user-defined way.
                 group.GetExists world &&
                 Seq.isEmpty (World.getEntitiesSovereign group world) &&
                 getTypeName (group.GetDispatcher world) = nameof GroupDispatcher then
@@ -269,10 +283,12 @@ module WorldImSim =
                         World.setGroupProtection DeclarativeProtection group world |> ignore<bool>
                     World.addSimulantJournal group.GroupAddress { SimulantInitializing = true; SimulantUtilized = true; InitializationTime = Core.getTimeStampUnique (); Result = () } world
                     true
+            let initializing = initializing || Initializing
+            let reinitializing = initializing || Reinitializing
             for arg in args do
                 if (match arg.ArgType with
                     | InitializingArg -> initializing
-                    | ReinitializingArg -> initializing || Reinitializing
+                    | ReinitializingArg -> reinitializing
                     | DynamicArg -> true) && group.GetExists world then
                     group.TrySetProperty arg.ArgLens.Name { PropertyType = arg.ArgLens.Type; PropertyValue = arg.ArgValue } world |> ignore
             if groupCreation && group.GetExists world && WorldModuleInternal.UpdatingSimulants && World.getGroupSelected group world then
@@ -320,7 +336,7 @@ module WorldImSim =
         /// Begin the ImSim declaration of a entity read from the given file path with the given arguments.
         /// Note that changing the file path over time has no effect as only the first moment is used.
         static member beginEntityFromFile name entityFilePath args (world : World) =
-            
+
             // decide on entity creation
             Address.assertIdentifierName name
             if world.ContextImSim.Names.Length < 3 then raise (InvalidOperationException "ImSim entity declared outside of valid ImSim context (must be called in a Group or Entity context).")
@@ -344,6 +360,10 @@ module WorldImSim =
                     World.addSimulantJournal entity.EntityAddress { SimulantInitializing = true; SimulantUtilized = true; InitializationTime = Core.getTimeStampUnique (); Result = () } world
                     true
 
+            // compute initialization states
+            let initializing = initializing || Initializing
+            let reinitializing = initializing || Reinitializing
+
             // entity-specific initialization
             let mutable mountOptOpt = ValueNone
             for arg in args do
@@ -351,14 +371,14 @@ module WorldImSim =
                     mountOptOpt <- ValueSome (arg.ArgValue :?> Entity Address option)
                 if (match arg.ArgType with
                     | InitializingArg -> initializing
-                    | ReinitializingArg -> initializing || Reinitializing
+                    | ReinitializingArg -> reinitializing
                     | DynamicArg -> true) && entity.GetExists world then
                     entity.TrySetProperty arg.ArgLens.Name { PropertyType = arg.ArgLens.Type; PropertyValue = arg.ArgValue } world |> ignore
-            
+
             // update mount opt when appropriate
-            if mountOptOpt.IsNone && (initializing || Reinitializing) && entity.GetExists world && entity.Surnames.Length > 1 then
+            if mountOptOpt.IsNone && reinitializing && entity.GetExists world && entity.Surnames.Length > 1 then
                 entity.SetMountOpt (Some Address.parent) world
-            
+
             // process entity when appropriate
             if entityCreation && entity.GetExists world && WorldModuleInternal.UpdatingSimulants && World.getEntitySelected entity world then
                 WorldModuleInternal.tryProcessEntity true entity world
@@ -405,16 +425,20 @@ module WorldImSim =
                     // fin
                     true
 
+            // compute initialization states
+            let initializing = initializing || Initializing
+            let reinitializing = initializing || Reinitializing
+
             // entity-specific initialization
             for arg in args do
                 if (match arg.ArgType with
                     | InitializingArg -> initializing
-                    | ReinitializingArg -> initializing || Reinitializing
+                    | ReinitializingArg -> reinitializing
                     | DynamicArg -> true) && entity.GetExists world then
                     entity.TrySetProperty arg.ArgLens.Name { PropertyType = arg.ArgLens.Type; PropertyValue = arg.ArgValue } world |> ignore
 
             // update mount opt when appropriate
-            if mountOptOpt.IsNone && (initializing || Reinitializing) && entity.GetExists world && entity.Surnames.Length > 1 then
+            if mountOptOpt.IsNone && reinitializing && entity.GetExists world && entity.Surnames.Length > 1 then
                 entity.SetMountOpt (Some Address.parent) world
 
             // process entity when appropriate
