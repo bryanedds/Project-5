@@ -546,12 +546,6 @@ type [<ReferenceEquality>] VulkanContext =
     /// The texture command queue.
     member this.TextureQueue = this.TextureQueue_
 
-    /// The render finished semaphore.
-    member this.RenderFinishedSemaphore = this.RenderFinishedSemaphore_
-
-    /// The image available semaphore.
-    member this.ImageAvailableSemaphore = this.ImageAvailableSemaphore_
-
     /// The render fence.
     member this.RenderFence = this.RenderFence_
 
@@ -876,14 +870,6 @@ type [<ReferenceEquality>] VulkanContext =
         Vulkan.vkCreateCommandPool (device, &info, nullPtr, &commandPool) |> Hl.check
         commandPool
 
-    /// Allocate an array of command buffers for each frame in flight.
-    static member private allocateCommandBuffersPrimary count commandPool device =
-        Hl.allocateCommandBuffers count VkCommandBufferLevel.Primary commandPool device
-
-    /// Allocate an array of command buffers for each frame in flight.
-    static member private allocateCommandBuffersSecondary count commandPool device =
-        Hl.allocateCommandBuffers count VkCommandBufferLevel.Secondary commandPool device
-
     /// Handle changes in window size, and check for minimization.
     static member private handleWindowSize vkc =
         
@@ -906,7 +892,7 @@ type [<ReferenceEquality>] VulkanContext =
 
     static member private beginRenderCommandBuffer (vkc : VulkanContext) =
         if vkc.RenderCommandBuffersCursor_ >= vkc.RenderCommandBuffers_.Count then
-            let buffers = VulkanContext.allocateCommandBuffersPrimary vkc.RenderCommandBuffers_.Count vkc.RenderCommandPool_ vkc.Device
+            let buffers = Hl.allocateCommandBuffers vkc.RenderCommandBuffers_.Count VkCommandBufferLevel.Primary vkc.RenderCommandPool_ vkc.Device
             vkc.RenderCommandBuffers_.AddRange buffers
         let commandBuffer = vkc.RenderCommandBuffers_[vkc.RenderCommandBuffersCursor_]
         Vulkan.vkResetCommandBuffer (commandBuffer, VkCommandBufferResetFlags.None) |> Hl.check
@@ -1128,12 +1114,12 @@ type [<ReferenceEquality>] VulkanContext =
             // setup execution for rendering on render thread
             let renderFence = Hl.createFence true device
             let renderCommandPool = VulkanContext.createCommandPool false physicalDevice.GraphicsQueueFamily device
-            let renderCommandBuffers = VulkanContext.allocateCommandBuffersPrimary Constants.Vulkan.RenderCommandBufferCountDefault renderCommandPool device
+            let renderCommandBuffers = Hl.allocateCommandBuffers Constants.Vulkan.RenderCommandBufferCountDefault VkCommandBufferLevel.Primary renderCommandPool device
             let renderFinishedSemaphore = Hl.createSemaphore device
 
             // setup execution for presentation on render thread
             let presentCommandPool = VulkanContext.createCommandPool false physicalDevice.PresentQueueFamily device
-            let presentCommandBuffer = (VulkanContext.allocateCommandBuffersPrimary 1 renderCommandPool device)[0]
+            let presentCommandBuffer = (Hl.allocateCommandBuffers 1 VkCommandBufferLevel.Primary renderCommandPool device)[0]
             let presentFence = Hl.createFence true device
             let imageAvailableSemaphore = Hl.createSemaphore device
 
@@ -1187,6 +1173,7 @@ type [<ReferenceEquality>] VulkanContext =
     static member cleanup vkc =
         Swapchain.destroy vkc.RenderQueue_ vkc.PresentQueue_ vkc.Swapchain_ vkc.Device
         Vulkan.vkDestroySemaphore (vkc.Device, vkc.RenderFinishedSemaphore_, nullPtr)
+        Vulkan.vkDestroySemaphore (vkc.Device, vkc.ImageAvailableSemaphore_, nullPtr)
         Vulkan.vkDestroyFence (vkc.Device, vkc.RenderFence_, nullPtr)
         Vulkan.vkDestroyFence (vkc.Device, vkc.TextureFence, nullPtr)
         Vulkan.vkDestroyFence (vkc.Device, vkc.TransientFence, nullPtr)
