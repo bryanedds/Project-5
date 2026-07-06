@@ -2540,6 +2540,9 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // track geometry instancing
         renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
 
+        // fin
+        i
+
     static member private endPhysicallyBasedShadowSurfaces pipeline vkc =
         PhysicallyBased.endPhysicallyBasedShadowSurfaces pipeline vkc
 
@@ -2674,6 +2677,9 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // track geometry instancing
         renderer.GeometryInstanced.Add surface.PhysicallyBasedGeometry |> ignore<bool>
 
+        // fin
+        i
+
     static member private beginPhysicallyBasedForwardSurfaces
         eyeCenter view projection lightCutoffMargin lightAmbientColor lightAmbientBrightness lightAmbientBoostCutoff lightAmbientBoostScalar lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
         fogEnabled fogType fogStart fogFinish fogDensity fogColor ssvfEnabled ssvfIntensity ssvfSteps ssvfAsymmetry ssrrEnabled ssrrIntensity ssrrDetail ssrrRefinementsMax ssrrRayThickness ssrrDistanceCutoff ssrrDistanceCutoffMargin ssrrEdgeHorizontalMargin ssrrEdgeVerticalMargin shadowNear
@@ -2789,44 +2795,68 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         let uniformsDescriptorSet =
             VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
                 lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
-
+        
         // deferred render static surface shadows
         for entry in renderTasks.DeferredStatic do
             VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
                 [||] entry.Value entry.Key uniformsDescriptorSet shadowStaticPipeline renderer
-
+        
+        // end shadow static rendering
+        VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+        
         // deferred render static surface pre-batches shadows
+        let mutable rendered = 0
+        let mutable instances = 0
+        let mutable uniformsDescriptorSet = VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
         for entry in renderTasks.DeferredStaticPreBatches do
             let struct (surface, preBatch) = entry.Value
-            VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch
-                lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
+            instances <- instances + VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
+            let delta = instances - rendered
+            if delta >= Constants.Vulkan.ShadowSurfaceInstanceThreshold then
+                VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+                uniformsDescriptorSet <- VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
+                rendered <- instances
+        VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
 
+        // begin shadow static rendering
+        let uniformsDescriptorSet =
+            VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
+                lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
+        
         // deferred render static surface clipped shadows (TODO: consider implementing clipped shadow rendering.)
         for entry in renderTasks.DeferredStaticClipped do
             VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
                 [||] entry.Value entry.Key uniformsDescriptorSet shadowStaticPipeline renderer
-
+        
+        // end shadow static rendering
+        VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+        
         // deferred render static surface pre-batches clipped shadows (TODO: consider implementing clipped shadow rendering.)
+        let mutable rendered = 0
+        let mutable instances = 0
+        let mutable uniformsDescriptorSet = VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
         for entry in renderTasks.DeferredStaticClippedPreBatches do
             let struct (surface, preBatch) = entry.Value
-            VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch
-                lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
-
-        // end shadow static rendering
+            instances <- instances + VulkanRenderer3d.renderPhysicallyBasedShadowSurfacePreBatch lightType lightFrustum [||] preBatch surface uniformsDescriptorSet shadowStaticPipeline renderer
+            let delta = instances - rendered
+            if delta >= Constants.Vulkan.ShadowSurfaceInstanceThreshold then
+                VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
+                uniformsDescriptorSet <- VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution (Some colorClearValue) colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
+                rendered <- instances
         VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
 
         // begin shadow animated rendering
         let uniformsDescriptorSet =
             VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
                 lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowAnimatedPipeline renderer
-
+        
         // deferred render animated surface shadows
         for entry in renderTasks.DeferredAnimated do
             let surfaceKey = entry.Key
             let parameters = entry.Value
             VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
                 surfaceKey.BoneTransforms parameters surfaceKey.AnimatedSurface uniformsDescriptorSet shadowAnimatedPipeline renderer
-
+        
         // end shadow animated pipeline
         VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowAnimatedPipeline renderer.VulkanContext
 
@@ -2848,36 +2878,37 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         //VulkanRenderer3d.endPhysicallyBasedShadowPipeline shadowTerrainPipeline
 
         // forward render surface shadows
+        // TODO: P0: switch pipelines only as much as is required.
         for struct (model, castShadow, presence, texCoordsOffset, properties, boneTransformsOpt, surface, _) in renderTasks.ForwardSorted do
             if castShadow then
                 match boneTransformsOpt with
                 | ValueSome boneTransforms ->
-
+        
                     // begin shadow animated rendering
                     let uniformsDescriptorSet =
                         VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
                             lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowAnimatedPipeline renderer
-
+        
                     // actually render surfaces
                     VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
                         boneTransforms (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
                         surface uniformsDescriptorSet shadowAnimatedPipeline renderer
-
+        
                     // end shadow animated rendering
                     VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowAnimatedPipeline renderer.VulkanContext
-
+        
                 | ValueNone ->
-
+        
                     // begin shadow static rendering
                     let uniformsDescriptorSet =
                         VulkanRenderer3d.beginPhysicallyBasedShadowSurfaces
                             lightOrigin lightViewProjection renderer.LightingConfig.LightShadowExponent resolution None colorAttachments depthAttachment renderer.RenderPassIndex shadowStaticPipeline renderer
-
+        
                     // actually render surfaces
                     VulkanRenderer3d.renderPhysicallyBasedShadowSurfaces
                         [||] (List ([struct (model, castShadow, presence, texCoordsOffset, properties)]))
                         surface uniformsDescriptorSet shadowStaticPipeline renderer
-
+        
                     // end shadow static rendering
                     VulkanRenderer3d.endPhysicallyBasedShadowSurfaces shadowStaticPipeline renderer.VulkanContext
 
@@ -3070,55 +3101,73 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
                 eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
                 renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
-
+        
         // render deferred static surfaces (unbatched)
         let mutable i = 0
         for entry in renderTasks.DeferredStatic do
             VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
                 [||] entry.Value entry.Key eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
             i <- inc i
-
-        // render deferred static surface pre-batches
-        for entry in renderTasks.DeferredStaticPreBatches do
-            let struct (surface, preBatch) = entry.Value
-            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
-                frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface
-                eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
-
-        // end deferred static rendering
+        
+        // end deferred static clipped rendering
         VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
             renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
-
+        
+        // render deferred static surface pre-batches
+        let mutable rendered = 0
+        let mutable instances = 0
+        let mutable (eyeDescriptorSet, samplerDescriptorSet) = VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
+        for entry in renderTasks.DeferredStaticPreBatches do
+            let struct (surface, preBatch) = entry.Value
+            instances <- instances + VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
+            let delta = instances - rendered
+            if delta >= Constants.Vulkan.DeferredSurfaceInstanceThreshold then
+                VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
+                let (eyeDescriptorSet', samplerDescriptorSet') = VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer
+                eyeDescriptorSet <- eyeDescriptorSet'
+                samplerDescriptorSet <- samplerDescriptorSet'
+                rendered <- instances
+        VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
+        
         // begin deferred static clipped rendering
         let (eyeDescriptorSet, samplerDescriptorSet) =
             VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
                 eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
                 renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
-
+        
         // render deferred static surfaces clipped (unbatched)
         let mutable i = 0
         for entry in renderTasks.DeferredStaticClipped do
             VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
                 [||] entry.Value entry.Key eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
             i <- inc i
-
-        // render deferred static surface clipped pre-batches
-        for entry in renderTasks.DeferredStaticClippedPreBatches do
-            let struct (surface, preBatch) = entry.Value
-            VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch
-                frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface
-                eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
-
+        
         // end deferred static clipped rendering
         VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
-            renderer.PhysicallyBasedPipelines.DeferredStaticPipeline renderer.VulkanContext
-
+            renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer.VulkanContext
+        
+        // render deferred static surface clipped pre-batches
+        let mutable rendered = 0
+        let mutable instances = 0
+        let mutable (eyeDescriptorSet, samplerDescriptorSet) = VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
+        for entry in renderTasks.DeferredStaticClippedPreBatches do
+            let struct (surface, preBatch) = entry.Value
+            instances <- instances + VulkanRenderer3d.renderPhysicallyBasedDeferredSurfacePreBatch frustumInterior frustumExterior frustumImposter renderPass [||] preBatch surface eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
+            let delta = instances - rendered
+            if delta >= Constants.Vulkan.DeferredSurfaceInstanceThreshold then
+                VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer.VulkanContext
+                let (eyeDescriptorSet', samplerDescriptorSet') = VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer
+                eyeDescriptorSet <- eyeDescriptorSet'
+                samplerDescriptorSet <- samplerDescriptorSet'
+                rendered <- instances
+        VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces renderer.PhysicallyBasedPipelines.DeferredStaticClippedPipeline renderer.VulkanContext
+        
         // begin deferred animated rendering
         let (eyeDescriptorSet, samplerDescriptorSet) =
             VulkanRenderer3d.beginPhysicallyBasedDeferredSurfaces
                 eyeCenter view geometryProjection renderer.FilteredSampler geometryTextureViews zTexture
                 renderer.GeometryViewport renderer.RenderPassIndex renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer
-
+        
         // render animated surfaces deferred
         for entry in renderTasks.DeferredAnimated do
             let surfaceKey = entry.Key
@@ -3126,7 +3175,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             VulkanRenderer3d.renderPhysicallyBasedDeferredSurfaces
                 surfaceKey.BoneTransforms parameters surfaceKey.AnimatedSurface
                 eyeDescriptorSet samplerDescriptorSet renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer
-
+        
         // end deferred animated rendering
         VulkanRenderer3d.endPhysicallyBasedDeferredSurfaces
             renderer.PhysicallyBasedPipelines.DeferredAnimatedPipeline renderer.VulkanContext
@@ -3259,8 +3308,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         | None -> ()
 
         // render forward (static and animated) surfaces to composition attachment
-        // TODO: P1: consider optimizing this such that the current forward pipeline is only ended when pipeline change
-        // is detected.
+        // TODO: P0: switch pipelines only as much as is required.
         let ssrrEnabled = if renderer.RendererConfig.SsrrEnabled && renderer.LightingConfig.SsrrEnabled then 1 else 0
         let forwardSsvfSteps = renderer.LightingConfig.SsvfSteps * 2 // HACK: need an increase in forward-rendered steps since they don't get a blur pass.
         for (model, _, presence, texCoordsOffset, properties, boneTransformsOpt, surface, depthTest) in renderTasks.ForwardSorted do
@@ -3404,7 +3452,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                 renderer.IrradianceMap.InternalFormat
                                 renderer.IrradiancePipeline
                                 (fun () -> renderer.VulkanContext.RenderCommandBuffer)
-                                (fun threshold -> VulkanContext.advanceRenderCommandBuffer threshold renderer.VulkanContext)
+                                (fun () -> VulkanContext.advanceRenderCommandBuffer renderer.VulkanContext)
                                 renderer.VulkanContext
 
                         // render fallback env filter map
@@ -3416,7 +3464,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                 renderer.EnvironmentFilterMap.InternalFormat
                                 renderer.EnvironmentFilterPipeline
                                 (fun () -> renderer.VulkanContext.RenderCommandBuffer)
-                                (fun threshold -> VulkanContext.advanceRenderCommandBuffer threshold renderer.VulkanContext)
+                                (fun () -> VulkanContext.advanceRenderCommandBuffer renderer.VulkanContext)
                                 renderer.VulkanContext
 
                         // add to cache and create light map
@@ -3451,7 +3499,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                     lightProbeAmbientColor
                                     lightProbeAmbientBrightness
                                     (fun () -> renderer.VulkanContext.RenderCommandBuffer)
-                                    (fun threshold -> VulkanContext.advanceRenderCommandBuffer threshold renderer.VulkanContext)
+                                    (fun () -> VulkanContext.advanceRenderCommandBuffer renderer.VulkanContext)
                                     renderer.VulkanContext
 
                             // create irradiance map
@@ -3463,7 +3511,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                     renderer.IrradianceMap.InternalFormat
                                     renderer.IrradiancePipeline
                                     (fun () -> renderer.VulkanContext.RenderCommandBuffer)
-                                    (fun threshold -> VulkanContext.advanceRenderCommandBuffer threshold renderer.VulkanContext)
+                                    (fun () -> VulkanContext.advanceRenderCommandBuffer renderer.VulkanContext)
                                     renderer.VulkanContext
 
                             // create env filter map
@@ -3475,7 +3523,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                     renderer.EnvironmentFilterMap.InternalFormat
                                     renderer.EnvironmentFilterPipeline
                                     (fun () -> renderer.VulkanContext.RenderCommandBuffer)
-                                    (fun threshold -> VulkanContext.advanceRenderCommandBuffer threshold renderer.VulkanContext)
+                                    (fun () -> VulkanContext.advanceRenderCommandBuffer renderer.VulkanContext)
                                     renderer.VulkanContext
 
                             // destroy reflection map
