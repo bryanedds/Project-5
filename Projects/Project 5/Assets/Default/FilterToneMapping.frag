@@ -1,30 +1,22 @@
-#shader vertex
-#version 460 core
+#version 450 core
 
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec2 texCoords;
-
-out vec2 texCoordsOut;
-
-void main()
+struct ToneMapping
 {
-    texCoordsOut = texCoords;
-    gl_Position = vec4(position, 1.0);
-}
+    float lightExposure;
+    int toneMapType;
+    vec3 toneMapSlope;
+    vec3 toneMapOffset;
+    vec3 toneMapPower;
+    float toneMapSaturation;
+    float toneMapWhitePoint;
+};
 
-#shader fragment
-#version 460 core
+layout(set = 0, binding = 0) buffer readonly ToneMappingBlock { ToneMapping toneMapping; };
+layout(set = 0, binding = 1) uniform texture2D inputTexture;
 
-uniform float lightExposure;
-uniform int toneMapType;
-uniform vec3 toneMapSlope;
-uniform vec3 toneMapOffset;
-uniform vec3 toneMapPower;
-uniform float toneMapSaturation;
-uniform float toneMapWhitePoint;
-uniform sampler2D inputTexture;
+layout(set = 1, binding = 0) uniform sampler inputSampler;
 
-in vec2 texCoordsOut;
+layout(location = 0) in vec2 texCoordsOut;
 
 layout(location = 0) out vec4 frag;
 
@@ -224,19 +216,19 @@ vec3 applyKronosNeutralToneMap(vec3 color)
 void main()
 {
     // apply tone mapping
-    vec3 color = texture(inputTexture, texCoordsOut, 0).xyz;
-    switch (toneMapType)
+    vec3 color = texture(sampler2D(inputTexture, inputSampler), texCoordsOut, 0).xyz;
+    switch (toneMapping.toneMapType)
     {
-        case 0: color = applyAgXToneMap(color * lightExposure, toneMapSlope, toneMapOffset, toneMapPower, toneMapSaturation); break;
-        case 1: color = applyReinhardToneMap(color * lightExposure); break;
-        case 2: color = applyReinhardExtendedToneMap(color * lightExposure, toneMapWhitePoint); break;
-        case 3: color = applyUnrealToneMap(color * lightExposure); break;
-        case 4: color = applyAcesFittedToneMap(color * lightExposure); break;
-        case 5: color = applyAcesFilmicToneMap(color * lightExposure); break;
-        case 6: color = applyUncharted2ToneMap(color * lightExposure); break;
-        case 7: color = applyUncharted2FilmicToneMap(color * lightExposure); break;
-        case 8: color = applyLottesToneMap(color * lightExposure); break;
-        default: color = applyKronosNeutralToneMap(color * lightExposure); break;
+        case 0: color = applyAgXToneMap(color * toneMapping.lightExposure, toneMapping.toneMapSlope, toneMapping.toneMapOffset, toneMapping.toneMapPower, toneMapping.toneMapSaturation); break;
+        case 1: color = applyReinhardToneMap(color * toneMapping.lightExposure); break;
+        case 2: color = applyReinhardExtendedToneMap(color * toneMapping.lightExposure, toneMapping.toneMapWhitePoint); break;
+        case 3: color = applyUnrealToneMap(color * toneMapping.lightExposure); break;
+        case 4: color = applyAcesFittedToneMap(color * toneMapping.lightExposure); break;
+        case 5: color = applyAcesFilmicToneMap(color * toneMapping.lightExposure); break;
+        case 6: color = applyUncharted2ToneMap(color * toneMapping.lightExposure); break;
+        case 7: color = applyUncharted2FilmicToneMap(color * toneMapping.lightExposure); break;
+        case 8: color = applyLottesToneMap(color * toneMapping.lightExposure); break;
+        default: color = applyKronosNeutralToneMap(color * toneMapping.lightExposure); break;
     }
 
     // fin
