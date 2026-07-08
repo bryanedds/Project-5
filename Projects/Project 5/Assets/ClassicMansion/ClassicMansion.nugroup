@@ -14,7 +14,7 @@
       [DesireFog True]
       [DesireShadows True]
       [LightCutoff 24]
-      [LightType [DirectionalLight 18]]
+      [LightType [DirectionalLight 9]]
       [MountOpt [Some ^]]
       [Name Sun]
       [Presence Omnipresent]
