@@ -916,7 +916,7 @@ type [<ReferenceEquality>] VulkanContext =
             | FirstSubmission ->
                 let mutable imageAvailableSemaphore = vkc.ImageAvailableSemaphore_
                 let mutable stageFlag = VkPipelineStageFlags.ColorAttachmentOutput
-                submitInfo.waitSemaphoreCount <- uint 1
+                submitInfo.waitSemaphoreCount <- 1u
                 submitInfo.pWaitSemaphores <- &&imageAvailableSemaphore
                 submitInfo.pWaitDstStageMask <- &&stageFlag
                 Vulkan.vkQueueSubmit (vkQueue, 1u, &&submitInfo, VkFence.Null) |> Hl.check // fine without waiting because we've already waited on the render fence
@@ -924,7 +924,7 @@ type [<ReferenceEquality>] VulkanContext =
                 Vulkan.vkQueueSubmit (vkQueue, 1u, &&submitInfo, VkFence.Null) |> Hl.check
             | LastSubmission ->
                 let mutable renderFinishedSemaphore = vkc.RenderFinishedSemaphore_
-                submitInfo.signalSemaphoreCount <- uint 1
+                submitInfo.signalSemaphoreCount <- 1u
                 submitInfo.pSignalSemaphores <- &&renderFinishedSemaphore
                 Vulkan.vkQueueSubmit (vkQueue, 1u, &&submitInfo, vkc.RenderFence_) |> Hl.check
 
@@ -992,7 +992,7 @@ type [<ReferenceEquality>] VulkanContext =
             VulkanContext.beginRenderCommandBuffer vkc
 
             // ensure swapchain image is ready to be drawn to
-            Hl.recordTransitionLayout true 1 0 1 VkImageAspectFlags.Color Undefined ColorAttachmentRead vkc.Swapchain_.Image vkc.RenderCommandBuffer
+            Hl.recordTransitionLayout true 1 0 1 VkImageAspectFlags.Color Undefined Hl.SwapchainImageReadLayout vkc.Swapchain_.Image vkc.RenderCommandBuffer
 
     /// End the frame.
     static member endFrame vkc =
@@ -1021,7 +1021,7 @@ type [<ReferenceEquality>] VulkanContext =
                 let mutable renderFinishedSemaphore = vkc.RenderFinishedSemaphore_
                 let mutable pipelineStage = VkPipelineStageFlags.ColorAttachmentOutput
                 Vulkan.vkBeginCommandBuffer (commandBuffer, &&beginInfo) |> Hl.check
-                Hl.recordTransitionLayout true 1 0 1 VkImageAspectFlags.Color ColorAttachmentRead Present vkc.Swapchain_.Image commandBuffer
+                Hl.recordTransitionLayout true 1 0 1 VkImageAspectFlags.Color Hl.SwapchainImageReadLayout Present vkc.Swapchain_.Image commandBuffer
                 let mutable info = VkSubmitInfo ()
                 info.waitSemaphoreCount <- 1u
                 info.pWaitSemaphores <- &&renderFinishedSemaphore
