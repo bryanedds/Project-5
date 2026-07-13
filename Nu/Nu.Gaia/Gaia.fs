@@ -814,26 +814,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         then Assembly.LoadFrom assemblyFilePath
         else null
 
-    let private nuPluginTypeFilter (metadataReader : MetadataReader) ty =
-        let typeDef = metadataReader.GetTypeDefinition ty
-        let baseType = typeDef.BaseType
-        match baseType.Kind with
-        | HandleKind.TypeReference ->
-            let typeRef = metadataReader.GetTypeReference (TypeReferenceHandle.op_Explicit baseType)
-            metadataReader.GetString typeRef.Name = nameof NuPlugin
-        | HandleKind.TypeDefinition -> false // base type must not be defined in the same assembly
-        | HandleKind.TypeSpecification -> false // base type is not a constructed generic type, pointer or array
-        | _ -> false
-
-    let private nuAssemblyFileFilter filePath =
-        try use fileStream = new FileStream (filePath, FileMode.Open, FileAccess.Read)
-            use peReader = new PortableExecutable.PEReader (fileStream)
-            peReader.HasMetadata &&
-            let metadataReader = PEReaderExtensions.GetMetadataReader peReader in metadataReader.IsAssembly &&
-            Seq.exists (metadataReader.GetAssemblyReference >> _.Name >> metadataReader.GetString >> (=) "Nu") metadataReader.AssemblyReferences &&
-            Seq.exists (nuPluginTypeFilter metadataReader) metadataReader.TypeDefinitions
-        with _ -> false
-
     // NOTE: this function isn't used, but it is kept around as it's a good tool to surface memory leaks deep in large libs like FSI.
     let private scanAndNullifyFields (root : obj) (targetType : Type) =
         let bindingFlags = BindingFlags.NonPublic ||| BindingFlags.Public ||| BindingFlags.Instance
@@ -894,8 +874,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         | _ -> ()
         Cascade
 
-    let private handleNuSelectedScreenOptChange (evt : Event<ChangeData, Game>) world =
-        match evt.Data.Value :?> Screen option with
+    let private handleNuSelectedScreenOptChange (evt : Event<Screen option, Game>) world =
+        match evt.Data with
         | Some screen ->
             selectScreen true screen
             selectGroupInitial screen world
@@ -1531,6 +1511,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         World.setSelectedScreen screen world
                         let eventTrace = EventTrace.debug "World" "selectScreen" "Select" EventTrace.empty
                         World.publishPlus () screen.SelectEvent eventTrace screen false false world
+                        let eventTrace = EventTrace.debug "World" "selectScreen" "PostSelect" EventTrace.empty
+                        World.publishPlus (Some screen) Game.PostSelectEvent eventTrace screen false false world
                         screen
                     else screen
                 | Some screen -> screen
@@ -4631,7 +4613,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 World.subscribe handleNuMouseButton Game.MouseRightDownEvent Game world |> ignore
                 World.subscribe handleNuMouseButton Game.MouseRightUpEvent Game world |> ignore
                 World.subscribe handleNuLifeCycleGroup (Game.LifeCycleEvent (nameof Group)) Game world |> ignore
-                World.subscribe handleNuSelectedScreenOptChange Game.SelectedScreenOpt.ChangeEvent Game world |> ignore
+                World.subscribe handleNuSelectedScreenOptChange Game.PostSelectEvent Game world |> ignore
                 World.subscribe handleNuExitRequest Game.ExitRequestEvent Game world |> ignore
 
                 // run the world
