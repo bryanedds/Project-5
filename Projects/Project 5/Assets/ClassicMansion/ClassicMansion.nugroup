@@ -276974,6 +276974,7 @@
       [Brightness 0.75]
       [Color [1 0.90588236 0.78039217 1]]
       [DesireShadows True]
+      [DynamicShadows False]
       [LightCutoff 7.5]
       [MountOpt [Some ^]]
       [Name Light3d-0011]
