@@ -191,14 +191,14 @@ type [<ReferenceEquality>] VulkanRenderer2d =
     private
         { VulkanContext : VulkanContext
           mutable Viewport : Viewport
-          TextQuad : Nu.Vulkan.Buffer * Nu.Vulkan.Buffer
+          TextQuad : VulkanBuffer * VulkanBuffer
           TextureDumpster : TextureDumpster
           UnfilteredSampler : Sampler
           FilteredSampler : Sampler
           TextTextures : Dictionary<obj, bool ref * (int * int * Matrix4x4 * Texture)>
           SpriteBatchEnv : SpriteBatchEnv
-          SpritePipeline : Nu.Vulkan.Buffer * Nu.Vulkan.Buffer * Pipeline
-          ContourTessellationPipeline : Nu.Vulkan.Buffer * Nu.Vulkan.Buffer * Nu.Vulkan.Buffer * Pipeline
+          SpritePipeline : VulkanBuffer * VulkanBuffer * Pipeline
+          ContourTessellationPipeline : VulkanBuffer * VulkanBuffer * VulkanBuffer * Pipeline
           RenderPackages : Packages<RenderAsset, AssetClient>
           SpineSkeletonRenderers : Dictionary<uint64, bool ref * Spine.SkeletonRenderer>
           mutable RenderPackageCachedOpt : RenderPackageCached
@@ -1017,26 +1017,26 @@ type [<ReferenceEquality>] VulkanRenderer2d =
         ()
 
     /// Make a VulkanRenderer2d.
-    static member make viewport (vkc : VulkanContext) =
+    static member make viewport (context : VulkanContext) =
         
         // create samplers
-        let unfilteredSampler = Sampler.create VkSamplerAddressMode.Repeat VkFilter.Nearest VkFilter.Nearest false vkc
-        let filteredSampler = Sampler.create VkSamplerAddressMode.Repeat VkFilter.Linear VkFilter.Linear true vkc
+        let unfilteredSampler = Sampler.create VkSamplerAddressMode.Repeat VkFilter.Nearest VkFilter.Nearest false context
+        let filteredSampler = Sampler.create VkSamplerAddressMode.Repeat VkFilter.Linear VkFilter.Linear true context
         
         // create text resources
-        let spriteSingletonPipeline = SpriteSingleton.createSpriteSingletonPipeline vkc
-        let textQuad = SpriteSingleton.createSpriteQuad true vkc
+        let spriteSingletonPipeline = SpriteSingleton.createSpriteSingletonPipeline context
+        let textQuad = SpriteSingleton.createSpriteQuad true context
         let textureDumpster = TextureDumpster.create ()
 
         // create sprite batch env
-        let spriteBatchEnv = SpriteBatch.createSpriteBatchEnv unfilteredSampler filteredSampler vkc
+        let spriteBatchEnv = SpriteBatch.createSpriteBatchEnv unfilteredSampler filteredSampler context
 
         // create contour tessellation pipeline
-        let contourTesselationPipeline = ContourTessellation.createContourTessellationPipeline vkc
+        let contourTesselationPipeline = ContourTessellation.createContourTessellationPipeline context
         
         // make renderer
         let renderer =
-            { VulkanContext = vkc
+            { VulkanContext = context
               Viewport = viewport
               TextQuad = textQuad
               TextureDumpster = textureDumpster
@@ -1073,12 +1073,12 @@ type [<ReferenceEquality>] VulkanRenderer2d =
             for (_, _, _, textTexture) in Seq.map snd renderer.TextTextures.Values do Texture.destroy textTexture renderer.VulkanContext
             renderer.TextTextures.Clear ()
             TextureDumpster.destroy renderer.TextureDumpster renderer.VulkanContext
-            Sampler.destroy renderer.UnfilteredSampler renderer.VulkanContext
-            Sampler.destroy renderer.FilteredSampler renderer.VulkanContext
+            Sampler.destroy renderer.UnfilteredSampler
+            Sampler.destroy renderer.FilteredSampler
             Pipeline.destroy spritePipeline renderer.VulkanContext
             Pipeline.destroy tessellationPipeline renderer.VulkanContext
-            Nu.Vulkan.Buffer.destroy textVertexBuffer renderer.VulkanContext
-            Nu.Vulkan.Buffer.destroy textIndexBuffer renderer.VulkanContext
+            VulkanBuffer.destroy textVertexBuffer renderer.VulkanContext
+            VulkanBuffer.destroy textIndexBuffer renderer.VulkanContext
 
             // destroy sprite batch environment
             SpriteBatch.destroySpriteBatchEnv renderer.SpriteBatchEnv
