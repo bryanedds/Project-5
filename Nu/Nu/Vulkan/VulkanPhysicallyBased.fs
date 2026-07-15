@@ -1699,7 +1699,7 @@ module PhysicallyBased =
         (cubeMapFace : bool)
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightShadowExponent : single)
         (resolution : Vector2i)
         (colorClearValueOpt : VkClearValue option)
@@ -1711,7 +1711,7 @@ module PhysicallyBased =
         
         // compute vulkan-appropriate matrices
         // NOTE: we do NOT flip when rendering to a cube map face!
-        let projection = if cubeMapFace then projection else projection.Flipped
+        let projection = if cubeMapFace then projectionUnflipped else projectionUnflipped.Flipped
         let viewProjection = view * projection
 
         // set up render
@@ -1791,11 +1791,14 @@ module PhysicallyBased =
                 // draw
                 DeviceApi.vkCmdDrawIndexed (context.RenderCommandBuffer, uint geometry.ElementCount, uint surfacesCount, 0u, 0, 0u)
 
+                // report drawing
+                Hl.reportDrawCall surfacesCount false
+
                 // advance instancing
                 VulkanBuffer.advance geometry.InstanceBuffer
 
                 // advance pipeline
-                Pipeline.advance surfacesCount pipeline.Pipeline
+                Pipeline.advance pipeline.Pipeline
 
             // abort
             | None -> Log.warnOnce ("Cannot draw " + getTypeName pipeline + " because VkPipeline does not exist.")
@@ -1911,7 +1914,7 @@ module PhysicallyBased =
     let beginPhysicallyBasedDeferredSurfaces
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (filteredSampler : Sampler)
         (colorAttachments : VkImageView array)
         (depthAttachment : Texture)
@@ -1922,7 +1925,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -2018,12 +2021,15 @@ module PhysicallyBased =
 
                 // draw
                 DeviceApi.vkCmdDrawIndexed (context.RenderCommandBuffer, uint geometry.ElementCount, uint surfacesCount, 0u, 0, 0u)
+
+                // report drawing
+                Hl.reportDrawCall surfacesCount false
                     
                 // advance instancing
                 VulkanBuffer.advance geometry.InstanceBuffer
 
                 // advance pipeline
-                Pipeline.advance surfacesCount pipeline.Pipeline
+                Pipeline.advance pipeline.Pipeline
 
             // abort
             | None -> Log.warnOnce ("Cannot draw " + getTypeName pipeline + " because VkPipeline does not exist.")
@@ -2099,7 +2105,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredLightingSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightCutoffMargin : single)
         (lightShadowSamples : int)
         (lightShadowBias : single)
@@ -2131,7 +2137,7 @@ module PhysicallyBased =
         (lightShadowIndices : int array)
         (lightsCount : int)
         (shadowNear : single)
-        (shadowMatricesFlipped : Matrix4x4 array)
+        (shadowMatrices : Matrix4x4 array)
         (geometrySampler : Sampler)
         (shadowSampler : Sampler)
         (viewport : Viewport)
@@ -2143,12 +2149,9 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
-
-        // shadow matrices considered unflipped in this context
-        let shadowMatrices = shadowMatricesFlipped
 
         // only draw if required vkPipeline exists
         match Pipeline.tryGetVkPipeline VulkanUnblended false pipeline.Pipeline with
@@ -2253,11 +2256,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -2321,7 +2324,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredFoggingSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightCutoffMargin : single)
         (ssvfEnabled : int)
         (ssvfIntensity : single)
@@ -2346,7 +2349,7 @@ module PhysicallyBased =
         (lightDesireFogs : int array)
         (lightShadowIndices : int array)
         (lightsCount : int)
-        (shadowMatricesFlipped : Matrix4x4 array)
+        (shadowMatrices : Matrix4x4 array)
         (colorSampler : Sampler)
         (shadowSampler : Sampler)
         (foggingAttachment : Texture)
@@ -2358,12 +2361,9 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
-
-        // shadow matrices considered unflipped in this context
-        let shadowMatrices = shadowMatricesFlipped
 
         // only draw if required vkPipeline exists
         match Pipeline.tryGetVkPipeline VulkanUnblended false pipeline.Pipeline with
@@ -2465,11 +2465,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -2523,7 +2523,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredLightMappingSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightMapOrigins : Vector3 array)
         (lightMapMins : Vector3 array)
         (lightMapSizes : Vector3 array)
@@ -2544,7 +2544,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -2621,11 +2621,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -2679,7 +2679,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredAmbientSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightMapAmbientColor : Color)
         (lightMapAmbientBrightness : single)
         (lightMapAmbientColors : Color array)
@@ -2696,7 +2696,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -2768,11 +2768,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -2824,7 +2824,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredIrradianceSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (depthTexture : Texture)
         (normalPlusTexture : Texture)
         (lightMappingTexture : Texture)
@@ -2841,7 +2841,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -2899,11 +2899,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -2960,7 +2960,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredEnvironmentFilterSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightMapOrigins : Vector3 array)
         (lightMapMins : Vector3 array)
         (lightMapSizes : Vector3 array)
@@ -2984,7 +2984,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -3059,11 +3059,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -3114,7 +3114,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredSsaoSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (resolution : Vector2i)
         (intensity : single)
         (bias : single)
@@ -3133,7 +3133,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -3192,11 +3192,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -3257,7 +3257,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredColoringSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightAmbientBoostCutoff : single)
         (lightAmbientBoostScalar : single)
         (ssrlEnabled : int)
@@ -3299,7 +3299,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -3387,11 +3387,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -3443,7 +3443,7 @@ module PhysicallyBased =
     let drawPhysicallyBasedDeferredCompositionSurface
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (fogEnabled : int)
         (fogType : int)
         (fogStart : single)
@@ -3463,7 +3463,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -3530,11 +3530,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -3546,7 +3546,7 @@ module PhysicallyBased =
     let beginPhysicallyBasedForwardSurfaces
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (lightCutoffMargin : single)
         (lightAmbientColor : Color)
         (lightAmbientBrightness : single)
@@ -3597,7 +3597,7 @@ module PhysicallyBased =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -3703,7 +3703,7 @@ module PhysicallyBased =
         (lightDesireFogs : int array)
         (lightShadowIndices : int array)
         (lightsCount : int)
-        (shadowMatricesFlipped : Matrix4x4 array)
+        (shadowMatrices : Matrix4x4 array)
         (material : PhysicallyBasedMaterial)
         (geometry : PhysicallyBasedGeometry)
         (depthTest : DepthTest)
@@ -3712,9 +3712,6 @@ module PhysicallyBased =
         (samplersDescriptorSet : VkDescriptorSet)
         (pipeline : PhysicallyBasedPipeline)
         (context : VulkanContext) =
-
-        // shadow matrices considered unflipped in this context
-        let shadowMatrices = shadowMatricesFlipped
 
         // only draw if required vkPipeline exists
         let blend = if blending then VulkanTransparent else VulkanUnblended
@@ -3794,7 +3791,7 @@ module PhysicallyBased =
 
                 // specify shadow matrices
                 use shadowMatricesPin = new ArrayPin<_> (shadowMatrices)
-                let shadowMatricesCount = min shadowMatricesFlipped.Length (Constants.Render.ShadowTexturesMax + Constants.Render.ShadowCascadesMax * Constants.Render.ShadowCascadeLevels)
+                let shadowMatricesCount = min shadowMatrices.Length (Constants.Render.ShadowTexturesMax + Constants.Render.ShadowCascadesMax * Constants.Render.ShadowCascadeLevels)
                 VulkanBuffer.uploadData sizeof<Matrix4x4> shadowMatricesCount shadowMatricesPin.NativeInt pipeline.ShadowMatrixUniform context
                 Pipeline.writeDescriptorUniformBuffer 4 0 pipeline.ShadowMatrixUniform vkSet
 
@@ -3828,11 +3825,14 @@ module PhysicallyBased =
             // draw
             DeviceApi.vkCmdDrawIndexed (context.RenderCommandBuffer, uint geometry.ElementCount, uint surfacesCount, 0u, 0, 0u)
 
+            // report drawing
+            Hl.reportDrawCall surfacesCount false
+
             // advance instancing
             VulkanBuffer.advance geometry.InstanceBuffer
 
             // advance pipeline
-            Pipeline.advance surfacesCount pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
         // abort
         | None -> Log.warnOnce ("Cannot draw " + getTypeName pipeline + " because VkPipeline does not exist.")
@@ -3931,11 +3931,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -4041,11 +4041,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -4163,11 +4163,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -4273,11 +4273,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context
@@ -4367,11 +4367,11 @@ module PhysicallyBased =
             // tear down render
             DeviceApi.vkCmdEndRendering context.RenderCommandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer
             VulkanContext.advanceRenderCommandBuffer context

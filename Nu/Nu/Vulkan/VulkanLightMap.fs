@@ -89,7 +89,6 @@ module LightMap =
             render false lightAmbientOverride origin view viewSkyBox frustum projection projection bounds i reflectionCubeMap.Image
 
             // take a snapshot for testing
-            // TODO: DJL: implement.
             //Hl.saveFramebufferRgbaToBitmap resolution resolution ("Reflection." + string reflectionCubeMapId + "." + string i + ".bmp")
 
         // end reflection rendering
@@ -136,7 +135,6 @@ module LightMap =
                 irradiancePipeline getCommandBuffer advanceCommandBufferWhenNeeded context
 
             // take a snapshot for testing
-            // TODO: DJL: implement.
             //Hl.saveFramebufferRgbaToBitmap resolution resolution ("Irradiance." + string cubeMapId + "." + string i + ".bmp")
 
         // end cubemap rendering
@@ -179,7 +177,7 @@ module LightMap =
     let drawEnvironmentFilter
         (eyeCenter : Vector3)
         (view : Matrix4x4)
-        (projection : Matrix4x4)
+        (projectionUnflipped : Matrix4x4)
         (roughness : single)
         (resolution : single)
         (cubeMap : Texture)
@@ -193,7 +191,7 @@ module LightMap =
 
         // compute vulkan-appropriate matrices
         let viewInverse = view.Inverted
-        let projection = projection.Flipped
+        let projection = projectionUnflipped.Flipped
         let projectionInverse = projection.Inverted
         let viewProjection = view * projection
 
@@ -251,11 +249,11 @@ module LightMap =
             // tear down render
             DeviceApi.vkCmdEndRendering commandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer when needed
             advanceCommandBufferWhenNeeded ()
@@ -302,7 +300,6 @@ module LightMap =
                     environmentFilterPipeline getCommandBuffer advanceCommandBufferWhenNeeded context
 
                 // take a snapshot for testing
-                // TODO: DJL: implement.
                 //Hl.saveFramebufferRgbaToBitmap (int mipResolution) (int mipResolution) ("EnvironmentFilter." + string i + "." + string mip + ".bmp")
 
         // end cubemap rendering

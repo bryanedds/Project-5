@@ -213,9 +213,8 @@ type Pipeline =
         pipeline.DrawIndex_ <- 0
 
     /// Advance the state of the pipeline for additional drawing.
-    static member advance drawInstances pipeline =
+    static member advance pipeline =
         pipeline.DrawIndex_ <- inc pipeline.DrawIndex_
-        Hl.reportDrawCall drawInstances
 
     /// The descriptor set of the given number for the current frame.
     static member getDescriptorSet set pipeline =
@@ -367,7 +366,6 @@ type Pipeline =
                 NativePtr.set infos i info
                 
             // create vulkan pipelines
-            // TODO: DJL: consider pipeline cache.
             let vkPipelines = Array.zeroCreate<VkPipeline> pipelineSettings.Length
             use vkPipelinesPin = new ArrayPin<_> (vkPipelines)
             DeviceApi.vkCreateGraphicsPipelines (VkPipelineCache.Null, uint vkPipelines.Length, infos, nullPtr, vkPipelinesPin.Pointer) |> Hl.check
@@ -596,9 +594,9 @@ type Pipeline =
         let vertexBindingDescriptions = Array.map (fun (binding : VertexBinding) -> Hl.makeVertexBinding binding.Binding binding.Stride binding.InputRate ) vertexBindings
         let vertexAttributes =
             [|for i in 0 .. dec vertexBindings.Length do
-                  for j in 0 .. dec vertexBindings[i].Attributes.Length do
-                      let attribute = vertexBindings[i].Attributes[j]
-                      yield Hl.makeVertexAttribute attribute.Location vertexBindings[i].Binding attribute.Format attribute.Offset |]
+                for j in 0 .. dec vertexBindings[i].Attributes.Length do
+                    let attribute = vertexBindings[i].Attributes[j]
+                    yield Hl.makeVertexAttribute attribute.Location vertexBindings[i].Binding attribute.Format attribute.Offset |]
         let pushConstantRanges = Array.map (fun pushConstant -> Hl.makePushConstantRange pushConstant.Offset pushConstant.Size pushConstant.ShaderStage) pushConstants
 
         // create descriptor set layouts

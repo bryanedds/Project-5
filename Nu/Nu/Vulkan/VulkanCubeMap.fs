@@ -340,11 +340,11 @@ module CubeMap =
             // tear down render
             DeviceApi.vkCmdEndRendering commandBuffer
 
-            // report draw scope
-            Hl.reportDrawScope ()
+            // report drawing
+            Hl.reportDrawCall 1 true
 
             // advance pipeline
-            Pipeline.advance 1 pipeline.Pipeline
+            Pipeline.advance pipeline.Pipeline
 
             // advance rendering command buffer when needed
             advanceCommandBufferWhenNeeded ()
