@@ -1812,7 +1812,7 @@ module PhysicallyBased =
         // report draw scope
         Hl.reportDrawScope ()
 
-        // intermittently advance rendering command buffer
+        // advance rendering command buffer
         VulkanContext.advanceRenderCommandBuffer context
 
     /// Create a physically-based pipeline.
@@ -2043,7 +2043,7 @@ module PhysicallyBased =
         // report draw scope
         Hl.reportDrawScope ()
 
-        // intermittently advance rendering command buffer
+        // advance rendering command buffer
         VulkanContext.advanceRenderCommandBuffer context
 
     /// Create a PhysicallyBasedDeferredLightingPipeline.
@@ -3846,7 +3846,7 @@ module PhysicallyBased =
         // report draw scope
         Hl.reportDrawScope ()
 
-        // intermittently advance rendering command buffer
+        // advance rendering command buffer
         VulkanContext.advanceRenderCommandBuffer context
 
     /// Create a box filter pipeline.
@@ -4574,7 +4574,8 @@ module PhysicallyBased =
                 context
 
         // create 1d box filter pipeline
-        let filterBox1dPipeline = createFilterBoxPipeline Constants.Paths.FilterBox1dShaderFilePath R32f.VkFormat
+        // TODO: P0: make this pipeline specialized to SSAO since it's 16f!
+        let filterBox1dPipeline = createFilterBoxPipeline Constants.Paths.FilterBox1dShaderFilePath R16f.VkFormat
 
         // create esm gaussian filter pipeline
         let filterGaussianEsmPipeline = createFilterGaussianEsmPipeline Rg32f.VkFormat context
