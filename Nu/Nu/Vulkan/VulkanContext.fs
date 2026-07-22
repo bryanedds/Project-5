@@ -629,13 +629,12 @@ type [<ReferenceEquality>] VulkanContext =
             | _ -> ""
         let header = "Vulkan" + typeLabel + severityLabel
 
-        // decide when to log
-        if messageType = VkDebugUtilsMessageTypeFlagsEXT.Performance then
-            if messageSeverity > VkDebugUtilsMessageSeverityFlagsEXT.Warning then
-                Log.custom header message
-        else
-            if messageSeverity > VkDebugUtilsMessageSeverityFlagsEXT.Info then
-                Log.custom header message
+        // log when appropriate
+        let shouldLog =
+            if messageType = VkDebugUtilsMessageTypeFlagsEXT.Performance
+            then messageSeverity > VkDebugUtilsMessageSeverityFlagsEXT.Warning
+            else messageSeverity > VkDebugUtilsMessageSeverityFlagsEXT.Info
+        if shouldLog then Log.custom header message
 
         // finish passively
         ignore pUserData
@@ -660,7 +659,7 @@ type [<ReferenceEquality>] VulkanContext =
         Unsafe.WriteUnaligned (NativePtr.toByRef<byte> fieldRef, callbackPointer) // TODO: report this F# compiler bug that allows direct assignment to compile without error but causes a crash at runtime
         info.pUserData <- NativePtr.toVoidPtr NativePtr.nullPtr<byte>
         info
-    
+
     /// Create the Vulkan instance.
     static member private createVulkanInstance debugInfo =
 
