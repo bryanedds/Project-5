@@ -36,7 +36,7 @@
       [Static True]]
      []]
     [SkyBoxDispatcher
-     [[AmbientBrightness 0.025]
+     [[AmbientBrightness 0.005]
       [Brightness 0.05]
       [CubeMap [ClassicMansion SkyBoxMap]]
       [MountOpt [Some ^]]
