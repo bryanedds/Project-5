@@ -369,21 +369,6 @@ module Hl =
     let setWindowProperties windowProperties =
         WindowProperties_ <- windowProperties
 
-    /// Get the current pixel density of the SDL window.
-    let getWindowPixelDensity () =
-        let pixelDensity = WindowProperties.WindowPixelDensity
-        if pixelDensity > 0.0f then pixelDensity
-        else Log.error "Invalid window pixel density."; 1.0f
-
-    /// Scale a rectangle from window coordinate space to pixel coordinate space.
-    let scaleRectForPixelDensity pixelDensity (rect : VkRect2D) =
-        let inline scale v = single v * pixelDensity
-        VkRect2D (int (scale rect.offset.x), int (scale rect.offset.y), uint (scale rect.extent.width), uint (scale rect.extent.height))
-
-    /// Scale a rectangle from SDL window coordinates to SDL pixel coordinates.
-    let scaleRectToWindowPixels rect =
-        scaleRectForPixelDensity (getWindowPixelDensity ()) rect
-
     let internal setPresentationSetupInitiated () =
         lock BackgroundingResponseStateLock (fun () -> BackgroundingResponseState <- PresentationSetupInitiated)
 
@@ -799,8 +784,8 @@ module Hl =
         else
 
             // get pixel resolution from sdl
-            let mutable width = WindowProperties.WindowWidth
-            let mutable height = WindowProperties.WindowHeight
+            let mutable width = WindowProperties.WindowWidthInPixels
+            let mutable height = WindowProperties.WindowHeightInPixels
 
             // clamp resolution to size limits
             width <- max width (int capabilities.minImageExtent.width)
@@ -1069,9 +1054,9 @@ module Hl =
         writer.Write (uint32 mipmapLevels)      // mip levels
         writer.Write 0u                         // key-value data size
 
-    /// Attempt to generate uncompressed astc bytes an MagickImage to astc bytes.
+    /// Attempt to generate uncompressed astc bytes from a MagickImage.
     let tryGenerateUncompressedImage (image : MagickImage) =
-        let pixelBytes = image.GetPixels().ToByteArray(PixelMapping.RGBA)
+        let pixelBytes = image.GetPixels().ToByteArray(PixelMapping.BGRA) // uncompressed images are BGRA
         let resolution = v2i (int image.Width) (int image.Height)
         Some (resolution, pixelBytes)
 
