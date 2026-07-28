@@ -5,7 +5,7 @@
    [Assets Assets/Default [wav ogg mp3] [] [Audio]]
    [Assets Assets/Default [cur] [] [Cursor]]
    [Assets Assets/Default [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Default [nuentity nugroup tsx tmx atlas nav nbrd glsl frag vert bin] [] []]]]
+   [Assets Assets/Default [nuentity nugroup tsx tmx atlas nav nbrd frag vert bin] [] []]]]
  [Gui
   [[Assets Assets/Gui [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/Gui [jpg jpeg tga tif tiff dds ktx] [BlockCompress] [Render3d]]
@@ -13,7 +13,7 @@
    [Assets Assets/Gui [wav ogg mp3] [] [Audio]]
    [Assets Assets/Gui [cur] [] [Cursor]]
    [Assets Assets/Gui [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Gui [nuentity nugroup tsx tmx atlas nav nbrd glsl frag vert bin] [] []]]]
+   [Assets Assets/Gui [nuentity nugroup tsx tmx atlas nav nbrd frag vert bin] [] []]]]
  [Gameplay
   [[Assets Assets/Gameplay [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/Gameplay [jpg jpeg tga tif tiff dds ktx] [BlockCompress] [Render3d]]
@@ -21,7 +21,7 @@
    [Assets Assets/Gameplay [wav ogg mp3] [] [Audio]]
    [Assets Assets/Gameplay [cur] [] [Cursor]]
    [Assets Assets/Gameplay [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/Gameplay [nuentity nugroup tsx tmx atlas nav nbrd glsl frag vert bin] [] []]]]
+   [Assets Assets/Gameplay [nuentity nugroup tsx tmx atlas nav nbrd frag vert bin] [] []]]]
  [ClassicMansion
   [[Assets Assets/ClassicMansion [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/ClassicMansion [jpg jpeg tga tif tiff dds ktx] [BlockCompress] [Render3d]]
@@ -29,7 +29,7 @@
    [Assets Assets/ClassicMansion [wav ogg mp3] [] [Audio]]
    [Assets Assets/ClassicMansion [cur] [] [Cursor]]
    [Assets Assets/ClassicMansion [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/ClassicMansion [nuentity nugroup tsx tmx atlas nav nbrd glsl frag vert bin] [] []]]]
+   [Assets Assets/ClassicMansion [nuentity nugroup tsx tmx atlas nav nbrd frag vert bin] [] []]]]
  [SwampHouse
   [[Assets Assets/SwampHouse [bmp png psd ttf skel json] [PsdToPng] [Render2d]]
    [Assets Assets/SwampHouse [jpg jpeg tga tif tiff dds ktx] [BlockCompress] [Render3d]]
@@ -37,4 +37,4 @@
    [Assets Assets/SwampHouse [wav ogg mp3] [] [Audio]]
    [Assets Assets/SwampHouse [cur] [] [Cursor]]
    [Assets Assets/SwampHouse [nueffect nuscript csv] [] [Symbol]]
-   [Assets Assets/SwampHouse [nuentity nugroup tsx tmx atlas nav nbrd glsl frag vert bin] [] []]]]]
+   [Assets Assets/SwampHouse [nuentity nugroup tsx tmx atlas nav nbrd frag vert bin] [] []]]]]
