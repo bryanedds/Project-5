@@ -11,7 +11,7 @@
      [[AttenuationLinear 0.078125]
       [AttenuationQuadratic 0.0024414062]
       [Brightness 0.4]
-      [Color [0.5882353 0.78431374 1 1]]
+      [Color [0.78431374 0.88702154 1 1]]
       [DesireFog True]
       [DesireShadows True]
       [LightCutoff 24]
@@ -38,7 +38,7 @@
      []]
     [SkyBoxDispatcher
      [[AmbientBrightness 0.005]
-      [Brightness 0.1]
+      [Brightness 0.75]
       [CubeMap [ClassicMansion SkyBoxMap]]
       [MountOpt [Some ^]]
       [Name SkyBox]
