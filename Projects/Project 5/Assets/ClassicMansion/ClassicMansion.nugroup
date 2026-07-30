@@ -37,7 +37,7 @@
      []]
     [SkyBoxDispatcher
      [[AmbientBrightness 0.005]
-      [Brightness 0.05]
+      [Brightness 0.1]
       [CubeMap [ClassicMansion SkyBoxMap]]
       [MountOpt [Some ^]]
       [Name SkyBox]
@@ -118,8 +118,9 @@
         [DepthOfFieldEnabled True]
         [DepthOfFieldNearDistance 0]
         [DepthOfFieldFarDistance 48]
+        [DepthOfFieldRadius 5]
         [DepthOfFieldFocalType StaticFocalDistance]
-        [DepthOfFieldFocalDistance 1]
+        [DepthOfFieldFocalDistance 0.5]
         [DepthOfFieldFocalPoint [0 0]]
         [ChromaticAberrationEnabled True]
         [ChromaticAberrationChannelOffsets [0.003 0.002 -0.002]]
@@ -131,7 +132,7 @@
   [PlayerDispatcher
    [[MountOpt [Some ^]]
     [Name Player]
-    [Position [-0.5 0.0 -2.5]]
+    [Position [-0.5 0 -2.5]]
     [Rotation [0 0.70710677 0 0.70710677]]
     [Size [1.5 2 1.5]]]
    []]
