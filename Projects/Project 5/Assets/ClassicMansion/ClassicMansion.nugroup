@@ -133,7 +133,7 @@
   [PlayerDispatcher
    [[MountOpt [Some ^]]
     [Name Player]
-    [Position [-0.5 0 -2.5]]
+    [Position [-0.49996668 -0.0039448203 -2.5]]
     [Rotation [0 0.70710677 0 0.70710677]]
     [Size [1.5 2 1.5]]]
    []]
@@ -212793,6 +212793,7 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 6768 Convex None None]]]
+          [CastShadow False]
           [MountOpt [Some ^]]
           [Name Geometry]
           [NavEnabled False]
@@ -212811,6 +212812,7 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 6769 Convex None None]]]
+          [CastShadow False]
           [MountOpt [Some ^]]
           [Name Geometry2]
           [NavEnabled False]
@@ -212829,6 +212831,7 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 6770 Convex None None]]]
+          [CastShadow False]
           [MountOpt [Some ^]]
           [Name Geometry3]
           [NavEnabled False]
@@ -276610,17 +276613,18 @@
      [[MountOpt [Some ^]]
       [Name Hunters]]
      [[HunterDispatcher
-       [[LinearVelocity [0.47969246 0 -1.1543858]]
+       [[AngularVelocity [0 2.5000045 0]]
+        [LinearVelocity [0.4826355 0 -1.1531749]]
         [MountOpt [Some ^]]
-        [MovementState [Moving 2007.8007384 2009.3007384]]
+        [MovementState [Moving 29.0861444 29.0861444]]
         [Name Hunter-0007]
         [Offset [0 0 0]]
-        [Position [-16.409622 -3.4999418 2.4946609]]
-        [PositionLocal [-16.409622 -3.4999418 2.4946609]]
-        [Rotation [0 -0.19564472 0 0.98067486]]
-        [RotationLocal [0 -0.19564472 0 0.98067486]]
-        [Scale [0.9999988 1 0.9999988]]
-        [ScaleLocal [0.9999988 1 0.9999988]]
+        [Position [-17.108828 -3.5000107 4.150704]]
+        [PositionLocal [-17.108828 -3.5000107 4.150704]]
+        [Rotation [0 -0.519154 0 0.8546807]]
+        [RotationLocal [0 -0.519154 0 0.8546807]]
+        [Scale [0.9999989 1 0.9999989]]
+        [ScaleLocal [0.9999989 1 0.9999989]]
         [Size [1 1 1]]
         [WayPointIndexOpt [Some 2]]
         [WayPoints
@@ -276865,8 +276869,8 @@
       [LightType [SpotLight 1.5 1.7]]
       [MountOpt [Some ^]]
       [Name Light3d-0002]
-      [Position [-24.5 2.8 -13.6]]
-      [PositionLocal [-24.5 2.8 -13.6]]
+      [Position [-24.5 2.85 -13.6]]
+      [PositionLocal [-24.5 2.85 -13.6]]
       [Size [8 8 8]]
       [Static True]]
      []]
