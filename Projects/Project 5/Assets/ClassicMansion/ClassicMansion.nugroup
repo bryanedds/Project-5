@@ -87,7 +87,7 @@
         [SsvfSteps 12]
         [SsvfAsymmetry 0.1]
         [SsrlEnabled True]
-        [SsrlIntensity 0.2]
+        [SsrlIntensity 0.25]
         [SsrlDetail 0.21]
         [SsrlRefinementsMax 24]
         [SsrlRayThickness 0.025]
