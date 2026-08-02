@@ -46,6 +46,7 @@ struct LightingStruct
     float ssrrEdgeHorizontalMargin;
     float ssrrEdgeVerticalMargin;
     int ssrlEnabled;
+    float ssrlIntensity;
     float ssrlDetail;
     int ssrlRefinementsMax;
     float ssrlRayThickness;
@@ -218,7 +219,8 @@ void computeSsrl(float depth, vec4 position, vec3 albedo, float roughness, float
                     vec3 diffuse = irradiance * albedo * ambientLight;
 
                     // compute color
-                    specularScreen = lightAccum + diffuse;
+                    specularScreen = lightAccum + diffuse + specular;
+                    specularScreen *= lighting.ssrlIntensity;
 
                     // compute weight
                     specularScreenWeight =
