@@ -250050,6 +250050,24 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 8208 Convex None None]]]
+          [MaterialProperties
+           [[AlbedoOpt
+             [Some [1 1 1 1]]]
+            [RoughnessOpt [Some 1]]
+            [MetallicOpt [Some 1]]
+            [AmbientOcclusionOpt [Some 1]]
+            [EmissionOpt [Some 0]]
+            [HeightOpt [Some 1]]
+            [IgnoreLightMapsOpt [Some False]]
+            [OpaqueDistanceOpt [Some 100000]]
+            [FinenessOffsetOpt [Some 0]]
+            [ScatterTypeOpt [Some NoScatter]]
+            [SpecularScalarOpt [Some 1]]
+            [SubsurfaceCutoffOpt [Some 8]]
+            [SubsurfaceCutoffMarginOpt [Some 0.2]]
+            [RefractiveIndexOpt [Some 1]]
+            [ClearCoatOpt [Some 1]]
+            [ClearCoatRoughnessOpt [Some 1]]]]
           [MountOpt [Some ^]]
           [Name Geometry]
           [NavEnabled False]
@@ -250081,6 +250099,24 @@
           [BodyShape
            [StaticModelSurfaceShape
             [[ClassicMansion ClassicMansion] 8209 Convex None None]]]
+          [MaterialProperties
+           [[AlbedoOpt
+             [Some [1 1 1 1]]]
+            [RoughnessOpt [Some 1]]
+            [MetallicOpt [Some 1]]
+            [AmbientOcclusionOpt [Some 1]]
+            [EmissionOpt [Some 0]]
+            [HeightOpt [Some 1]]
+            [IgnoreLightMapsOpt [Some False]]
+            [OpaqueDistanceOpt [Some 100000]]
+            [FinenessOffsetOpt [Some 0]]
+            [ScatterTypeOpt [Some NoScatter]]
+            [SpecularScalarOpt [Some 1]]
+            [SubsurfaceCutoffOpt [Some 8]]
+            [SubsurfaceCutoffMarginOpt [Some 0.2]]
+            [RefractiveIndexOpt [Some 1]]
+            [ClearCoatOpt [Some 1]]
+            [ClearCoatRoughnessOpt [Some 1]]]]
           [MountOpt [Some ^]]
           [Name Geometry]
           [NavEnabled False]
