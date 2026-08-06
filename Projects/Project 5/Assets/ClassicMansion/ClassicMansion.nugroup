@@ -276580,7 +276580,7 @@
       [PositionLocal [-12.7 2.4 -2.5]]
       [Presence Omnipresent]
       [ProbeBounds
-       [[-20.4 -0.1 -10.65] [15.9 7 16.049984]]]
+       [[-20.4 -0.1 -10.65] [15.9 7 16.349998]]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
@@ -276896,6 +276896,7 @@
      [[AttenuationLinear 0.16666667]
       [AttenuationQuadratic 0.041666668]
       [Brightness 1.5]
+      [DesireFog True]
       [DesireShadows True]
       [LightCutoff 4]
       [LightType [SpotLight 1 1.5]]
@@ -276957,7 +276958,7 @@
       [PositionLocal [-13.6 2.7 9.8]]
       [Presence Omnipresent]
       [ProbeBounds
-       [[-20.6 -0.1 5.8] [16.15 7 9.75]]]
+       [[-20.6 -0.1 5.4] [16.15 7 10.150002]]]
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]]]
