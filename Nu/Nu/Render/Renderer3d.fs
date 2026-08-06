@@ -897,17 +897,20 @@ type private SortableLightMap =
                 lightMapEnvironmentFilterMaps[i] <- lightMap.SortableLightMapEnvironmentFilterMap
         (lightMapOrigins, lightMapMins, lightMapSizes, lightMapAmbientColors, lightMapAmbientBrightnesses, lightMapIrradianceMaps, lightMapEnvironmentFilterMaps)
 
+/// A sortable light 'projection' used for sorting lights by desirability for rendering.
 [<CustomComparison; CustomEquality>]
 type private SortableLightProjection =
     { DirectionalWeight : int
       LightDistance : single
       DesiredShadowsWeight : int }
 
+    /// Compare two sortable light projections for equality.
     static member equals left right =
         left.DirectionalWeight = right.DirectionalWeight &&
         left.LightDistance = right.LightDistance &&
         left.DesiredShadowsWeight = right.DesiredShadowsWeight
 
+    /// Compare two sortable light projections for ordering.
     static member compare left right =
         if left.DirectionalWeight < right.DirectionalWeight then -1
         elif left.DirectionalWeight > right.DirectionalWeight then 1
@@ -917,6 +920,7 @@ type private SortableLightProjection =
         elif left.DesiredShadowsWeight > right.DesiredShadowsWeight then 1
         else 0
 
+    /// Make a sortable light projection.
     static member make directionalWeight lightDistance desiredShadowsWeight =
         { DirectionalWeight = directionalWeight
           LightDistance = lightDistance
@@ -4624,7 +4628,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             Texture.recordTransitionLayout TransferSrc ColorAttachmentRead colorFull0Texture renderer.VulkanContext.RenderCommandBuffer
             Texture.recordTransitionLayout TransferDst ColorAttachmentRead compositionTexture renderer.VulkanContext.RenderCommandBuffer
 
-        // run tone-mapping pass when appropriate
+        // run tone-mapping pass
         let toneMappingTexture = renderer.PhysicallyBasedAttachments.ToneMappingAttachment
         Texture.recordTransitionLayout ColorAttachmentRead ColorAttachmentWrite toneMappingTexture renderer.VulkanContext.RenderCommandBuffer
         PhysicallyBased.drawFilterToneMappingSurface
