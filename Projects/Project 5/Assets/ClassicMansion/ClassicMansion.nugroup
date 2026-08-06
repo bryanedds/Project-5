@@ -96,7 +96,7 @@
         [SsrlDepthCutoffMargin 0.2]
         [SsrlDistanceCutoff 16]
         [SsrlDistanceCutoffMargin 0.2]
-        [SsrlRoughnessCutoff 0.3]
+        [SsrlRoughnessCutoff 0.15]
         [SsrlRoughnessCutoffMargin 0.3]
         [SsrlSlopeCutoff 0.1]
         [SsrlSlopeCutoffMargin 0.2]
