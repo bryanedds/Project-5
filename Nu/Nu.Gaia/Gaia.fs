@@ -1280,21 +1280,14 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         |> Array.map (fun line -> line.Replace ("/>", ""))
                         |> Array.map (fun line -> line.Replace ("\"", ""))
                         |> Array.map (fun line -> line.Trim ())
-                    let fsprojDllFilePaths =
-                        fsprojFileLines
-                        |> Array.map (fun line -> line.Trim ())
-                        |> Array.filter (fun line -> line.Contains "HintPath" && line.Contains ".dll")
-                        |> Array.map (fun line -> line.Replace ("<HintPath>", ""))
-                        |> Array.map (fun line -> line.Replace ("</HintPath>", ""))
-                        |> Array.map (fun line -> line.Replace ("=", ""))
-                        |> Array.map (fun line -> line.Replace ("\"", ""))
-                        |> Array.map (fun line -> PathF.Normalize line)
-                        |> Array.map (fun line -> line.Trim ())
+                    let fsprojDllFilePaths = // TODO: see if we can pull these from the fsproj as well...
+                        [|"../Nu.Dependencies/AssimpNet/netstandard2.1/AssimpNet.dll"
+                          "../Nu.Dependencies/BulletSharpPInvoke/netstandard2.1/BulletSharp.dll"
+                          "../Nu.Dependencies/TiledSharp/lib/netstandard2.0/TiledSharp.dll"|]
                     let fsprojProjectLines = // TODO: see if we can pull these from the fsproj as well...
-                        ["#r \"../../../../../Nu/Nu.Math/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.Math.dll\""
-                         "#r \"../../../../../Nu/Nu.Pipe/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.Pipe.dll\""
-                         "#r \"../../../../../Nu/Nu.Spine/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.Spine.dll\""
-                         "#r \"../../../../../Nu/Nu/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.dll\""]
+                        [|"#r \"../../../../../Nu/Nu.Math/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.Math.dll\""
+                          "#r \"../../../../../Nu/Nu.Pipe/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.Pipe.dll\""
+                          "#r \"../../../../../Nu/Nu/bin/" + Constants.Engine.BuildName + "/" + Constants.Engine.TargetFramework + "/Nu.dll\""|]
                     let fsprojFsFilePaths =
                         fsprojFileLines
                         |> Array.map (fun line -> line.Trim ())
@@ -1488,32 +1481,19 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
 
         // figure out which screen to use
         let screen =
-            match Game.GetDesiredScreen world with
-            | Desire screen -> screen
-            | DesireNone ->
-                match Game.GetSelectedScreenOpt world with
-                | None ->
-                    let screen = Game / "Screen"
-                    if not (screen.GetExists world) then
-                        let screen = World.createScreen (Some "Screen") world
-                        Game.SetDesiredScreen (Desire screen) world
-                        screen
-                    else screen
-                | Some screen -> screen
-            | DesireIgnore ->
-                match Game.GetSelectedScreenOpt world with
-                | None ->
-                    let screen = Game / "Screen"
-                    if not (screen.GetExists world) then
-                        let screen = World.createScreen (Some "Screen") world
-                        World.setSelectedScreen screen world
-                        let eventTrace = EventTrace.debug "World" "selectScreen" "Select" EventTrace.empty
-                        World.publishPlus () screen.SelectEvent eventTrace screen false false world
-                        let eventTrace = EventTrace.debug "World" "selectScreen" "PostSelect" EventTrace.empty
-                        World.publishPlus (Some screen) Game.PostSelectEvent eventTrace screen false false world
-                        screen
-                    else screen
-                | Some screen -> screen
+            match Game.GetSelectedScreenOpt world with
+            | None ->
+                let screen = Game / "Screen"
+                if not (screen.GetExists world) then
+                    let screen = World.createScreen (Some "Screen") world
+                    World.setSelectedScreen screen world
+                    let eventTrace = EventTrace.debug "World" "selectScreen" "Select" EventTrace.empty
+                    World.publishPlus () screen.SelectEvent eventTrace screen false false world
+                    let eventTrace = EventTrace.debug "World" "selectScreen" "PostSelect" EventTrace.empty
+                    World.publishPlus (Some screen) Game.PostSelectEvent eventTrace screen false false world
+                    screen
+                else screen
+            | Some screen -> screen
 
         // proceed directly to idle state
         World.selectScreen (IdlingState world.GameTime) screen world
