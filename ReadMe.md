@@ -1,13 +1,13 @@
-Nu Game Engine [![Build status](https://github.com/bryanedds/Nu/actions/workflows/CI.yml/badge.svg)](https://github.com/bryanedds/Nu/actions/workflows/CI.yml)
+Nu Game Engine [![Build status](https://github.com/bryanedds/Nu/actions/workflows/CI.yml/badge.svg)](https://github.com/bryanedds/Nu/actions/workflows/CI.yml) NOTE: build is occasionally failing because we temporarily run out of Github Actions :/
 
-BIG NU NEWS - Vulkan, Mac, iOS, and Android now available!
+BIG NEWS - Vulkan, Mac, iOS, and Android now available!
 ==
 
 To upgrade your existing projects, you may pull latest and follow the steps at this wiki page -
 
 https://github.com/bryanedds/Nu/wiki/Converting-from-Nu-with-OpenGL-to-Nu-with-Vulkan
 
-This branch not only replaces our OpenGL renderers completely with Vulkan renderers, it also features important rendering and performance enhancements as well as makes Nu deployable on `Mac`, `iOS`, and `Android`!
+This not only replaces our OpenGL renderers completely with Vulkan renderers, it also features important rendering and performance enhancements as well as makes Nu deployable on `Mac`, `iOS`, and `Android`!
 
 If you have any issues, please report them so we can fix them ASAP!
 
@@ -27,7 +27,7 @@ This repository hosts several projects, including -
 - Breakout tutorial using the MMCC API, ['Breakout MMCC'](https://github.com/bryanedds/Nu/tree/master/Projects/Breakout%20Mmcc).
 - the 3D third-person game sample, ['Terra Firma'](https://github.com/bryanedds/Nu/tree/master/Projects/Terra%20Firma).
 - the 2D puzzle game tutorial, ['Twenty 48'](https://github.com/bryanedds/Nu/tree/master/Projects/Twenty%2048).
-- the WIP prototype game sample for ['Project 5 (Tentative Title)'](https://github.com/bryanedds/Project-5/tree/master/Projects/Project%205) - [Demo Here!](https://github.com/bryanedds/Project-5/releases/tag/v0.1.16)
+- the WIP prototype game sample for ['Project 5 (Tentative Title)'](https://github.com/bryanedds/Project-5/tree/master/Projects/Project%205) - [Demo Here!](https://github.com/bryanedds/Project-5/releases/tag/v0.1.16-vulkan)
 - the WIP prototype game sample for ['Project Race (Tentative Title)'](https://github.com/bryanedds/Project-Race/tree/master/Projects/Project%20Race) - [Demo Here!](https://github.com/bryanedds/Project-Race/releases/tag/v0.1.7)
 - the commercial game demo for ['Omni Blade'](https://github.com/bryanedds/Nu/tree/omni-blade/Projects/Omni%20Blade) - [Full game available here!](https://bryanedds.itch.io/omni-blade)
 
