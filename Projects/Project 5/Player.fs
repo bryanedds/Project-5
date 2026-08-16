@@ -69,7 +69,7 @@ type PlayerDispatcher () =
          define Entity.FlashLightEnabled false]
 
     override this.ProcessCharacterState (entity, world) =
-        if world.Advancing then
+        if world.TimeAdvancing then
             processPlayerInput entity world
 
     override this.DeclareCharacterView (entity, world) =

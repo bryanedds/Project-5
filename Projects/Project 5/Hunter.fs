@@ -133,7 +133,7 @@ type HunterDispatcher () =
          define Entity.Awareness UnawareOfTarget]
 
     override this.ProcessCharacterState (entity, world) =
-        if world.Advancing then
+        if world.TimeAdvancing then
             let player = Simulants.GameplayPlayer
             let enemyTargetingEir =
                 let processEnemies =

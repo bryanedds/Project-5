@@ -167,7 +167,7 @@ type [<AbstractClass>] CharacterDispatcher () =
     override this.Process (entity, world) =
 
         // unmount when advancing to enable physics
-        if world.Advancing
+        if world.TimeAdvancing
         then entity.SetMountOptWithAdjustment false None world
         else entity.SetMountOptWithAdjustment false (Some Address.parent) world
 
@@ -221,7 +221,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         this.ProcessCharacterState (entity, world)
 
         // process action state
-        if world.Advancing then
+        if world.TimeAdvancing then
             match entity.GetActionState world with
             | NormalState -> ()
             | AttackState attack as actionState ->

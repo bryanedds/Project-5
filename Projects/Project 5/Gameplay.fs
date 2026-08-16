@@ -450,7 +450,7 @@ type GameplayDispatcher () =
                     | Player -> screen.SetGameplayState Quit world
 
             // update eye to look at player
-            if world.Advancing then
+            if world.TimeAdvancing then
                 let position = player.GetPositionInterpolated world
                 let rotation = player.GetRotationInterpolated world
                 let actionState = player.GetActionState world
