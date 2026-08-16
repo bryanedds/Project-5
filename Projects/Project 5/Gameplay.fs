@@ -221,7 +221,7 @@ type GameplayDispatcher () =
                 let sceneNavFilePath = PathF.ChangeExtension (sceneFilePath, ".nav")
                 World.defer (World.synchronizeNav3d false (Some sceneNavFilePath) screen) screen world
 
-            // protect player
+            // protect player from accidental deletion in Gaia
             let player = Simulants.GameplayPlayer
             player.SetProtection ManualProtection world
 
