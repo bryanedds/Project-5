@@ -205,21 +205,25 @@ type GameplayDispatcher () =
         // only process when selected
         if screen.GetSelected world then
 
-            // initialize gameplay state
-            let initializing = FQueue.contains Select screenResults
-            if initializing then
+            // process screen selection
+            let selecting = FQueue.contains Select screenResults
+            if selecting then
                 World.setEye3dFieldOfView 1.13446f world // ~65 degrees in radians
                 screen.SetStalkerSpawnState (StalkerUnspawned world.GameTime) world
 
-            // begin scene declaration, processing nav sync at end of frame since optimized representations like frozen
-            // entities won't have their nav info registered until then
+            // begin scene declaration
             let sceneFilePath = "Assets/ClassicMansion/ClassicMansion"
             World.beginGroupFromFile "Scene" (sceneFilePath + ".nugroup") [] world
-            if initializing then World.defer (World.synchronizeNav3d false (Some (sceneFilePath + ".nav")) screen) screen world
+            
+            // process nav sync at end of selection frame since optimized scene entities (like frozen entities) won't
+            // have their nav info registered until then
+            if selecting then
+                let sceneNavFilePath = PathF.ChangeExtension (sceneFilePath, ".nav")
+                World.defer (World.synchronizeNav3d false (Some sceneNavFilePath) screen) screen world
 
             // protect player
-            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name [Entity.Protection .= ManualProtection] world
-            let player = world.DeclaredEntity
+            let player = Simulants.GameplayPlayer
+            player.SetProtection ManualProtection world
 
             // process player interaction spots
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
