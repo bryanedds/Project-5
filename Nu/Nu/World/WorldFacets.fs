@@ -1705,6 +1705,9 @@ module FluidEmitter2dFacetExtensions =
         member this.GetFluidEnabled world : bool = this.Get (nameof Entity.FluidEnabled) world
         member this.SetFluidEnabled (value : bool) world = this.Set (nameof Entity.FluidEnabled) value world
         member this.FluidEnabled = lens (nameof Entity.FluidEnabled) this this.GetFluidEnabled this.SetFluidEnabled
+        member this.GetFluidMessagesEnabled world : bool = this.Get (nameof Entity.FluidMessagesEnabled) world
+        member this.SetFluidMessagesEnabled (value : bool) world = this.Set (nameof Entity.FluidMessagesEnabled) value world
+        member this.FluidMessagesEnabled = lens (nameof Entity.FluidMessagesEnabled) this this.GetFluidMessagesEnabled this.SetFluidMessagesEnabled
         member this.GetFluidParticles world : FluidParticle SArray = this.Get (nameof Entity.FluidParticles) world
         member this.SetFluidParticles (value : FluidParticle SArray) world = this.Set (nameof Entity.FluidParticles) value world
         member this.FluidParticles = lens (nameof Entity.FluidParticles) this this.GetFluidParticles this.SetFluidParticles
@@ -1716,7 +1719,7 @@ module FluidEmitter2dFacetExtensions =
         member this.FluidCellSize = lens (nameof Entity.FluidCellSize) this this.GetFluidCellSize this.SetFluidCellSize
         member this.GetFluidEmitterId world : FluidEmitterId = this.Get (nameof Entity.FluidEmitterId) world
         member this.FluidEmitterId = lensReadOnly (nameof Entity.FluidEmitterId) this this.GetFluidEmitterId
-        member this.FluidEmitterUpdateEvent = Events.FluidEmitterUpdateEvent --> this
+        member this.FluidEmitterEvent = Events.FluidEmitterEvent --> this
 
 /// Augments an entity with the behavior of fluid emission.
 type FluidEmitter2dFacet () =
@@ -1728,6 +1731,7 @@ type FluidEmitter2dFacet () =
             Box2dNetFluidEmitterDescriptor
                 { Box2dNetFluidEmitterDescriptor.defaultDescriptor with
                     ParticlesMax = entity.GetFluidParticlesMax world
+                    MessagesEnabled = entity.GetFluidMessagesEnabled world
                     CellSize = entity.GetFluidCellSize world
                     Enabled = entity.GetFluidEnabled world
                     SimulationBounds = (entity.GetBounds world).Box2
@@ -1744,6 +1748,7 @@ type FluidEmitter2dFacet () =
 
     static member Properties =
         [define Entity.FluidEnabled true
+         define Entity.FluidMessagesEnabled true
          define Entity.FluidParticles SArray.empty
          define Entity.FluidParticlesMax 20000
          define Entity.FluidCellSize 20.0f
@@ -1755,6 +1760,7 @@ type FluidEmitter2dFacet () =
         // update fluid emitter when any of the descriptor properties is set
         for event in
             [emitter.FluidEnabled.ChangeEvent
+             emitter.FluidMessagesEnabled.ChangeEvent
              emitter.FluidParticlesMax.ChangeEvent
              emitter.FluidCellSize.ChangeEvent
              emitter.Bounds.ChangeEvent
@@ -2820,8 +2826,9 @@ module Light3dFacetExtensions =
             let shadowProjection = this.ComputeShadowProjection world
             Frustum (shadowView * shadowProjection)
 
+/// 3D light operations.
 [<RequireQualifiedAccess>]
-module Light3dFacetModule =
+module Light3dModule =
 
     /// Compute the origin for a directional light's shadow map, snapping it to texel-sized increments and offsetting
     /// it by its forward offset scalar.
@@ -2909,8 +2916,8 @@ type Light3dFacet () =
         let origin =
             match lightType with
             | PointLight | SpotLight (_, _) -> entity.GetPosition world
-            | DirectionalLight offsetForwardScalar -> Light3dFacetModule.getDirectionalLightOrigin rotation lightCutoff offsetForwardScalar world
-            | CascadedLight -> Light3dFacetModule.getCascadedLightOrigin rotation lightCutoff world
+            | DirectionalLight offsetForwardScalar -> Light3dModule.getDirectionalLightOrigin rotation lightCutoff offsetForwardScalar world
+            | CascadedLight -> Light3dModule.getCascadedLightOrigin rotation lightCutoff world
         let direction = rotation.Down
         let color = entity.GetColor world
         let brightness = entity.GetBrightness world

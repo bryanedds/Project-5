@@ -285,6 +285,7 @@ type SurfaceState =
     | SurfaceLost
     | SurfaceDestroyed
 
+/// Vulkan operations.
 [<AutoOpen>]
 module Vulkan =
 
@@ -306,6 +307,7 @@ module Vulkan =
     /// The Vulkan device API. Ignore the type parameter as it's only use to expose InstanceApi in a convenient way.
     let inline internal DeviceApi<'a> = DeviceApi_
 
+/// High-level vulkan operations.
 [<RequireQualifiedAccess>]
 module Hl =
 
@@ -353,10 +355,10 @@ module Hl =
 
     /// Check the given Vulkan operation result, logging on non-Success.
     let check (result : VkResult) =
-        if int result > 0 then Log.info ("Vulkan info: " + string result)
+        if int result > 0 then
+            Log.info ("Vulkan info: " + string result)
         elif int result < 0 then
-            let message = "Vulkan assertion failed due to: " + string result
-            Log.error message
+            Log.warn ("Vulkan error: " + string result)
 
     /// Generate a globally unique texture id for use in descriptor writes.
     let internal genTextureId () =
@@ -377,6 +379,7 @@ module Hl =
 
     /// Make the surface state reflect the loss of the surface.
     let notifySurfaceLost () =
+        Log.info "Vulkan surface lost."
         SurfaceState_ <- SurfaceLost
 
     /// Callback to inform render loop about app backgrounding. Official documentation for android case -

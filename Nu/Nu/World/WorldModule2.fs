@@ -1101,7 +1101,11 @@ module WorldModule2 =
             | SDL_EventType.SDL_EVENT_QUIT ->
                 let eventTrace = EventTrace.debug "World" "processInput2" "ExitRequest" EventTrace.empty
                 World.publishPlus () Nu.Game.Handle.ExitRequestEvent eventTrace Nu.Game.Handle true true world
-            | SDL_EventType.SDL_EVENT_WINDOW_RESIZED | SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ->
+            | SDL_EventType.SDL_EVENT_WINDOW_RESIZED
+            | SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
+            | SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED
+            | SDL_EventType.SDL_EVENT_WINDOW_ENTER_FULLSCREEN
+            | SDL_EventType.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ->
                 World.processWindowResize world
             | SDL_EventType.SDL_EVENT_MOUSE_MOTION ->
                 let io = ImGui.GetIO ()
@@ -1279,7 +1283,7 @@ module WorldModule2 =
                         if entity.GetExists world && entity.GetSelected world then
                             entity.SetXtensionPropertyWithoutEvent "FluidParticles" fluidEmitterMessage.FluidParticles world
                             let eventTrace = EventTrace.debug "World" "processIntegrationMessage" "" EventTrace.empty
-                            World.publishPlus fluidEmitterMessage entity.FluidEmitterUpdateEvent eventTrace entity false false world
+                            World.publishPlus fluidEmitterMessage entity.FluidEmitterEvent eventTrace entity false false world
                     | _ -> ()
 
         /// Sweep the quadtree clean of all empty nodes.
@@ -1731,7 +1735,7 @@ module WorldModule2 =
                             // compute cull frustum
                             let shadowRotation = light.GetRotation world
                             let shadowCutoff = light.GetLightCutoff world
-                            let shadowOrigin = Light3dFacetModule.getDirectionalLightOrigin shadowRotation shadowCutoff offsetForwardScalar world
+                            let shadowOrigin = Light3dModule.getDirectionalLightOrigin shadowRotation shadowCutoff offsetForwardScalar world
                             let shadowForward = shadowRotation.Down
                             let shadowUp = shadowForward.OrthonormalUp
                             let shadowNearDistance = Constants.Render.NearPlaneDistanceInterior
@@ -1753,7 +1757,7 @@ module WorldModule2 =
                             let lightId = light.GetId world
                             let shadowRotation = light.GetRotation world
                             let shadowCutoff = light.GetLightCutoff world
-                            let shadowOrigin = Light3dFacetModule.getCascadedLightOrigin shadowRotation shadowCutoff world
+                            let shadowOrigin = Light3dModule.getCascadedLightOrigin shadowRotation shadowCutoff world
                             let shadowRotation = light.GetRotation world
                             let shadowForward = shadowRotation.Down
                             let shadowUp = shadowForward.OrthonormalUp
