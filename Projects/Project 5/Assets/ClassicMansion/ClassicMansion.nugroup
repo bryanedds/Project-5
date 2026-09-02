@@ -81,7 +81,7 @@
         [SsaoIntensity 1.75]
         [SsaoBias 0.025]
         [SsaoRadius 0.25]
-        [SsaoDistanceMax 0.125]
+        [SsaoDistanceMax 0.05]
         [SsvfEnabled True]
         [SsvfIntensity 0.25]
         [SsvfSteps 12]
