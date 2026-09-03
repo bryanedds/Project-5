@@ -466,6 +466,12 @@ type GameplayDispatcher () =
                 World.setEye3dCenter eyeCenter world
                 World.setEye3dRotation eyeRotation world
 
+            // eye light
+            World.doLight3d "EyeLight"
+                [Entity.Position @= World.getEye3dCenter world
+                 Entity.Brightness .= 0.1f
+                 Entity.LightCutoff .= 5.0f] world
+
             // declare quit button
             if World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world then
                 screen.SetGameplayState Quit world
