@@ -409,10 +409,6 @@ type GameplayDispatcher () =
                 | None -> max 0.0f (danger - world.GameDelta.SecondsF / 7.5f))
                 world
 
-            // process lighting
-            let fillLightColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world)
-            Simulants.GameplayFillLight.SetColor fillLightColor world
-
             // process attacks
             for character in characters do
                 for attacked in World.doSubscription "Attack" character.AttackEvent world do
@@ -466,11 +462,10 @@ type GameplayDispatcher () =
                 World.setEye3dCenter eyeCenter world
                 World.setEye3dRotation eyeRotation world
 
-            // eye light
-            World.doLight3d "EyeLight"
-                [Entity.Position @= World.getEye3dCenter world
-                 Entity.Brightness .= 0.1f
-                 Entity.LightCutoff .= 5.0f] world
+            // update eye light
+            let eyeLightColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world * 0.5f)
+            Simulants.GameplayEyeLight.SetPosition (World.getEye3dCenter world) world
+            Simulants.GameplayEyeLight.SetColor eyeLightColor world
 
             // declare quit button
             if World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world then
