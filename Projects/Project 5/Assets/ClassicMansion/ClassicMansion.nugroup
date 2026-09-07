@@ -32,6 +32,8 @@
       [LightCutoff 5]
       [MountOpt [Some ^]]
       [Name EyeLight]
+      [Pickable False]
+      [Position [-20.397366 5.2711453 -14.279145]]
       [Presence Omnipresent]
       [Size [10 10 10]]
       [Static True]]
