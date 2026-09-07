@@ -33,10 +33,9 @@
       [MountOpt [Some ^]]
       [Name EyeLight]
       [Pickable False]
-      [Position [-20.397366 5.2711453 -14.279145]]
+      [Position [-22.496582 5.0536113 -14.38319]]
       [Presence Omnipresent]
-      [Size [10 10 10]]
-      [Static True]]
+      [Size [10 10 10]]]
      []]
     [SkyBoxDispatcher
      [[AmbientBrightness 0.005]
