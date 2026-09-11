@@ -10,11 +10,55 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Numerics
 open System.Threading
+open Microsoft.FSharp.NativeInterop
 open SDL
 open ImGuiNET
 open Prime
 open Vortice.Vulkan
 open Nu.Vulkan
+
+/// Represent the state of a window properties request.
+type TryCreateVulkanSurfaceRequest =
+    | TryCreateVulkanSurfaceRequestUninitiated
+    | TryCreateVulkanSurfaceRequestInitiated of SDL_Window nativeptr * VkInstance
+    | TryCreateVulkanSurfaceRequestSuccess of VkSurfaceKHR
+    | TryCreateVulkanSurfaceRequestFailure
+
+    /// Attempt to create a vulkan surface using the given SDL window and vulkan instance.
+    /// TODO: move this somewhere more general?
+    static member internal tryCreateVulkanSurface window instance =
+
+        // check that window resource is available
+        let windowResourceAvailable =
+            if OperatingSystem.IsAndroid () then
+                let windowProperties = Hl.WindowProperties.PropertiesHandle
+                let windowPointer = SDL3.SDL_GetPointerProperty (windowProperties, SDL3.SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, 0n)
+                windowPointer <> 0n
+            else true // will presumably never be blocked on other platforms
+
+        // ensure window resource is available for utilization
+        if windowResourceAvailable then
+
+            // inform the backgrounding callback that we begin the process of creating the surface and swapchain
+            // that may need to be aborted/destroyed at any point before _or_ after completion due to a
+            // backgrounding event, hence setup _initiated_
+            Hl.setPresentationSetupInitiated ()
+
+            // attempt to create vulkan surface
+            Log.info "Creating vulkan surface..."
+            let mutable surfacePtr = Unchecked.defaultof<VkSurfaceKHR_T nativeptr>
+            let instance = NativePtr.ofNativeInt (VkInstance.op_Implicit instance)
+            if SDL3.SDL_Vulkan_CreateSurface (window, instance, NativePtr.nullPtr, &&surfacePtr) |> SDLBool.op_Implicit then
+                Log.info "Created vulkan surface."
+                let surface = NativePtr.toNativeInt surfacePtr |> uint64 |> VkSurfaceKHR.op_Implicit
+                Some surface
+            else
+                Log.error "Failed to create vulkan surface."
+                Hl.setPresentationTeardownComplete () // inform callback to scrap setup attempt
+                None
+
+        // failure
+        else None
 
 /// A renderer process that may or may not be threaded.
 /// TODO: name all these abstract method parameters.
@@ -60,6 +104,9 @@ type RendererProcess =
         /// Request to swap the underlying render buffer.
         abstract RequestSwap : unit -> unit
 
+        /// Attempt to create a vulkan surface on the main thread for the renderer thread.
+        abstract TryCreateVulkanSurface : SDL_Window nativeptr -> VkInstance -> VkSurfaceKHR option
+
         /// Terminate the rendering process, blocking until termination is complete.
         abstract Terminate : unit -> unit
         end
@@ -97,7 +144,7 @@ type RendererInline (windowProperties) =
 
                     // attempt to create VulkanContext, storing reference to it
                     let context =
-                        match VulkanContext.tryCreate window with
+                        match VulkanContext.tryCreate TryCreateVulkanSurfaceRequest.tryCreateVulkanSurface window with
                         | Some context -> context
                         | None -> Log.fail "Could not create Vulkan context." // TODO: P1: handle failure more gracefully here?
 
@@ -113,14 +160,13 @@ type RendererInline (windowProperties) =
                     Hl.initEmptyTexture emptyTexture
 
                     // create the resolve texture
-                    match Hl.tryGetSurfaceCapabilities context.PhysicalDevice.VkPhysicalDevice with
-                    | Some capabilities ->
-                        match Hl.tryGetSwapExtent capabilities with
-                        | Some swapExtent ->
-                            let usageFlags = VkImageUsageFlags.Sampled ||| VkImageUsageFlags.TransferSrc ||| VkImageUsageFlags.TransferDst
-                            resolveTexture <- Attachment.createColorAttachment Texture2d usageFlags Rgba8 Rgba (int swapExtent.width) (int swapExtent.height) context
-                        | None -> Log.fail "Could not create resolve texture."
-                    | None -> Log.fail "Could not create resolve texture."
+                    let mutable width = Hl.WindowProperties.WidthPixels
+                    let mutable height = Hl.WindowProperties.HeightPixels
+                    if width <> 0 && height <> 0 then
+                        let usageFlags = VkImageUsageFlags.Sampled ||| VkImageUsageFlags.TransferSrc ||| VkImageUsageFlags.TransferDst
+                        let surfaceExtent = VkExtent2D (width, height)
+                        resolveTexture <- Attachment.createColorAttachment Texture2d usageFlags Rgba8 Rgba (int surfaceExtent.width) (int surfaceExtent.height) context
+                    else Log.fail "Could not create resolve texture."
 
                     // create 3d renderer
                     let renderer3d =
@@ -207,12 +253,11 @@ type RendererInline (windowProperties) =
             | Some (renderer3d, renderer2d, rendererImGui, context) ->
 
                 // attempt to size resolve texture
-                match Hl.tryGetSurfaceCapabilities context.PhysicalDevice.VkPhysicalDevice with
-                | Some capabilities ->
-                    match Hl.tryGetSwapExtent capabilities with
-                    | Some swapExtent -> Attachment.updateColorAttachmentSize (int swapExtent.width) (int swapExtent.height) resolveTexture context
-                    | None -> ()
-                | None -> ()
+                let mutable width = Hl.WindowProperties.WidthPixels
+                let mutable height = Hl.WindowProperties.HeightPixels
+                if width <> 0 && height <> 0 then
+                    let surfaceExtent = VkExtent2D (width, height)
+                    Attachment.updateColorAttachmentSize (int surfaceExtent.width) (int surfaceExtent.height) resolveTexture context
 
                 // pre-render 3d. OPTIMIZATION: don't render geometry when no 3D messages are encountered.
                 let renderGeometry = messages3d.Count > 0
@@ -249,6 +294,9 @@ type RendererInline (windowProperties) =
             | Some (_, _, _, context) -> VulkanContext.present context
             | None -> ()
 
+        member ri.TryCreateVulkanSurface window instance =
+            TryCreateVulkanSurfaceRequest.tryCreateVulkanSurface window instance
+
         member ri.Terminate () =
             match dependenciesOpt with
             | Some (renderer3d, renderer2d, rendererImGui, context) ->
@@ -273,6 +321,7 @@ type RendererThread (windowProperties) =
     let [<VolatileField>] mutable submissionOpt = Option<Frustum * Frustum * Frustum * RenderMessage3d List * RenderMessage2d List * RenderMessageImGui List * Vector3 * Quaternion * single * Vector2 * Vector2 * Viewport * Viewport * WindowProperties * ImDrawDataPtr>.None
     let [<VolatileField>] mutable swapRequested = false
     let [<VolatileField>] mutable swapRequestAcknowledged = false
+    let [<VolatileField>] mutable tryCreateVulkanSurfaceRequest = TryCreateVulkanSurfaceRequestUninitiated
     let [<VolatileField>] mutable renderer3dConfig = Renderer3dConfig.defaultConfig
     let [<VolatileField>] mutable messageBufferIndex = 0
     let messageBuffers3d = [|List (); List ()|]
@@ -419,14 +468,13 @@ type RendererThread (windowProperties) =
         Hl.initEmptyTexture emptyTexture
 
         // create the resolve texture
-        match Hl.tryGetSurfaceCapabilities context.PhysicalDevice.VkPhysicalDevice with
-        | Some capabilities ->
-            match Hl.tryGetSwapExtent capabilities with
-            | Some swapExtent ->
-                let usageFlags = VkImageUsageFlags.Sampled ||| VkImageUsageFlags.TransferSrc ||| VkImageUsageFlags.TransferDst
-                resolveTexture <- Attachment.createColorAttachment Texture2d usageFlags Rgba8 Rgba (int swapExtent.width) (int swapExtent.height) context
-            | None -> Log.fail "Could not create resolve texture."
-        | None -> Log.fail "Could not create resolve texture."
+        let mutable width = Hl.WindowProperties.WidthPixels
+        let mutable height = Hl.WindowProperties.HeightPixels
+        if width <> 0 && height <> 0 then
+            let usageFlags = VkImageUsageFlags.Sampled ||| VkImageUsageFlags.TransferSrc ||| VkImageUsageFlags.TransferDst
+            let surfaceExtent = VkExtent2D (width, height)
+            resolveTexture <- Attachment.createColorAttachment Texture2d usageFlags Rgba8 Rgba (int surfaceExtent.width) (int surfaceExtent.height) context
+        else Log.fail "Could not create resolve texture."
 
         // create 3d renderer
         let renderer3d =
@@ -458,12 +506,11 @@ type RendererThread (windowProperties) =
             if not terminated then
 
                 // attempt to size resolve texture
-                match Hl.tryGetSurfaceCapabilities context.PhysicalDevice.VkPhysicalDevice with
-                | Some capabilities ->
-                    match Hl.tryGetSwapExtent capabilities with
-                    | Some swapExtent -> Attachment.updateColorAttachmentSize (int swapExtent.width) (int swapExtent.height) resolveTexture context
-                    | None -> ()
-                | None -> ()
+                let mutable width = Hl.WindowProperties.WidthPixels
+                let mutable height = Hl.WindowProperties.HeightPixels
+                if width <> 0 && height <> 0 then
+                    let surfaceExtent = VkExtent2D (width, height)
+                    Attachment.updateColorAttachmentSize (int surfaceExtent.width) (int surfaceExtent.height) resolveTexture context
 
                 // pre-render 3d. OPTIMIZATION: don't render geometry when no 3D messages are encountered.
                 let renderGeometry = messages3d.Count > 0
@@ -533,7 +580,7 @@ type RendererThread (windowProperties) =
 
                 // attempt to create VulkanContext on main thread, storing a reference for clean-up.
                 let context =
-                    match VulkanContext.tryCreate window with
+                    match VulkanContext.tryCreate TryCreateVulkanSurfaceRequest.tryCreateVulkanSurface window with
                     | Some context -> context
                     | None -> Log.fail "Could not create Vulkan context." // TODO: P1: handle failure more gracefully here?
                 contextOpt <- Some context
@@ -758,8 +805,30 @@ type RendererThread (windowProperties) =
         member rt.RequestSwap () =
             if Option.isNone threadOpt then raise (InvalidOperationException "Render process not yet started or already terminated.")
             swapRequested <- true
-            while not swapRequestAcknowledged && not terminated do Thread.Yield () |> ignore<bool>
+            while not swapRequestAcknowledged && not terminated do
+                Thread.Yield () |> ignore<bool>
+                match tryCreateVulkanSurfaceRequest with
+                | TryCreateVulkanSurfaceRequestInitiated (window, instance) ->
+                    tryCreateVulkanSurfaceRequest <- 
+                        match TryCreateVulkanSurfaceRequest.tryCreateVulkanSurface window instance with
+                        | Some vkSurface -> TryCreateVulkanSurfaceRequestSuccess vkSurface
+                        | None -> TryCreateVulkanSurfaceRequestFailure
+                | _ -> ()
             swapRequestAcknowledged <- false
+
+        member rt.TryCreateVulkanSurface window instance =
+            match tryCreateVulkanSurfaceRequest with
+            | TryCreateVulkanSurfaceRequestUninitiated ->
+                tryCreateVulkanSurfaceRequest <- TryCreateVulkanSurfaceRequestInitiated (window, instance)
+                let mutable stableRequest = tryCreateVulkanSurfaceRequest // use a stable variable since multiple operations are needed on the volatile field
+                while stableRequest.IsTryCreateVulkanSurfaceRequestInitiated do
+                    stableRequest <- tryCreateVulkanSurfaceRequest
+                    Thread.Yield () |> ignore<bool>
+                match stableRequest with
+                | TryCreateVulkanSurfaceRequestSuccess vkSurface -> Some vkSurface
+                | TryCreateVulkanSurfaceRequestFailure -> None
+                | _ -> raise (InvalidOperationException "Render process window properties request in invalid state, indicating a logic bug in its usage.")
+            | _ -> raise (InvalidOperationException "Render process already requesting window properties.")
 
         member rt.Terminate () =
             if Option.isNone threadOpt then raise (InvalidOperationException "Render process not yet started or already terminated.")
