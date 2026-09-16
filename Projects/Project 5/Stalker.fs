@@ -48,7 +48,7 @@ type StalkerDispatcher () =
                 | _ -> ()
             | Left () -> ()
 
-    override this.DeclareCharacterView (entity, world) =
+    override this.DeclareCharacterVisuals (entity, world) =
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
         World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName

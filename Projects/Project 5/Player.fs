@@ -72,7 +72,7 @@ type PlayerDispatcher () =
         if world.TimeAdvancing then
             processPlayerInput entity world
 
-    override this.DeclareCharacterView (entity, world) =
+    override this.DeclareCharacterVisuals (entity, world) =
 
         // declare animated model
         let positionInterpolated = entity.GetPositionInterpolated world

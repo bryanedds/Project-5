@@ -151,7 +151,7 @@ type HunterDispatcher () =
                 if uncoveredPlayer then player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
             | Left () -> ()
 
-    override this.DeclareCharacterView (entity, world) =
+    override this.DeclareCharacterVisuals (entity, world) =
         let positionInterpolated = entity.GetPositionInterpolated world
         let rotationInterpolated = entity.GetRotationInterpolated world
         World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
