@@ -6166,7 +6166,8 @@ type PhysicallyBasedSceneClient () =
                           // attempt to collect light probe
                           let lastNameLower = Array.last(names).ToLowerInvariant()
                           if lastNameLower.Contains "probe" && not (lastNameLower.Contains "probes") then
-                            let names = Array.append names [|"LightProbe"|]
+                            let name = "LightProbe"
+                            let names = Array.append names [|name|]
                             let lightProbeOrigin = transform.Translation
                             let lightProbeBounds =
                                 box3
@@ -6185,7 +6186,8 @@ type PhysicallyBasedSceneClient () =
                           for i in 0 .. dec lightNodes.Length do
                             let (light, lightNode) = lightNodes[i]
                             if lightNode = node then
-                                let names = Array.append names [|"Light" + if i > 0 then string i else ""|]
+                                let name = if i > 0 then String.Intern ("Light" + string i) else "Light"
+                                let names = Array.append names [|name|]
                                 let lightMatrix = Assimp.ExportMatrix node.TransformWorld
                                 let color = color (min 1.0f light.ColorDiffuse.R) (min 1.0f light.ColorDiffuse.G) (min 1.0f light.ColorDiffuse.B) 1.0f
                                 let lightType =
@@ -6208,7 +6210,8 @@ type PhysicallyBasedSceneClient () =
 
                           // collect surfaces
                           for i in 0 .. dec node.MeshIndices.Count do
-                            let names = Array.append names [|"Geometry" + if i > 0 then string (inc i) else ""|]
+                            let name = if i > 0 then String.Intern ("Geometry" + string (inc i)) else "Geometry"
+                            let names = Array.append names [|name|]
                             let meshIndex = node.MeshIndices[i]
                             let materialIndex = scene.Meshes[meshIndex].MaterialIndex
                             let (properties, material) = materials[materialIndex]
