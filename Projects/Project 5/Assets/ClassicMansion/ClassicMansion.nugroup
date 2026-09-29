@@ -123,7 +123,7 @@
         [DepthOfFieldFarDistance 48]
         [DepthOfFieldRadius 5]
         [DepthOfFieldFocalType StaticFocalDistance]
-        [DepthOfFieldFocalDistance 0.5]
+        [DepthOfFieldFocalDistance 0.25]
         [DepthOfFieldFocalPoint [0 0]]
         [ChromaticAberrationEnabled True]
         [ChromaticAberrationChannelOffsets [0.003 0.002 -0.002]]
