@@ -285,8 +285,8 @@ type GameplayDispatcher () =
                     let spawnPoints =
                         world
                         |> World.getEntitiesAs<SpawnPointDispatcher> Simulants.GameplayScene 
-                        |> USet.filter (fun entity -> entity.Surnames.[0] <> "Palettes")
-                    if unspawnDuration >= Constants.Gameplay.StalkDelay && USet.notEmpty spawnPoints then
+                        |> Seq.filter (fun entity -> entity.Surnames.[0] <> "Palettes")
+                    if unspawnDuration >= Constants.Gameplay.StalkDelay && Seq.notEmpty spawnPoints then
                         let spawnPoint = Gen.randomChoice spawnPoints
                         screen.SetStalkerSpawnState (StalkerStalking (false, spawnPoint, world.GameTime)) world
                 | StalkerStalking (caughtTargetHiding, spawnPoint, spawnTime) ->
@@ -356,7 +356,7 @@ type GameplayDispatcher () =
             let characters =
                 world
                 |> World.getEntitiesAs<CharacterDispatcher> Simulants.GameplayScene
-                |> USet.filter (fun entity -> entity.Surnames.[0] <> "Palettes")
+                |> Seq.filter (fun entity -> entity.Surnames.[0] <> "Palettes")
 
             // process hunted time
             let hunted =
