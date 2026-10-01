@@ -21,6 +21,7 @@ module Simulants =
     let Gameplay = Game / "Gameplay"
     let GameplayScene = Gameplay / "Scene"
     let GameplayPlayer = GameplayScene / "Player"
+    let GameplayStalker = GameplayScene / "Stalker"
     let GameplayEnvironment = GameplayScene / "Environment"
     let GameplaySun = GameplayEnvironment / "Sun"
     let GameplayEyeLight = GameplayEnvironment / "EyeLight"

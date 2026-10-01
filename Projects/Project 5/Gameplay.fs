@@ -312,7 +312,7 @@ type GameplayDispatcher () =
                         then AwareOfTargetHiding world.GameTime
                         else AwareOfTargetTraversing world.GameTime
                     StalkingState { SpawnPosition = spawnPosition; Awareness = awareness }
-                World.doEntity<StalkerDispatcher> "Stalker"
+                World.doEntity<StalkerDispatcher> Simulants.GameplayStalker.Name
                     [if spawnTime = world.GameTime then
                         Entity.Position @= spawnPosition
                         Entity.StalkState @= stalkState] world
@@ -334,7 +334,7 @@ type GameplayDispatcher () =
                 // declare stalker in unspawning state
                 let unspawnPosition = unspawnPoint.GetPosition world
                 let stalkState = LeavingState { UnspawnPosition = unspawnPosition; Awareness = UnawareOfTarget }
-                World.doEntity<StalkerDispatcher> "Stalker" [Entity.StalkState @= stalkState] world
+                World.doEntity<StalkerDispatcher> Simulants.GameplayStalker.Name [Entity.StalkState @= stalkState] world
                 let stalker = world.DeclaredEntity
 
                 // process resetting to late spawn state or unspawning
