@@ -9,7 +9,7 @@ type GameplayState =
     | Playing
     | Quit
 
-// this extends the Screen API to expose the Gameplay model as well as the Quit event.
+// this extends the Screen API to expose the Gameplay properties as well as the Quit event.
 [<AutoOpen>]
 module GameplayExtensions =
     type Screen with
