@@ -222,8 +222,8 @@ type GameplayDispatcher () =
                 World.defer (World.synchronizeNav3d false (Some sceneNavFilePath) screen) screen world
 
             // protect player from accidental deletion in Gaia
-            let player = Simulants.GameplayPlayer
-            player.SetProtection ManualProtection world
+            World.doEntity<PlayerDispatcher> Simulants.GameplayPlayer.Name [Entity.Protection .= ManualProtection] world
+            let player = world.DeclaredEntity
 
             // process player interaction spots
             let hidingSpotCollisionOpt = player.GetHidingSpotCollisions world |> Seq.filter (fun c -> c.GetExists world && c.GetBodyEnabled world) |> Seq.tryHead
