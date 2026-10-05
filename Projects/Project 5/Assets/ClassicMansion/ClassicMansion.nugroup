@@ -34,7 +34,7 @@
       [MountOpt [Some ^]]
       [Name EyeLight]
       [Pickable False]
-      [Position [-12.022354 1.6228262 -14.009869]]
+      [Position [-8.886653 1.7475699 -1.5013942]]
       [Presence Omnipresent]
       [Size [10 10 10]]
       [Static True]]
@@ -56,7 +56,7 @@
      []]
     [Lighting3dConfigDispatcher
      [[Lighting3dConfig
-       [[LightCutoffMargin 0.5]
+       [[LightCutoffMargin 0.4]
         [LightAmbientBoostCutoff 0.3]
         [LightAmbientBoostScalar 0.5]
         [LightShadowSamples 3]
