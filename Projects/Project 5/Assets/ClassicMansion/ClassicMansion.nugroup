@@ -30,7 +30,7 @@
       [Brightness 0.1]
       [DynamicShadows False]
       [LightCutoff 5]
-      [LightType [PointLight -100]]
+      [LightType [PointLight -1000]]
       [MountOpt [Some ^]]
       [Name EyeLight]
       [Pickable False]
