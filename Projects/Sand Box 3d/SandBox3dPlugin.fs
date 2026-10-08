@@ -11,20 +11,16 @@ type SandBox3dPlugin () =
     inherit NuPlugin ()
 
     let DeferredStaticFlipped =
-        { PipelineName = "DeferredStaticFlipped"
-          PipelineType = DeferredStatic
-          ShaderPath = "Assets/Gameplay/PhysicallyBasedDeferredStatic"
-          Blends = [|Vulkan.VulkanUnblended|]
-          CullModes = [|false; true|]
+        { PipelineType = DeferredStatic
+          PipelineName = "DeferredStaticFlipped"
+          ShaderPath = "Assets/Gameplay/DeferredStaticFlipped"
           MaterialPropertiesUserDefinedOptNames = [|"TestField"|]
           MaterialUserDefinedImageOptNames = [|"TestImage"|] }
 
     let TerrainFlipped =
-        { PipelineName = "TerrainFlipped"
-          PipelineType = Terrain
-          ShaderPath = "Assets/Gameplay/PhysicallyBasedDeferredTerrain"
-          Blends = [|Vulkan.VulkanUnblended|]
-          CullModes = [|true|]
+        { PipelineType = Terrain
+          PipelineName = "TerrainFlipped"
+          ShaderPath = "Assets/Gameplay/DeferredTerrainFlipped"
           MaterialPropertiesUserDefinedOptNames = [||]
           MaterialUserDefinedImageOptNames = [||] }
 
