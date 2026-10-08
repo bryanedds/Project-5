@@ -1,7 +1,6 @@
 #version 450 core
 
 const float GAMMA = 2.2;
-const float ALBEDO_ALPHA_MIN = 0.3;
 const float SAA_VARIANCE = 0.1; // TODO: consider exposing as lighting config property.
 const float SAA_THRESHOLD = 0.1; // TODO: consider exposing as lighting config property.
 
@@ -30,8 +29,6 @@ layout(set = 1, binding = 9) uniform texture2D scatterTexture;
 layout(set = 1, binding = 10) uniform texture2D clearCoatTexture;
 layout(set = 1, binding = 11) uniform texture2D clearCoatRoughnessTexture;
 layout(set = 1, binding = 12) uniform texture2D clearCoatNormalTexture;
-layout(set = 1, binding = 13) uniform texture2D userDefinedTexture;
-layout(set = 1, binding = 14) uniform texture2D userDefined2Texture;
 
 layout(set = 3, binding = 0) uniform sampler materialSampler;
 
@@ -117,8 +114,7 @@ void main()
 
     // compute albedo
     vec4 albedoSample = texture(sampler2D(albedoTexture, materialSampler), texCoords);
-    if (albedoSample.a < ALBEDO_ALPHA_MIN) discard;
-    albedoOut = pow(albedoSample.rgb, vec3(GAMMA)) * albedo.rgb;
+    albedoOut = vec3(1.0) - pow(albedoSample.rgb, vec3(GAMMA)) * albedo.rgb;
 
     // compute normal and ignore local height maps
     normalPlusOut.xyz = normalize(toWorld * decodeNormal(texture(sampler2D(normalTexture, materialSampler), texCoords).xy));
@@ -136,7 +132,7 @@ void main()
     float roughnessPerceptualSquared = clamp(roughnessPerceptual * roughnessPerceptual + roughnessKernal, 0.0, 1.0);
     roughness = sqrt(sqrt(roughnessPerceptualSquared));
 
-    // compute remaining materialOut properties
+    // compute remaining material properties
     float metallic = texture(sampler2D(metallicTexture, materialSampler), texCoords).g * material.g;
     float ambientOcclusion = texture(sampler2D(ambientOcclusionTexture, materialSampler), texCoords).b * material.b;
     float emission = texture(sampler2D(emissionTexture, materialSampler), texCoords).r * material.a;
