@@ -3378,6 +3378,7 @@ type BasicStaticBillboardEmitterFacet () =
                               ClearCoatNormalImageOpt = match emitterMaterial.ClearCoatNormalImageOpt with ValueSome clearCoatNormalImage -> ValueSome clearCoatNormalImage | ValueNone -> descriptor.Material.ClearCoatNormalImageOpt
                               UserDefinedImage0Opt = match emitterMaterial.UserDefinedImage0Opt with ValueSome userDefinedImage -> ValueSome userDefinedImage | ValueNone -> descriptor.Material.UserDefinedImage0Opt
                               UserDefinedImage1Opt = match emitterMaterial.UserDefinedImage1Opt with ValueSome userDefinedImage -> ValueSome userDefinedImage | ValueNone -> descriptor.Material.UserDefinedImage1Opt
+                              UserDefinedImage2Opt = match emitterMaterial.UserDefinedImage2Opt with ValueSome userDefinedImage -> ValueSome userDefinedImage | ValueNone -> descriptor.Material.UserDefinedImage2Opt
                               TwoSidedOpt = match emitterMaterial.TwoSidedOpt with ValueSome twoSided -> ValueSome twoSided | ValueNone -> descriptor.Material.TwoSidedOpt
                               ClippedOpt = match emitterMaterial.ClippedOpt with ValueSome clipped -> ValueSome clipped | ValueNone -> descriptor.Material.ClippedOpt
                               PipelineNameOpt = match emitterMaterial.PipelineNameOpt with ValueSome pipelineName -> ValueSome pipelineName | ValueNone -> descriptor.Material.PipelineNameOpt }
@@ -3846,11 +3847,13 @@ type TerrainFacet () =
                     [|{ AlbedoImage = Assets.Default.TerrainLayer0Albedo
                         RoughnessImage = Assets.Default.TerrainLayer0Roughness
                         AmbientOcclusionImage = Assets.Default.TerrainLayer0AmbientOcclusion
-                        NormalImage = Assets.Default.TerrainLayer0Normal }
+                        NormalImage = Assets.Default.TerrainLayer0Normal
+                        UserDefinedImage = Assets.Default.TerrainLayer0UserDefinedImage }
                       { AlbedoImage = Assets.Default.TerrainLayer1Albedo
                         RoughnessImage = Assets.Default.TerrainLayer1Roughness
                         AmbientOcclusionImage = Assets.Default.TerrainLayer1AmbientOcclusion
-                        NormalImage = Assets.Default.TerrainLayer1Normal }|]
+                        NormalImage = Assets.Default.TerrainLayer1Normal
+                        UserDefinedImage = Assets.Default.TerrainLayer1UserDefinedImage }|]
                   BlendMap =
                       RedsMap
                         [|Assets.Default.TerrainLayer0Blend

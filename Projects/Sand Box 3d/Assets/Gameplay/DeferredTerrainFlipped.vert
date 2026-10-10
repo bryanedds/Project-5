@@ -1,7 +1,6 @@
 #version 450 core
 
 const int TEX_COORDS_OFFSET_VERTS = 6;
-const int TERRAIN_LAYERS_MAX = 6;
 
 const vec2 TEX_COORDS_OFFSET_FILTERS[TEX_COORDS_OFFSET_VERTS] =
     vec2[TEX_COORDS_OFFSET_VERTS](
@@ -44,6 +43,8 @@ layout(location = 11) in vec4 albedo;
 layout(location = 12) in vec4 material;
 layout(location = 13) in vec4 attributes;
 layout(location = 14) in vec4 subsurfacePlus; // NOTE: currently unutilized, but kept around to stay in sync with instance field count.
+layout(location = 16) in vec4 reservedSettings;
+layout(location = 17) in vec4 userDefinedSettings[2];
 
 layout(location = 0) out vec4 positionOut;
 layout(location = 1) out vec2 texCoordsOut;
@@ -53,6 +54,7 @@ layout(location = 5) out vec3 tintOut;
 layout(location = 6) flat out vec4 albedoOut;
 layout(location = 7) flat out vec4 materialOut;
 layout(location = 8) flat out vec4 attributesOut;
+layout(location = 9) flat out vec4 userDefinedSettingsOut[2];
 
 void main()
 {
@@ -65,6 +67,7 @@ void main()
     materialOut = material;
     normalOut = transpose(inverse(mat3(model))) * normal;
     attributesOut = attributes;
+    userDefinedSettingsOut = userDefinedSettings;
     blendsOut[0] = blends[0];
     blendsOut[1] = blends[1];
     tintOut = tint;
