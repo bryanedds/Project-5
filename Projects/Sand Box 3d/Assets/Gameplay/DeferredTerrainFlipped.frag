@@ -32,7 +32,7 @@ layout(set = 1, binding = 0) uniform texture2D albedoTextures[TERRAIN_LAYERS_MAX
 layout(set = 1, binding = 1) uniform texture2D roughnessTextures[TERRAIN_LAYERS_MAX];
 layout(set = 1, binding = 2) uniform texture2D ambientOcclusionTextures[TERRAIN_LAYERS_MAX];
 layout(set = 1, binding = 3) uniform texture2D normalTextures[TERRAIN_LAYERS_MAX];
-layout(set = 1, binding = 4) uniform texture2D userDefinedTextures[TERRAIN_LAYERS_MAX];
+layout(set = 1, binding = 4) uniform texture2D userDefinedImageTextures[TERRAIN_LAYERS_MAX];
 layout(set = 1, binding = 5) uniform texture2D userDefinedImage0Texture;
 layout(set = 1, binding = 6) uniform texture2D userDefinedImage1Texture;
 
@@ -45,7 +45,7 @@ layout(location = 3) in vec4 blends[2];
 layout(location = 5) in vec3 tint;
 layout(location = 6) flat in vec4 albedo;
 layout(location = 7) flat in vec4 material;
-layout(location = 8) flat in vec4 attributes;
+layout(location = 8) flat in vec4 material2;
 layout(location = 9) flat in vec4 userDefinedSettings[2];
 
 layout(location = 0) out float depthOut;
@@ -95,7 +95,7 @@ void main()
 
     // compute normal and ignore local light maps
     normalPlusOut.xyz = normalize(toWorld * normalize(normalBlend));
-    normalPlusOut.w = attributes.x;
+    normalPlusOut.w = material2.x;
 
     // compute roughness with specular anti-aliasing (Tokuyoshi & Kaplanyan 2019)
     // NOTE: the SAA algo also includes derivative scalars that are currently not utilized here due to lack of need -
