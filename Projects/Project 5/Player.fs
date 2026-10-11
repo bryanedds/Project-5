@@ -83,6 +83,7 @@ type PlayerDispatcher () =
             Quaternion.CreateFromAxisAngle (v3Up, Constants.Gameplay.PlayerEyeShiftAngle * if entity.GetViewFlip world then -1.0f else 1.0f) *
             Quaternion.CreateFromAxisAngle (v3Right, -0.25f)
         let visibilityScalar = Algorithm.computePlayerVisibilityScalar positionInterpolated eyeDistanceRotation actionState entity world
+        let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar); ScatterTypeOpt = ValueSome SkinScatter }
         World.doAnimatedModel Constants.Gameplay.CharacterAnimatedModelName
             [Entity.Position @= positionInterpolated
              Entity.Rotation @= rotationInterpolated
@@ -91,10 +92,10 @@ type PlayerDispatcher () =
              Entity.MountOpt .= None
              Entity.Pickable .= false
              Entity.AnimatedModel .= Assets.Gameplay.AvaModel
-             Entity.MaterialProperties @= { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome (colorOne.WithA visibilityScalar); ScatterTypeOpt = ValueSome SkinScatter }
+             Entity.MaterialProperties @= materialProperties
              Entity.VisibleLocal @= (visibilityScalar > 0.0f)
              Entity.RenderStyle @= if visibilityScalar = 1.0f then Deferred else Forward (0.0f, 0.0f)
-             Entity.DualRenderedSurfaceIndices @= if visibilityScalar = 1.0f then Set.singleton 3 else Set.empty
+             Entity.DualRenderedSurfaces @= if visibilityScalar = 1.0f then Map.singleton 3 (Some { materialProperties with AnisotropyOpt = ValueSome 0.8f }) else Map.empty
              Entity.SubsortOffsets .= Map.ofList [(3, -1.0f); (8, -2.0f); (14, -1.0f)]] world
         let animatedModel = world.DeclaredEntity
 
