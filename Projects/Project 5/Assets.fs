@@ -23,6 +23,7 @@ module Assets =
         let SlashSound = asset<Sound> PackageName "Slash"
         let InjureSound = asset<Sound> PackageName "Injure"
         let StepSound = asset<Sound> PackageName "Step"
+        let StompSound = asset<Sound> PackageName "Stomp"
         let StealthSong = asset<Song> PackageName "Stealth"
         let HuntedSong = asset<Song> PackageName "Hunted"
         let StalkedSong = asset<Song> PackageName "Stalked"

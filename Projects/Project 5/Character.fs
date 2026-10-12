@@ -299,22 +299,30 @@ type [<AbstractClass>] CharacterDispatcher () =
             match entity.GetMovementState world with
             | Standing _ -> ()
             | Moving (startTime, lastStepTime) ->
-                let strideTime = GameTime.ofSeconds 0.75
-                let offsetTime = GameTime.ofSeconds 0.255
-                let localStepTime = world.GameTime - lastStepTime + offsetTime
-                if localStepTime >= strideTime then
-                    let distanceFromPlayer =
+                match entity.GetCharacterType world with
+                | Player ->
+                    let strideTime = GameTime.ofSeconds 0.75
+                    let offsetTime = GameTime.ofSeconds 0.255
+                    let localStepTime = world.GameTime - lastStepTime + offsetTime
+                    if localStepTime >= strideTime then
+                        let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
+                        let volume = if notJustTurning then 0.15f else 0.0f
+                        let velocityFlat = (entity.GetLinearVelocity world).WithY(0.0f).Length() * 0.5f
+                        let volume = volume * velocityFlat
+                        World.playSound 0.0f 0.0f volume Assets.Gameplay.StepSound world
+                        entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
+                | Hunter | Stalker ->
+                    let strideTime = GameTime.ofSeconds 0.7
+                    let offsetTime = GameTime.ofSeconds 0.3
+                    let localStepTime = world.GameTime - lastStepTime + offsetTime
+                    if localStepTime >= strideTime then
                         let playerPosition = Simulants.GameplayPlayer.GetPosition world
                         let entityPosition = entity.GetPosition world
                         let deltaWithYScaled = (playerPosition - entityPosition).MapY ((*) Constants.Gameplay.StepSoundDistanceYScalar)
-                        deltaWithYScaled.Length ()
-                    let volume =
-                        if entity = Simulants.GameplayPlayer then
-                            let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
-                            if notJustTurning then 0.15f else 0.0f
-                        else 0.25f
-                    World.playSound distanceFromPlayer 0.0f volume Assets.Gameplay.StepSound world
-                    entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
+                        let distanceFromPlayer = deltaWithYScaled.Length ()
+                        let volume = 0.5f
+                        World.playSound distanceFromPlayer 0.0f volume Assets.Gameplay.StompSound world
+                        entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
             let localTime = world.GameTime - attack.AttackTime
             if localTime > 0.12 && not attack.AttackSoundPlayed then

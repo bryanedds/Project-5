@@ -206,7 +206,7 @@ and CharacterType =
         match this with
         | Hunter -> 2.5f
         | Stalker -> 2.0f
-        | Player -> 1.0f
+        | Player -> 1.2f
 
     member this.InjuryTime =
         match this with

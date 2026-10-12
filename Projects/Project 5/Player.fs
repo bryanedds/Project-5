@@ -31,26 +31,24 @@ type PlayerDispatcher () =
         // process movement
         match entity.GetActionState world with
         | NormalState ->
-            if entity.GetFlashLightEnabled world then
-                entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
-            else
-                let rotation = entity.GetRotation world
-                let forward = rotation.Forward
-                let right = rotation.Right
-                let walkDirection =
-                    (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
-                    (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
-                    (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
-                    (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
-                let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * Player.WalkSpeed else v3Zero
-                entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
+            let walkSpeed = Player.WalkSpeed * if entity.GetFlashLightEnabled world then 0.5f else 1.0f
+            let rotation = entity.GetRotation world
+            let forward = rotation.Forward
+            let right = rotation.Right
+            let walkDirection =
+                (if World.isKeyboardKeyDown KeyboardKey.W world || World.isKeyboardKeyDown KeyboardKey.Up world then forward else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.S world || World.isKeyboardKeyDown KeyboardKey.Down world then -forward else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.A world then -right else v3Zero) +
+                (if World.isKeyboardKeyDown KeyboardKey.D world then right else v3Zero)
+            let walkVelocity = if walkDirection <> v3Zero then walkDirection.Normalized * walkSpeed else v3Zero
+            entity.SetLinearVelocity (walkVelocity.WithY 0.0f + v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
         // process rotation
         match entity.GetActionState world with
         | NormalState | InventoryState | InsertionState _  | InvestigationState _ | HideState _ ->
             let rotation = entity.GetRotation world
-            let turnSpeed = Player.TurnSpeed
+            let turnSpeed = Player.TurnSpeed * if entity.GetFlashLightEnabled world then 0.75f else 1.0f
             let turnVelocity =
                 (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
                 (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
@@ -108,7 +106,7 @@ type PlayerDispatcher () =
              Entity.MountOpt .= None
              Entity.Static .= false
              Entity.LightType .= SpotLight (0.25f, 0.8f, 1.2f)
-             Entity.LightCutoff .= 11.0f
+             Entity.LightCutoff .= 12.0f
              Entity.Brightness .= 0.65f
              Entity.DesireShadows .= true
              Entity.VisibleLocal @= entity.GetFlashLightEnabled world] world
