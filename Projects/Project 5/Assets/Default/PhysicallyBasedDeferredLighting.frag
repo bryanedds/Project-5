@@ -46,6 +46,7 @@ struct LightStruct
     float brightness;
     float attenuationLinear;
     float attenuationQuadratic;
+    float specularity;
     float cutoff;
     int lightType;
     float radius;
@@ -500,7 +501,7 @@ void main()
         vec3 f0 = mix(vec3(0.04), albedo, metallic); // if dia-electric (plastic) use f0 of 0.04f and if metal, use the albedo color as f0.
         for (int i = 0; i < lighting.lightsCount; ++i)
         {
-            // compute per-light material2 and compensate roughness where applicable
+            // compute per-light attributes and compensate roughness where applicable
             LightStruct light = lights[i];
             bool lightPoint = light.lightType == 0;
             bool lightSpot = light.lightType == 1;
@@ -508,7 +509,7 @@ void main()
             vec3 l, h, radiance;
             if (lightPoint || lightSpot)
             {
-                // compute material2
+                // compute attributes
                 vec3 d = light.origin - position.xyz;
                 l = normalize(d);
                 h = normalize(v + l);
@@ -563,7 +564,7 @@ void main()
                 vec3 numerator = ndf * g * f;
                 float nDotL = saturate(dot(normal, l));
                 float denominator = 4.0 * nDotV * nDotL + 0.0001; // add epsilon to prevent division by zero
-                vec3 specular = clamp(numerator / denominator, 0.0, 10000.0);
+                vec3 specular = clamp(numerator / denominator, 0.0, 10000.0) * light.specularity;
 
                 // mix in specularity of clear coat when desired
                 if (clearCoat > 0.0)
@@ -581,7 +582,7 @@ void main()
                     vec3 numerator = ndf * g * f;
                     float nDotL = saturate(dot(clearCoatNormal, l));
                     float denominator = 4.0 * nDotV * nDotL + 0.0001; // add epsilon to prevent division by zero
-                    vec3 clearCoatSpecular = clamp(numerator / denominator, 0.0, 10000.0);
+                    vec3 clearCoatSpecular = clamp(numerator / denominator, 0.0, 10000.0) * light.specularity;
 
                     // mix specular
                     specular = mix(specular, clearCoatSpecular, clearCoat);

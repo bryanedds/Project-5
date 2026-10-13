@@ -46,10 +46,11 @@ type InvestigationSpotDispatcher () =
             | InvestigationStarted _ -> Assets.Gameplay.InvestigationProcedingIconAlbedoImage
             | InvestigationFinished _ -> Assets.Gameplay.InvestigationConcludedIconAlbedoImage
         let emissionImage = Assets.Gameplay.IconEmissionImage
-        let material = { Material.defaultMaterial with AlbedoImageOpt = ValueSome albedoImage; EmissionImageOpt = ValueSome emissionImage }
         let albedoColor = colorOne.WithA visibility
         let cels = if phase.IsInvestigationStarted then 8 else 1
         for layer in 0 .. dec 2 do
+            let depthTest = if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
+            let material = { Material.defaultMaterial with AlbedoImageOpt = ValueSome albedoImage; EmissionImageOpt = ValueSome emissionImage; DepthTestOpt = ValueSome depthTest }
             let albedoColor = albedoColor.MapA (fun a -> if layer = 0 then a * 0.8f else a * 0.2f)
             let materialProperties = { MaterialProperties.defaultProperties with AlbedoOpt = ValueSome albedoColor; SpecularScalarOpt = ValueSome 0.0f }
             World.doAnimatedBillboard ("InvestigationIcon+" + string layer)
@@ -59,7 +60,6 @@ type InvestigationSpotDispatcher () =
                  Entity.MaterialProperties @= materialProperties
                  Entity.Material @= material
                  Entity.RenderStyle .= Forward (0.0f, Single.MaxValue)
-                 Entity.DepthTest .= if layer = 0 then LessThanOrEqualTest else AlwaysPassTest
                  Entity.AnimationDelay .= 1.0
                  Entity.CelCount @= cels
                  Entity.CelRun @= cels] world
