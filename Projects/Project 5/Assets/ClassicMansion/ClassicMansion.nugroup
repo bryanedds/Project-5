@@ -292378,11 +292378,11 @@
   [Entity3dDispatcher
    [[MountOpt [Some ^]]
     [Name Lighting]]
-   [[LightProbe3dDispatcher
+   [[LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0004]
+      [Name LightProbe-0004]
       [Position [-12.7 2.4 -2.5]]
       [PositionLocal [-12.7 2.4 -2.5]]
       [Presence Omnipresent]
@@ -292435,11 +292435,11 @@
       [Size [15.5 15.5 15.5]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0006]
+      [Name LightProbe-0006]
       [Position [-8.5 1.5 -13]]
       [PositionLocal [-8.5 1.5 -13]]
       [Presence Omnipresent]
@@ -292478,11 +292478,11 @@
       [Size [8 8 8]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0007]
+      [Name LightProbe-0007]
       [Position [-22.597353 5.05 -13.9]]
       [PositionLocal [-22.597353 5.05 -13.9]]
       [Presence Omnipresent]
@@ -292506,11 +292506,11 @@
       [Size [8 8 8]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0002]
+      [Name LightProbe-0002]
       [Position [-30.833271 5.022541 -14.2]]
       [PositionLocal [-30.833271 5.022541 -14.2]]
       [Presence Omnipresent]
@@ -292519,11 +292519,11 @@
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0003]
+      [Name LightProbe-0003]
       [Position [-16.5 1.71303 -13.5]]
       [PositionLocal [-16.5 1.71303 -13.5]]
       [Presence Omnipresent]
@@ -292593,11 +292593,11 @@
       [Size [8 8 8]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0005]
+      [Name LightProbe-0005]
       [Position [-24.65 1.3082371 -12.8]]
       [PositionLocal [-24.65 1.3082371 -12.8]]
       [Presence Omnipresent]
@@ -292690,11 +292690,11 @@
       [Size [8 8 8]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0011]
+      [Name LightProbe-0011]
       [Position [-25.3 1.3 -15.4]]
       [PositionLocal [-25.3 1.3 -15.4]]
       [Presence Omnipresent]
@@ -292719,11 +292719,11 @@
       [Size [15 15 15]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0012]
+      [Name LightProbe-0012]
       [Position [-32.669083 1.5 -2.1919906]]
       [PositionLocal [-32.669083 1.5 -2.1919906]]
       [Presence Omnipresent]
@@ -292732,11 +292732,11 @@
       [Size [0.25 0.25 0.25]]
       [Static True]]
      []]
-    [LightProbe3dDispatcher
+    [LightProbeDispatcher
      [[AmbientBrightness 0.2]
       [ExcludeGlobalLights True]
       [MountOpt [Some ^]]
-      [Name LightProbe3d-0001]
+      [Name LightProbe-0001]
       [Position [-13.6 2.7 9.8]]
       [PositionLocal [-13.6 2.7 9.8]]
       [Presence Omnipresent]
