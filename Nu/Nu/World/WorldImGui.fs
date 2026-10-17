@@ -340,8 +340,8 @@ module WorldImGui =
                     ty.GetGenericTypeDefinition () = typedefof<_ option> &&
                     (not ty.GenericTypeArguments[0].IsGenericType || ty.GenericTypeArguments[0].GetGenericTypeDefinition () <> typedefof<_ option>) &&
                     (not ty.GenericTypeArguments[0].IsGenericType || ty.GenericTypeArguments[0].GetGenericTypeDefinition () <> typedefof<_ voption>) &&
-                    ty.GenericTypeArguments[0] <> typeof<MaterialProperties> &&
                     ty.GenericTypeArguments[0] <> typeof<Material> &&
+                    ty.GenericTypeArguments[0] <> typeof<MaterialProperties> &&
                     (ty.GenericTypeArguments[0].IsValueType ||
                      ty.GenericTypeArguments[0] = typeof<string> ||
                      ty.GenericTypeArguments[0] = typeof<Slide> ||
@@ -430,8 +430,8 @@ module WorldImGui =
                      ty.GetGenericTypeDefinition () = typedefof<_ voption> &&
                      (not ty.GenericTypeArguments[0].IsGenericType || ty.GenericTypeArguments[0].GetGenericTypeDefinition () <> typedefof<_ option>) &&
                      (not ty.GenericTypeArguments[0].IsGenericType || ty.GenericTypeArguments[0].GetGenericTypeDefinition () <> typedefof<_ voption>) &&
-                     ty.GenericTypeArguments[0] <> typeof<MaterialProperties> &&
                      ty.GenericTypeArguments[0] <> typeof<Material> &&
+                     ty.GenericTypeArguments[0] <> typeof<MaterialProperties> &&
                      (ty.GenericTypeArguments[0].IsValueType ||
                       ty.GenericTypeArguments[0] = typeof<string> ||
                       ty.GenericTypeArguments[0] = typeof<Slide> ||
@@ -831,7 +831,114 @@ module WorldImGui =
                         else None
                     | None -> None
                 World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedSettingOpt true name (typeof<TerrainMaterialProperties>) tmps context world
-            | :? MaterialProperties as mps ->
+            | :? Material as material ->
+                let tryReplaceUserDefinedImageOpt (fieldInfo : PropertyInfo) (field : obj) =
+                    match context.SelectedEntityOpt with
+                    | Some selectedEntity ->
+                        let userDefinedImageSubstring = "UserDefinedImage"
+                        let optSubstring = "Opt"
+                        if fieldInfo.Name.StartsWith userDefinedImageSubstring && fieldInfo.Name.EndsWith optSubstring then
+                            let indexStr = fieldInfo.Name.Substring (userDefinedImageSubstring.Length, fieldInfo.Name.Length - userDefinedImageSubstring.Length - optSubstring.Length)
+                            let indexOpt =
+                                match Int32.TryParse indexStr with
+                                | (true, number) -> Some number
+                                | (false, _) -> None
+                            match indexOpt with
+                            | Some index ->
+                                let pipelineName =
+                                    match material.PipelineNameOpt with
+                                    | ValueSome pipelineName -> pipelineName
+                                    | ValueNone ->
+                                        let surfaceIndex =
+                                            match selectedEntity.TryGetProperty "SurfaceIndex" world with
+                                            | Some property when (property.PropertyValue :? int) -> property.PropertyValue :?> int
+                                            | Some _ | None -> 0 // NOTE: hard-coding first surface.
+                                        match selectedEntity.TryGetProperty "StaticModel" world with
+                                        | Some property when (property.PropertyValue :? StaticModel AssetTag) ->
+                                            let staticModel = property.PropertyValue :?> StaticModel AssetTag
+                                            match Metadata.tryGetStaticModelPipelineName surfaceIndex staticModel with
+                                            | ValueSome pipelineName -> pipelineName
+                                            | ValueNone -> Constants.Render.PipelineNameDefault
+                                        | Some _ | None ->
+                                            match selectedEntity.TryGetProperty "AnimatedModel" world with
+                                            | Some property when (property.PropertyValue :? AnimatedModel AssetTag) ->
+                                                let animatedModel = property.PropertyValue :?> AnimatedModel AssetTag
+                                                match Metadata.tryGetAnimatedModelPipelineName surfaceIndex animatedModel with
+                                                | ValueSome pipelineName -> pipelineName
+                                                | ValueNone -> Constants.Render.PipelineNameDefault
+                                            | Some _ | None -> Constants.Render.PipelineNameDefault
+                                let descriptors = World.getUserDefinedPipeline3dDescriptors world
+                                match descriptors.TryGetValue pipelineName with
+                                | (true, pipelineDescriptor) ->
+                                    let imageNames = pipelineDescriptor.UserDefinedImageNames
+                                    if index < imageNames.Length then
+                                        let asset index : Image AssetTag =
+                                            match index with
+                                            | 0 -> Assets.Default.UserDefinedImage0
+                                            | 1 -> Assets.Default.UserDefinedImage1
+                                            | 2 -> Assets.Default.UserDefinedImage2
+                                            | _ -> failwithumf ()
+                                        let mutable valueOpt = field :?> Image AssetTag voption
+                                        let mutable isSome = valueOpt.IsSome
+                                        let isSomeEdited = ImGui.Checkbox ("##" + imageNames[index], &isSome)
+                                        if ImGui.IsItemFocused () then context.FocusProperty ()
+                                        if isSomeEdited then
+                                            if isSome
+                                            then valueOpt <- ValueSome (asset index)
+                                            else valueOpt <- ValueNone
+                                        match valueOpt with
+                                        | ValueSome value ->
+                                            ImGui.SameLine ()
+                                            ImGui.PushID name
+                                            let mutable value = value
+                                            let mutable valueStr = scstring value
+                                            let valueEdited = ImGui.InputText (imageNames[index], &valueStr, 4096u)
+                                            try let value = scvalue<Image AssetTag> valueStr
+                                                if ImGui.IsItemFocused () then context.FocusProperty ()
+                                                ImGui.PopID ()
+                                                Some (isSomeEdited || valueEdited, ValueSome value :> obj)
+                                            with _ -> Some (false, field)
+                                        | ValueNone ->
+                                            ImGui.SameLine ()
+                                            ImGui.Text imageNames[index]
+                                            Some (isSomeEdited, valueOpt :> obj)
+                                    else Some (false, field)
+                                | (false, _) -> Some (false, field)
+                            | None -> Some (false, field)
+                        elif fieldInfo.Name = nameof material.PipelineNameOpt then
+                            let mutable pipelineNameOpt = field :?> string voption
+                            let mutable isSome = pipelineNameOpt.IsSome
+                            let isSomeEdited = ImGui.Checkbox ("##" + fieldInfo.Name, &isSome)
+                            if ImGui.IsItemFocused () then context.FocusProperty ()
+                            if isSomeEdited then
+                                if isSome
+                                then pipelineNameOpt <- ValueSome Constants.Render.PipelineNameDefault
+                                else pipelineNameOpt <- ValueNone
+                            match pipelineNameOpt with
+                            | ValueSome pipelineName ->
+                                ImGui.SameLine ()
+                                ImGui.PushID name
+                                let descriptors = World.getUserDefinedPipeline3dDescriptors world
+                                let pipelineNames = seq { Constants.Render.PipelineNameDefault; yield! descriptors.Keys }
+                                let mutable pipelineNameEdited = false
+                                if ImGui.BeginCombo (name, pipelineName) then
+                                    for pipelineName' in pipelineNames do
+                                        if String.notEmpty pipelineName' && ImGui.Selectable (pipelineName', (pipelineName' = pipelineName)) then
+                                            if pipelineName <> pipelineName' then
+                                                pipelineNameOpt <- ValueSome pipelineName'
+                                                pipelineNameEdited <- true
+                                    ImGui.EndCombo ()
+                                if ImGui.IsItemFocused () then context.FocusProperty ()
+                                ImGui.PopID ()
+                                Some (isSomeEdited || pipelineNameEdited, pipelineNameOpt :> obj)
+                            | ValueNone ->
+                                ImGui.SameLine ()
+                                ImGui.Text name
+                                Some (isSomeEdited, pipelineNameOpt :> obj)
+                        else None
+                    | None -> None
+                World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedImageOpt false name (typeof<Material>) material context world
+            | :? MaterialProperties as properties ->
                 let tryReplaceUserDefinedSettingOpt (fieldInfo : PropertyInfo) (field : obj) =
                     match context.SelectedEntityOpt with
                     | Some selectedEntity ->
@@ -902,114 +1009,7 @@ module WorldImGui =
                             | None -> Some (false, field)
                         else None
                     | None -> None
-                World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedSettingOpt false name (typeof<MaterialProperties>) mps context world
-            | :? Material as material ->
-                let tryReplaceUserDefinedImageOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
-                    | Some selectedEntity ->
-                        let userDefinedImageSubstring = "UserDefinedImage"
-                        let optSubstring = "Opt"
-                        if fieldInfo.Name.StartsWith userDefinedImageSubstring && fieldInfo.Name.EndsWith optSubstring then
-                            let indexStr = fieldInfo.Name.Substring (userDefinedImageSubstring.Length, fieldInfo.Name.Length - userDefinedImageSubstring.Length - optSubstring.Length)
-                            let indexOpt =
-                                match Int32.TryParse indexStr with
-                                | (true, number) -> Some number
-                                | (false, _) -> None
-                            match indexOpt with
-                            | Some index ->
-                                let pipelineName =
-                                    match material.PipelineNameOpt with
-                                    | ValueSome pipelineName -> pipelineName
-                                    | ValueNone ->
-                                        let surfaceIndex =
-                                            match selectedEntity.TryGetProperty "SurfaceIndex" world with
-                                            | Some property when (property.PropertyValue :? int) -> property.PropertyValue :?> int
-                                            | Some _ | None -> 0 // NOTE: hard-coding first surface.
-                                        match selectedEntity.TryGetProperty "StaticModel" world with
-                                        | Some property when (property.PropertyValue :? StaticModel AssetTag) ->
-                                            let staticModel = property.PropertyValue :?> StaticModel AssetTag
-                                            match Metadata.tryGetStaticModelPipelineName surfaceIndex staticModel with
-                                            | ValueSome pipelineName -> pipelineName
-                                            | ValueNone -> Constants.Render.PipelineNameDefault
-                                        | Some _ | None ->
-                                            match selectedEntity.TryGetProperty "AnimatedModel" world with
-                                            | Some property when (property.PropertyValue :? AnimatedModel AssetTag) ->
-                                                let animatedModel = property.PropertyValue :?> AnimatedModel AssetTag
-                                                match Metadata.tryGetAnimatedModelPipelineName surfaceIndex animatedModel with
-                                                | ValueSome pipelineName -> pipelineName
-                                                | ValueNone -> Constants.Render.PipelineNameDefault
-                                            | Some _ | None -> Constants.Render.PipelineNameDefault
-                                let descriptors = World.getUserDefinedPipeline3dDescriptors world
-                                match descriptors.TryGetValue pipelineName with
-                                | (true, pipelineDescriptor) ->
-                                    let imageNames = pipelineDescriptor.UserDefinedImageNames
-                                    if index < imageNames.Length then
-                                        let asset index : Image AssetTag =
-                                            match index with
-                                            | 0 -> Assets.Default.MaterialUserDefinedImage0
-                                            | 1 -> Assets.Default.MaterialUserDefinedImage1
-                                            | 2 -> Assets.Default.MaterialUserDefinedImage2
-                                            | _ -> failwithumf ()
-                                        let mutable valueOpt = field :?> Image AssetTag voption
-                                        let mutable isSome = valueOpt.IsSome
-                                        let isSomeEdited = ImGui.Checkbox ("##" + imageNames[index], &isSome)
-                                        if ImGui.IsItemFocused () then context.FocusProperty ()
-                                        if isSomeEdited then
-                                            if isSome
-                                            then valueOpt <- ValueSome (asset index)
-                                            else valueOpt <- ValueNone
-                                        match valueOpt with
-                                        | ValueSome value ->
-                                            ImGui.SameLine ()
-                                            ImGui.PushID name
-                                            let mutable value = value
-                                            let mutable valueStr = scstring value
-                                            let valueEdited = ImGui.InputText (imageNames[index], &valueStr, 4096u)
-                                            try let value = scvalue<Image AssetTag> valueStr
-                                                if ImGui.IsItemFocused () then context.FocusProperty ()
-                                                ImGui.PopID ()
-                                                Some (isSomeEdited || valueEdited, ValueSome value :> obj)
-                                            with _ -> Some (false, field)
-                                        | ValueNone ->
-                                            ImGui.SameLine ()
-                                            ImGui.Text imageNames[index]
-                                            Some (isSomeEdited, valueOpt :> obj)
-                                    else Some (false, field)
-                                | (false, _) -> Some (false, field)
-                            | None -> Some (false, field)
-                        elif fieldInfo.Name = nameof material.PipelineNameOpt then
-                            let mutable pipelineNameOpt = field :?> string voption
-                            let mutable isSome = pipelineNameOpt.IsSome
-                            let isSomeEdited = ImGui.Checkbox ("##" + fieldInfo.Name, &isSome)
-                            if ImGui.IsItemFocused () then context.FocusProperty ()
-                            if isSomeEdited then
-                                if isSome
-                                then pipelineNameOpt <- ValueSome Constants.Render.PipelineNameDefault
-                                else pipelineNameOpt <- ValueNone
-                            match pipelineNameOpt with
-                            | ValueSome pipelineName ->
-                                ImGui.SameLine ()
-                                ImGui.PushID name
-                                let descriptors = World.getUserDefinedPipeline3dDescriptors world
-                                let pipelineNames = seq { Constants.Render.PipelineNameDefault; yield! descriptors.Keys }
-                                let mutable pipelineNameEdited = false
-                                if ImGui.BeginCombo (name, pipelineName) then
-                                    for pipelineName' in pipelineNames do
-                                        if String.notEmpty pipelineName' && ImGui.Selectable (pipelineName', (pipelineName' = pipelineName)) then
-                                            if pipelineName <> pipelineName' then
-                                                pipelineNameOpt <- ValueSome pipelineName'
-                                                pipelineNameEdited <- true
-                                    ImGui.EndCombo ()
-                                if ImGui.IsItemFocused () then context.FocusProperty ()
-                                ImGui.PopID ()
-                                Some (isSomeEdited || pipelineNameEdited, pipelineNameOpt :> obj)
-                            | ValueNone ->
-                                ImGui.SameLine ()
-                                ImGui.Text name
-                                Some (isSomeEdited, pipelineNameOpt :> obj)
-                        else None
-                    | None -> None
-                World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedImageOpt false name (typeof<Material>) material context world
+                World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedSettingOpt false name (typeof<MaterialProperties>) properties context world
             | :? Justification as justification ->
                 let (_, caseNameEdited, caseName) = World.imGuiSelectCase name ty justification context
                 let justification =

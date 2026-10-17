@@ -110,7 +110,160 @@ type Pipeline3dType =
     | ForwardAnimated
     | Terrain
 
-/// Material properties for surfaces.
+/// Material description for 3d surfaces.
+type [<SymbolicExpansion; CustomEquality; NoComparison>] Material =
+    { AlbedoImageOpt : Image AssetTag voption
+      RoughnessImageOpt : Image AssetTag voption
+      MetallicImageOpt : Image AssetTag voption
+      AmbientOcclusionImageOpt : Image AssetTag voption
+      EmissionImageOpt : Image AssetTag voption
+      NormalImageOpt : Image AssetTag voption
+      SubdermalImageOpt : Image AssetTag voption
+      FinenessImageOpt : Image AssetTag voption
+      ScatterImageOpt : Image AssetTag voption
+      ClearCoatImageOpt : Image AssetTag voption
+      ClearCoatRoughnessImageOpt : Image AssetTag voption
+      ClearCoatNormalImageOpt : Image AssetTag voption
+      UserDefinedImage0Opt : Image AssetTag voption
+      UserDefinedImage1Opt : Image AssetTag voption
+      UserDefinedImage2Opt : Image AssetTag voption
+      CullModeOpt : CullMode voption
+      ClippedOpt : bool voption
+      DepthTestOpt : DepthTest voption
+      DepthWriteOpt : bool voption
+      BlendOpt : Blend voption
+      PipelineNameOpt : string voption }
+
+    member this.AlbedoImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.AlbedoName) this.AlbedoImageOpt
+    member this.RoughnessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.RoughnessName) this.RoughnessImageOpt
+    member this.MetallicImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MetallicName) this.MetallicImageOpt
+    member this.AmbientOcclusionImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.AmbientOcclusionName) this.AmbientOcclusionImageOpt
+    member this.EmissionImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.EmissionName) this.EmissionImageOpt
+    member this.NormalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.NormalName) this.NormalImageOpt
+    member this.SubdermalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.SubdermalName) this.SubdermalImageOpt
+    member this.FinenessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.FinenessName) this.FinenessImageOpt
+    member this.ScatterImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.ScatterName) this.ScatterImageOpt
+    member this.ClearCoatImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.ClearCoatName) this.ClearCoatImageOpt
+    member this.ClearCoatRoughnessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.ClearCoatRoughnessName) this.ClearCoatRoughnessImageOpt
+    member this.ClearCoatNormalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.ClearCoatNormalName) this.ClearCoatNormalImageOpt
+    member this.UserDefinedImage0 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.UserDefinedImage0Name) this.UserDefinedImage0Opt
+    member this.UserDefinedImage1 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.UserDefinedImage1Name) this.UserDefinedImage1Opt
+    member this.UserDefinedImage2 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.UserDefinedImage2Name) this.UserDefinedImage2Opt
+    member this.CullMode = ValueOption.defaultValue CullBack this.CullModeOpt
+    member this.Clipped = ValueOption.defaultValue false this.ClippedOpt
+    member this.DepthTest = ValueOption.defaultValue LessThanTest this.DepthTestOpt
+    member this.DepthWrite = ValueOption.defaultValue true this.DepthWriteOpt
+    member this.Blend = ValueOption.defaultValue Transparent this.BlendOpt
+    member this.PipelineName = ValueOption.defaultValue Constants.Render.PipelineNameDefault this.PipelineNameOpt
+
+    /// Get the hash code for this material.
+    static member hash material =
+        hash material.AlbedoImageOpt ^^^
+        hash material.RoughnessImageOpt ^^^
+        hash material.MetallicImageOpt ^^^
+        hash material.AmbientOcclusionImageOpt ^^^
+        hash material.EmissionImageOpt ^^^
+        hash material.NormalImageOpt ^^^
+        hash material.SubdermalImageOpt ^^^
+        hash material.FinenessImageOpt ^^^
+        hash material.ScatterImageOpt ^^^
+        hash material.ClearCoatImageOpt ^^^
+        hash material.ClearCoatRoughnessImageOpt ^^^
+        hash material.ClearCoatNormalImageOpt ^^^
+        hash material.UserDefinedImage0Opt ^^^
+        hash material.UserDefinedImage1Opt ^^^
+        hash material.UserDefinedImage2Opt ^^^
+        hash material.CullModeOpt ^^^
+        hash material.ClippedOpt ^^^
+        hash material.BlendOpt ^^^
+        hash material.PipelineNameOpt
+
+    /// Check that two materials are equal.
+    static member equals this that =
+        refEq this that ||
+        this.AlbedoImageOpt = that.AlbedoImageOpt &&
+        this.RoughnessImageOpt = that.RoughnessImageOpt &&
+        this.MetallicImageOpt = that.MetallicImageOpt &&
+        this.AmbientOcclusionImageOpt = that.AmbientOcclusionImageOpt &&
+        this.EmissionImageOpt = that.EmissionImageOpt &&
+        this.NormalImageOpt = that.NormalImageOpt &&
+        this.SubdermalImageOpt = that.SubdermalImageOpt &&
+        this.FinenessImageOpt = that.FinenessImageOpt &&
+        this.ScatterImageOpt = that.ScatterImageOpt &&
+        this.ClearCoatImageOpt = that.ClearCoatImageOpt &&
+        this.ClearCoatRoughnessImageOpt = that.ClearCoatRoughnessImageOpt &&
+        this.ClearCoatNormalImageOpt = that.ClearCoatNormalImageOpt &&
+        this.UserDefinedImage0Opt = that.UserDefinedImage0Opt &&
+        this.UserDefinedImage1Opt = that.UserDefinedImage1Opt &&
+        this.UserDefinedImage2Opt = that.UserDefinedImage2Opt &&
+        this.CullModeOpt = that.CullModeOpt &&
+        this.ClippedOpt = that.ClippedOpt &&
+        this.DepthTestOpt = that.DepthTestOpt &&
+        this.DepthWriteOpt = that.DepthWriteOpt &&
+        this.BlendOpt = that.BlendOpt &&
+        this.PipelineNameOpt = that.PipelineNameOpt
+
+    /// The material with populated default images.
+    static member val defaultMaterial =
+        { AlbedoImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.AlbedoName)
+          RoughnessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.RoughnessName)
+          MetallicImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MetallicName)
+          AmbientOcclusionImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.AmbientOcclusionName)
+          EmissionImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.EmissionName)
+          NormalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.NormalName)
+          SubdermalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.SubdermalName)
+          FinenessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.FinenessName)
+          ScatterImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.ScatterName)
+          ClearCoatImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.ClearCoatName)
+          ClearCoatRoughnessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.ClearCoatRoughnessName)
+          ClearCoatNormalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.ClearCoatNormalName)
+          UserDefinedImage0Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.UserDefinedImage0Name)
+          UserDefinedImage1Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.UserDefinedImage1Name)
+          UserDefinedImage2Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.UserDefinedImage2Name)
+          CullModeOpt = ValueSome CullBack
+          ClippedOpt = ValueSome false
+          DepthTestOpt = ValueSome LessThanTest
+          DepthWriteOpt = ValueSome true
+          BlendOpt = ValueSome Transparent
+          PipelineNameOpt = ValueSome Constants.Render.PipelineNameDefault }
+
+    /// The empty material.
+    static member val empty =
+        { AlbedoImageOpt = ValueNone
+          RoughnessImageOpt = ValueNone
+          MetallicImageOpt = ValueNone
+          AmbientOcclusionImageOpt = ValueNone
+          EmissionImageOpt = ValueNone
+          NormalImageOpt = ValueNone
+          SubdermalImageOpt = ValueNone
+          FinenessImageOpt = ValueNone
+          ScatterImageOpt = ValueNone
+          ClearCoatImageOpt = ValueNone
+          ClearCoatRoughnessImageOpt = ValueNone
+          ClearCoatNormalImageOpt = ValueNone
+          UserDefinedImage0Opt = ValueNone
+          UserDefinedImage1Opt = ValueNone
+          UserDefinedImage2Opt = ValueNone
+          CullModeOpt = ValueNone
+          ClippedOpt = ValueNone
+          DepthTestOpt = ValueNone
+          DepthWriteOpt = ValueNone
+          BlendOpt = ValueNone
+          PipelineNameOpt = ValueNone }
+
+    override this.GetHashCode () =
+        Material.hash this
+
+    override this.Equals (that : obj) =
+        match that with
+        | :? Material as that -> Material.equals this that
+        | _ -> false
+
+    interface IEquatable<Material> with
+        member this.Equals that =
+            Material.equals this that
+
+/// Material properties for 3d surfaces.
 /// NOTE: this type has to go after TerrainMaterialProperties lest the latter's field names shadow this one's.
 type [<SymbolicExpansion>] MaterialProperties =
     { AlbedoOpt : Color voption
@@ -218,161 +371,8 @@ type [<SymbolicExpansion>] MaterialProperties =
           UserDefinedSetting6Opt = ValueNone
           UserDefinedSetting7Opt = ValueNone }
 
-/// Material description for surfaces.
-type [<SymbolicExpansion; CustomEquality; NoComparison>] Material =
-    { AlbedoImageOpt : Image AssetTag voption
-      RoughnessImageOpt : Image AssetTag voption
-      MetallicImageOpt : Image AssetTag voption
-      AmbientOcclusionImageOpt : Image AssetTag voption
-      EmissionImageOpt : Image AssetTag voption
-      NormalImageOpt : Image AssetTag voption
-      SubdermalImageOpt : Image AssetTag voption
-      FinenessImageOpt : Image AssetTag voption
-      ScatterImageOpt : Image AssetTag voption
-      ClearCoatImageOpt : Image AssetTag voption
-      ClearCoatRoughnessImageOpt : Image AssetTag voption
-      ClearCoatNormalImageOpt : Image AssetTag voption
-      UserDefinedImage0Opt : Image AssetTag voption
-      UserDefinedImage1Opt : Image AssetTag voption
-      UserDefinedImage2Opt : Image AssetTag voption
-      CullModeOpt : CullMode voption
-      ClippedOpt : bool voption
-      DepthTestOpt : DepthTest voption
-      DepthWriteOpt : bool voption
-      BlendOpt : Blend voption
-      PipelineNameOpt : string voption }
-
-    member this.AlbedoImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialAlbedoName) this.AlbedoImageOpt
-    member this.RoughnessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialRoughnessName) this.RoughnessImageOpt
-    member this.MetallicImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialMetallicName) this.MetallicImageOpt
-    member this.AmbientOcclusionImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialAmbientOcclusionName) this.AmbientOcclusionImageOpt
-    member this.EmissionImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialEmissionName) this.EmissionImageOpt
-    member this.NormalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialNormalName) this.NormalImageOpt
-    member this.SubdermalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialSubdermalName) this.SubdermalImageOpt
-    member this.FinenessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialFinenessName) this.FinenessImageOpt
-    member this.ScatterImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialScatterName) this.ScatterImageOpt
-    member this.ClearCoatImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatName) this.ClearCoatImageOpt
-    member this.ClearCoatRoughnessImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatRoughnessName) this.ClearCoatRoughnessImageOpt
-    member this.ClearCoatNormalImage = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatNormalName) this.ClearCoatNormalImageOpt
-    member this.UserDefinedImage0 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage0Name) this.UserDefinedImage0Opt
-    member this.UserDefinedImage1 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage1Name) this.UserDefinedImage1Opt
-    member this.UserDefinedImage2 = ValueOption.defaultValue (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage2Name) this.UserDefinedImage2Opt
-    member this.CullMode = ValueOption.defaultValue CullBack this.CullModeOpt
-    member this.Clipped = ValueOption.defaultValue false this.ClippedOpt
-    member this.DepthTest = ValueOption.defaultValue LessThanTest this.DepthTestOpt
-    member this.DepthWrite = ValueOption.defaultValue true this.DepthWriteOpt
-    member this.Blend = ValueOption.defaultValue Transparent this.BlendOpt
-    member this.PipelineName = ValueOption.defaultValue Constants.Render.PipelineNameDefault this.PipelineNameOpt
-
-    /// Get the hash code for this material.
-    static member hash material =
-        hash material.AlbedoImageOpt ^^^
-        hash material.RoughnessImageOpt ^^^
-        hash material.MetallicImageOpt ^^^
-        hash material.AmbientOcclusionImageOpt ^^^
-        hash material.EmissionImageOpt ^^^
-        hash material.NormalImageOpt ^^^
-        hash material.SubdermalImageOpt ^^^
-        hash material.FinenessImageOpt ^^^
-        hash material.ScatterImageOpt ^^^
-        hash material.ClearCoatImageOpt ^^^
-        hash material.ClearCoatRoughnessImageOpt ^^^
-        hash material.ClearCoatNormalImageOpt ^^^
-        hash material.UserDefinedImage0Opt ^^^
-        hash material.UserDefinedImage1Opt ^^^
-        hash material.UserDefinedImage2Opt ^^^
-        hash material.CullModeOpt ^^^
-        hash material.ClippedOpt ^^^
-        hash material.BlendOpt ^^^
-        hash material.PipelineNameOpt
-
-    /// Check that two materials are equal.
-    static member equals this that =
-        refEq this that ||
-        this.AlbedoImageOpt = that.AlbedoImageOpt &&
-        this.RoughnessImageOpt = that.RoughnessImageOpt &&
-        this.MetallicImageOpt = that.MetallicImageOpt &&
-        this.AmbientOcclusionImageOpt = that.AmbientOcclusionImageOpt &&
-        this.EmissionImageOpt = that.EmissionImageOpt &&
-        this.NormalImageOpt = that.NormalImageOpt &&
-        this.SubdermalImageOpt = that.SubdermalImageOpt &&
-        this.FinenessImageOpt = that.FinenessImageOpt &&
-        this.ScatterImageOpt = that.ScatterImageOpt &&
-        this.ClearCoatImageOpt = that.ClearCoatImageOpt &&
-        this.ClearCoatRoughnessImageOpt = that.ClearCoatRoughnessImageOpt &&
-        this.ClearCoatNormalImageOpt = that.ClearCoatNormalImageOpt &&
-        this.UserDefinedImage0Opt = that.UserDefinedImage0Opt &&
-        this.UserDefinedImage1Opt = that.UserDefinedImage1Opt &&
-        this.UserDefinedImage2Opt = that.UserDefinedImage2Opt &&
-        this.CullModeOpt = that.CullModeOpt &&
-        this.ClippedOpt = that.ClippedOpt &&
-        this.DepthTestOpt = that.DepthTestOpt &&
-        this.DepthWriteOpt = that.DepthWriteOpt &&
-        this.BlendOpt = that.BlendOpt &&
-        this.PipelineNameOpt = that.PipelineNameOpt
-
-    /// The material with populated default images.
-    static member val defaultMaterial =
-        { AlbedoImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialAlbedoName)
-          RoughnessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialRoughnessName)
-          MetallicImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialMetallicName)
-          AmbientOcclusionImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialAmbientOcclusionName)
-          EmissionImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialEmissionName)
-          NormalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialNormalName)
-          SubdermalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialSubdermalName)
-          FinenessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialFinenessName)
-          ScatterImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialScatterName)
-          ClearCoatImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatName)
-          ClearCoatRoughnessImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatRoughnessName)
-          ClearCoatNormalImageOpt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialClearCoatNormalName)
-          UserDefinedImage0Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage0Name)
-          UserDefinedImage1Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage1Name)
-          UserDefinedImage2Opt = ValueSome (asset Assets.Default.PackageName Assets.Default.MaterialUserDefinedImage2Name)
-          CullModeOpt = ValueSome CullBack
-          ClippedOpt = ValueSome false
-          DepthTestOpt = ValueSome LessThanTest
-          DepthWriteOpt = ValueSome true
-          BlendOpt = ValueSome Transparent
-          PipelineNameOpt = ValueSome Constants.Render.PipelineNameDefault }
-
-    /// The empty material.
-    static member val empty =
-        { AlbedoImageOpt = ValueNone
-          RoughnessImageOpt = ValueNone
-          MetallicImageOpt = ValueNone
-          AmbientOcclusionImageOpt = ValueNone
-          EmissionImageOpt = ValueNone
-          NormalImageOpt = ValueNone
-          SubdermalImageOpt = ValueNone
-          FinenessImageOpt = ValueNone
-          ScatterImageOpt = ValueNone
-          ClearCoatImageOpt = ValueNone
-          ClearCoatRoughnessImageOpt = ValueNone
-          ClearCoatNormalImageOpt = ValueNone
-          UserDefinedImage0Opt = ValueNone
-          UserDefinedImage1Opt = ValueNone
-          UserDefinedImage2Opt = ValueNone
-          CullModeOpt = ValueNone
-          ClippedOpt = ValueNone
-          DepthTestOpt = ValueNone
-          DepthWriteOpt = ValueNone
-          BlendOpt = ValueNone
-          PipelineNameOpt = ValueNone }
-
-    override this.GetHashCode () =
-        Material.hash this
-
-    override this.Equals (that : obj) =
-        match that with
-        | :? Material as that -> Material.equals this that
-        | _ -> false
-
-    interface IEquatable<Material> with
-        member this.Equals that =
-            Material.equals this that
-
-/// A mutable 3d light probe value.
-type [<Struct>] LightProbe3dValue =
+/// A mutable light probe value.
+type [<Struct>] LightProbeValue =
     { mutable LightProbeId : uint64
       mutable Enabled : bool
       mutable Origin : Vector3
@@ -401,8 +401,8 @@ type [<Struct>] BillboardValue =
       mutable CastShadow : bool
       mutable Presence : Presence
       mutable InsetOpt : Box2 option
-      mutable MaterialProperties : MaterialProperties
       mutable Material : Material
+      mutable MaterialProperties : MaterialProperties
       mutable ShadowOffset : single
       mutable RenderType : RenderType }
 
@@ -412,8 +412,8 @@ type [<Struct>] StaticModelValue =
       mutable CastShadow : bool
       mutable Presence : Presence
       mutable InsetOpt : Box2 option
-      mutable MaterialProperties : MaterialProperties
       mutable Material : Material
+      mutable MaterialProperties : MaterialProperties
       mutable StaticModel : StaticModel AssetTag
       mutable RenderType : RenderType }
 
@@ -423,16 +423,16 @@ type [<Struct>] StaticModelSurfaceValue =
       mutable CastShadow : bool
       mutable Presence : Presence
       mutable InsetOpt : Box2 option
-      mutable MaterialProperties : MaterialProperties
       mutable Material : Material
+      mutable MaterialProperties : MaterialProperties
       mutable StaticModel : StaticModel AssetTag
       mutable SurfaceIndex : int
       mutable RenderType : RenderType }
 
 /// Describes billboard-based particles.
 type BillboardParticlesDescriptor =
-    { MaterialProperties : MaterialProperties
-      Material : Material
+    { Material : Material
+      MaterialProperties : MaterialProperties
       ShadowOffset : single
       Particles : Particle SArray
       RenderType : RenderType }
@@ -459,8 +459,8 @@ type TerrainDescriptor =
     { Bounds : Box3
       CastShadow : bool
       InsetOpt : Box2 option
-      MaterialProperties : TerrainMaterialProperties
       Material : TerrainMaterial
+      MaterialProperties : TerrainMaterialProperties
       TintImageOpt : Image AssetTag option
       NormalImageOpt : Image AssetTag option
       Tiles : Vector2
@@ -483,8 +483,8 @@ type CachedStaticModelMessage =
       mutable CachedStaticModelCastShadow : bool
       mutable CachedStaticModelPresence : Presence
       mutable CachedStaticModelInsetOpt : Box2 voption
-      mutable CachedStaticModelMaterialProperties : MaterialProperties
       mutable CachedStaticModelMaterial : Material
+      mutable CachedStaticModelMaterialProperties : MaterialProperties
       mutable CachedStaticModel : StaticModel AssetTag
       mutable CachedStaticModelRenderType : RenderType
       mutable CachedStaticModelRenderPass : RenderPass }
@@ -495,22 +495,21 @@ type CachedStaticModelSurfaceMessage =
       mutable CachedStaticModelSurfaceCastShadow : bool
       mutable CachedStaticModelSurfacePresence : Presence
       mutable CachedStaticModelSurfaceInsetOpt : Box2 voption
-      mutable CachedStaticModelSurfaceMaterialProperties : MaterialProperties
       mutable CachedStaticModelSurfaceMaterial : Material
+      mutable CachedStaticModelSurfaceMaterialProperties : MaterialProperties
       mutable CachedStaticModelSurfaceModel : StaticModel AssetTag
       mutable CachedStaticModelSurfaceIndex : int
       mutable CachedStaticModelSurfaceRenderType : RenderType
       mutable CachedStaticModelSurfaceRenderPass : RenderPass }
 
 /// An internally cached animated model used to reduce GC promotion or pressure.
-/// TODO: P0: add a corresponding workflow for AnimatedModelSurface.
 type CachedAnimatedModelMessage =
     { mutable CachedAnimatedModelMatrix : Matrix4x4
       mutable CachedAnimatedModelCastShadow : bool
       mutable CachedAnimatedModelPresence : Presence
       mutable CachedAnimatedModelInsetOpt : Box2 voption
-      mutable CachedAnimatedModelMaterialProperties : MaterialProperties
       mutable CachedAnimatedModelMaterial : Material
+      mutable CachedAnimatedModelMaterialProperties : MaterialProperties
       mutable CachedAnimatedModelBoneTransforms : Matrix4x4 array
       mutable CachedAnimatedModel : AnimatedModel AssetTag
       mutable CachedAnimatedModelSubsortOffsets : Map<int, single>
@@ -518,15 +517,30 @@ type CachedAnimatedModelMessage =
       mutable CachedAnimatedModelRenderType : RenderType
       mutable CachedAnimatedModelRenderPass : RenderPass }
 
-/// Describes a user-defined 3D rendering pipeline.
+/// An internally cached animated model surface used to reduce GC promotion or pressure.
+type CachedAnimatedModelSurfaceMessage =
+    { mutable CachedAnimatedModelSurfaceMatrix : Matrix4x4
+      mutable CachedAnimatedModelSurfaceCastShadow : bool
+      mutable CachedAnimatedModelSurfacePresence : Presence
+      mutable CachedAnimatedModelSurfaceInsetOpt : Box2 voption
+      mutable CachedAnimatedModelSurfaceMaterial : Material
+      mutable CachedAnimatedModelSurfaceMaterialProperties : MaterialProperties
+      mutable CachedAnimatedModelSurfaceBoneTransforms : Matrix4x4 array
+      mutable CachedAnimatedModelSurfaceModel : AnimatedModel AssetTag
+      mutable CachedAnimatedModelSurfaceIndex : int
+      mutable CachedAnimatedModelSurfaceDualRendering : bool
+      mutable CachedAnimatedModelSurfaceRenderType : RenderType
+      mutable CachedAnimatedModelSurfaceRenderPass : RenderPass }
+
+/// Describes a user-defined 3d rendering pipeline.
 type UserDefinedPipeline3dDescriptor =
     { PipelineType : Pipeline3dType
       PipelineName : string
       ShaderPath : string
-      UserDefinedSettingNames : string array
-      UserDefinedImageNames : string array }
+      UserDefinedImageNames : string array
+      UserDefinedSettingNames : string array }
 
-/// Describes how to create a user-defined 3D rendering pipeline.
+/// Describes how to create a user-defined 3d rendering pipeline.
 type CreateUserDefinedPipeline3d =
     { Pipeline3dDescriptor : UserDefinedPipeline3dDescriptor }
 
@@ -586,8 +600,8 @@ type RenderSkyBox =
       CubeMap : CubeMap AssetTag
       RenderPass : RenderPass }
 
-/// Describes how to render a 3D light probe.
-type RenderLightProbe3d =
+/// Describes how to render a light probe.
+type RenderLightProbe =
     { LightProbeId : uint64
       Enabled : bool
       Origin : Vector3
@@ -596,12 +610,12 @@ type RenderLightProbe3d =
       Bounds : Box3
       RenderPass : RenderPass }
 
-/// Describes how to render a 3D light map.
-type RenderLightMap3d =
+/// Describes how to render a light map.
+type RenderLightMap =
     { LightProbeId : uint64
       RenderPass : RenderPass }
 
-/// Describes how to render a 3D light.
+/// Describes how to render a 3d light.
 type RenderLight3d =
     { LightId : uint64
       Origin : Vector3
@@ -627,8 +641,8 @@ type RenderBillboard =
       InsetOpt : Box2 option
       OrientUp : bool
       Planar : bool
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       ShadowOffset : single
       RenderType : RenderType
       RenderPass : RenderPass }
@@ -636,8 +650,8 @@ type RenderBillboard =
 /// Describes how to render multiple billboards with shared attributes.
 type RenderBillboards =
     { Billboards : (Matrix4x4 * bool * Presence * Box2 option * bool * bool) SList
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       ShadowOffset : single
       RenderType : RenderType
       RenderPass : RenderPass }
@@ -646,8 +660,8 @@ type RenderBillboards =
 type RenderBillboardParticles =
     { CastShadow : bool
       Presence : Presence
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       ShadowOffset : single
       Particles : Particle SArray
       RenderType : RenderType
@@ -695,22 +709,20 @@ type RenderStaticModelSurfacePreBatches =
       RenderPass : RenderPass }
 
 /// Describes how to render a static model.
-/// TODO: P0: see if we can add Material to this in the way we added it to RenderAnimatedModel without incurring a
-/// significant amount of processing overhead.
 type RenderStaticModel =
     { ModelMatrix : Matrix4x4
       CastShadow : bool
       Presence : Presence
       InsetOpt : Box2 option
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       StaticModel : StaticModel AssetTag
       RenderType : RenderType
       RenderPass : RenderPass }
 
 /// Describes how to render multiple static model with shared attributes.
 type RenderStaticModels =
-    { StaticModels : (Matrix4x4 * bool * Presence * Box2 option * MaterialProperties * Material) SList
+    { StaticModels : (Matrix4x4 * bool * Presence * Box2 option * Material * MaterialProperties) SList
       StaticModel : StaticModel AssetTag
       RenderType : RenderType
       RenderPass : RenderPass }
@@ -721,8 +733,8 @@ type RenderAnimatedModelSurface =
       CastShadow : bool
       Presence : Presence
       InsetOpt : Box2 option
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       BoneTransforms : Matrix4x4 array
       AnimatedModel : AnimatedModel AssetTag
       SurfaceIndex : int
@@ -736,8 +748,8 @@ type RenderAnimatedModel =
       CastShadow : bool
       Presence : Presence
       InsetOpt : Box2 option
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       BoneTransforms : Matrix4x4 array
       AnimatedModel : AnimatedModel AssetTag
       SubsortOffsets : Map<int, single>
@@ -748,7 +760,7 @@ type RenderAnimatedModel =
 /// Describes how to render multiple animated models with shared attributes.
 type RenderAnimatedModels =
     { BoneTransforms : Matrix4x4 array
-      AnimatedModels : (Matrix4x4 * bool * Presence * Box2 option * MaterialProperties * Material) SList
+      AnimatedModels : (Matrix4x4 * bool * Presence * Box2 option * Material * MaterialProperties) SList
       AnimatedModel : AnimatedModel AssetTag
       SubsortOffsets : Map<int, single>
       DualRenderedSurfaces : Map<int, MaterialProperties option>
@@ -761,8 +773,8 @@ type RenderUserDefinedStaticModel =
       CastShadow : bool
       Presence : Presence
       InsetOpt : Box2 option
-      MaterialProperties : MaterialProperties
       Material : Material
+      MaterialProperties : MaterialProperties
       StaticModelSurfaceDescriptors : StaticModelSurfaceDescriptor array
       Bounds : Box3
       RenderType : RenderType
@@ -966,8 +978,8 @@ type RenderMessage3d =
     | CreateUserDefinedStaticModel of CreateUserDefinedStaticModel
     | DestroyUserDefinedStaticModel of DestroyUserDefinedStaticModel
     | RenderSkyBox of RenderSkyBox
-    | RenderLightProbe3d of RenderLightProbe3d
-    | RenderLightMap3d of RenderLightMap3d
+    | RenderLightProbe of RenderLightProbe
+    | RenderLightMap of RenderLightMap
     | RenderLight3d of RenderLight3d
     | RenderBillboard of RenderBillboard
     | RenderBillboards of RenderBillboards
@@ -984,6 +996,7 @@ type RenderMessage3d =
     | RenderAnimatedModel of RenderAnimatedModel
     | RenderAnimatedModels of RenderAnimatedModels
     | RenderCachedAnimatedModel of CachedAnimatedModelMessage
+    | RenderCachedAnimatedModelSurface of CachedAnimatedModelSurfaceMessage
     | RenderTerrain of RenderTerrain
     | ConfigureLighting3d of Lighting3dConfig
     | ConfigureRenderer3d of Renderer3dConfig
@@ -1315,7 +1328,6 @@ type [<ReferenceEquality>] private RenderTasks =
             for entry in item do
                 entry.Value.Clear ()
 
-        // renderTasks.DeferredAnimatedRemovals.Clear () TODO: P0: ensure dummying this out doesn't cause a regression, then clean up.
         renderTasks.Forward.Clear ()
         renderTasks.ForwardSorted.Clear ()
 
@@ -1574,7 +1586,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
           IrradianceMap : Texture
           EnvironmentFilterMap : Texture
           PhysicallyBasedMaterial : PhysicallyBasedMaterial
-          mutable PhysicallyBasedAttachments : PhysicallyBasedAttachments
+          mutable PhysicallyBasedAttachments : PhysicallyBasedAttachments3d
           LightMaps : Dictionary<uint64, LightMap>
           mutable LightingConfig : Lighting3dConfig
           mutable LightingConfigChanged : bool
@@ -1862,7 +1874,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                 let surfaces =
                                     [|for surface in staticModel.Surfaces do
                                         let surfaceMaterial = scene.Materials[surface.SurfaceMaterialIndex]
-                                        let (_, surfaceMaterial) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient surfaceMaterial (Some renderer.VulkanContext)
+                                        let (surfaceMaterial, _) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient surfaceMaterial (Some renderer.VulkanContext)
                                         { surface with HashCode = surface.HashCode ^^^ hash surfaceMaterial; SurfaceMaterial = surfaceMaterial }|]
                                 StaticModelAsset (userDefinedImage, { staticModel with Surfaces = surfaces })
                             | Some _ | None -> renderAsset
@@ -1872,7 +1884,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                 let surfaces =
                                     [|for surface in animatedModel.Surfaces do
                                         let surfaceMaterial = scene.Materials[surface.SurfaceMaterialIndex]
-                                        let (_, surfaceMaterial) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient surfaceMaterial (Some renderer.VulkanContext)
+                                        let (surfaceMaterial, _) = PhysicallyBased.createPhysicallyBasedMaterial dirPath renderer.PhysicallyBasedMaterial renderPackage.PackageState.TextureClient surfaceMaterial (Some renderer.VulkanContext)
                                         { surface with HashCode = surface.HashCode ^^^ hash surfaceMaterial; SurfaceMaterial = surfaceMaterial }|]
                                 AnimatedModelAsset { animatedModel with Surfaces = surfaces }
                             | None -> renderAsset
@@ -2078,6 +2090,31 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                     | ValueSome (TextureAsset texture) -> texture
                     | _ -> renderer.PhysicallyBasedMaterial.AlbedoTexture
 
+                // make material
+                let material =
+                    { AlbedoTexture = albedoTexture
+                      RoughnessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.RoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.RoughnessTexture
+                      MetallicTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.MetallicImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.MetallicTexture
+                      AmbientOcclusionTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.AmbientOcclusionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture
+                      EmissionTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.EmissionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.EmissionTexture
+                      NormalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.NormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.NormalTexture
+                      SubdermalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.SubdermalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.SubdermalTexture
+                      FinenessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.FinenessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.FinenessTexture
+                      ScatterTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ScatterImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ScatterTexture
+                      ClearCoatTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatTexture
+                      ClearCoatRoughnessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatRoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatRoughnessTexture
+                      ClearCoatNormalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatNormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatNormalTexture
+                      UserDefinedImage0Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage0 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage0Texture
+                      UserDefinedImage1Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage1 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage1Texture
+                      UserDefinedImage2Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage2 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage2Texture
+                      CullMode = surfaceDescriptor.CullMode
+                      Clipped = surfaceDescriptor.Clipped
+                      DepthTest = surfaceDescriptor.DepthTest
+                      DepthWrite = surfaceDescriptor.DepthWrite
+                      Blend = surfaceDescriptor.Blend
+                      PipelineName = surfaceDescriptor.PipelineName
+                      Names = "" }
+
                 // make material properties
                 let properties =
                     { Albedo = surfaceDescriptor.MaterialProperties.Albedo
@@ -2104,31 +2141,6 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                       UserDefinedSetting5 = surfaceDescriptor.MaterialProperties.UserDefinedSetting5
                       UserDefinedSetting6 = surfaceDescriptor.MaterialProperties.UserDefinedSetting6
                       UserDefinedSetting7 = surfaceDescriptor.MaterialProperties.UserDefinedSetting7 }
-
-                // make material
-                let material =
-                    { AlbedoTexture = albedoTexture
-                      RoughnessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.RoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.RoughnessTexture
-                      MetallicTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.MetallicImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.MetallicTexture
-                      AmbientOcclusionTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.AmbientOcclusionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.AmbientOcclusionTexture
-                      EmissionTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.EmissionImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.EmissionTexture
-                      NormalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.NormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.NormalTexture
-                      SubdermalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.SubdermalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.SubdermalTexture
-                      FinenessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.FinenessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.FinenessTexture
-                      ScatterTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ScatterImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ScatterTexture
-                      ClearCoatTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatTexture
-                      ClearCoatRoughnessTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatRoughnessImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatRoughnessTexture
-                      ClearCoatNormalTexture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.ClearCoatNormalImage renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.ClearCoatNormalTexture
-                      UserDefinedImage0Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage0 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage0Texture
-                      UserDefinedImage1Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage1 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage1Texture
-                      UserDefinedImage2Texture = match VulkanRenderer3d.tryGetRenderAsset surfaceDescriptor.UserDefinedImage2 renderer with ValueSome (TextureAsset texture) -> texture | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage2Texture
-                      CullMode = surfaceDescriptor.CullMode
-                      Clipped = surfaceDescriptor.Clipped
-                      DepthTest = surfaceDescriptor.DepthTest
-                      DepthWrite = surfaceDescriptor.DepthWrite
-                      Blend = surfaceDescriptor.Blend
-                      PipelineName = surfaceDescriptor.PipelineName
-                      Names = "" }
 
                 // create vertex data, truncating it when required
                 let vertexCount = surfaceDescriptor.Positions.Length
@@ -2172,7 +2184,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 let geometry = PhysicallyBased.createPhysicallyBasedStaticGeometry VkPrimitiveTopology.TriangleList vertexData indexData surfaceDescriptor.Bounds (Some renderer.VulkanContext)
 
                 // create surface
-                let surface = PhysicallyBasedSurface.make Array.empty surfaceDescriptor.ModelMatrix surfaceDescriptor.Bounds properties material -1 Assimp.Node.Empty geometry
+                let surface = PhysicallyBasedSurface.make Array.empty surfaceDescriptor.ModelMatrix surfaceDescriptor.Bounds material properties -1 Assimp.Node.Empty geometry
                 surfaces.Add surface
 
             // create user-defined static model
@@ -2466,7 +2478,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // error
         | (_, _) -> None
 
-    static member private makeBillboardMaterial (properties : MaterialProperties) (material : Material) renderer =
+    static member private makeBillboardMaterial (material : Material) (properties : MaterialProperties) renderer =
         let albedoTexture =
             match VulkanRenderer3d.tryGetRenderAsset material.AlbedoImage renderer with
             | ValueSome (TextureAsset texture) -> texture
@@ -2527,6 +2539,29 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             match VulkanRenderer3d.tryGetRenderAsset material.UserDefinedImage2 renderer with
             | ValueSome (TextureAsset texture) -> texture
             | _ -> renderer.PhysicallyBasedMaterial.UserDefinedImage2Texture
+        let material : PhysicallyBasedMaterial =
+            { AlbedoTexture = albedoTexture
+              RoughnessTexture = roughnessTexture
+              MetallicTexture = metallicTexture
+              AmbientOcclusionTexture = ambientOcclusionTexture
+              EmissionTexture = emissionTexture
+              NormalTexture = normalTexture
+              SubdermalTexture = subdermalTexture
+              FinenessTexture = finenessTexture
+              ScatterTexture = scatterTexture
+              ClearCoatTexture = clearCoatTexture
+              ClearCoatRoughnessTexture = clearCoatRoughnessTexture
+              ClearCoatNormalTexture = clearCoatNormalTexture
+              UserDefinedImage0Texture = userDefinedImage0Texture
+              UserDefinedImage1Texture = userDefinedImage1Texture
+              UserDefinedImage2Texture = userDefinedImage2Texture
+              CullMode = material.CullMode
+              Clipped = material.Clipped
+              DepthTest = material.DepthTest
+              DepthWrite = material.DepthWrite
+              Blend = material.Blend
+              PipelineName = material.PipelineName
+              Names = "" }
         let properties : PhysicallyBasedMaterialProperties =
             { Albedo = properties.Albedo
               Roughness = properties.Roughness
@@ -2552,30 +2587,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
               UserDefinedSetting5 = properties.UserDefinedSetting5
               UserDefinedSetting6 = properties.UserDefinedSetting6
               UserDefinedSetting7 = properties.UserDefinedSetting7 }
-        let material : PhysicallyBasedMaterial =
-            { AlbedoTexture = albedoTexture
-              RoughnessTexture = roughnessTexture
-              MetallicTexture = metallicTexture
-              AmbientOcclusionTexture = ambientOcclusionTexture
-              EmissionTexture = emissionTexture
-              NormalTexture = normalTexture
-              SubdermalTexture = subdermalTexture
-              FinenessTexture = finenessTexture
-              ScatterTexture = scatterTexture
-              ClearCoatTexture = clearCoatTexture
-              ClearCoatRoughnessTexture = clearCoatRoughnessTexture
-              ClearCoatNormalTexture = clearCoatNormalTexture
-              UserDefinedImage0Texture = userDefinedImage0Texture
-              UserDefinedImage1Texture = userDefinedImage1Texture
-              UserDefinedImage2Texture = userDefinedImage2Texture
-              CullMode = material.CullMode
-              Clipped = material.Clipped
-              DepthTest = material.DepthTest
-              DepthWrite = material.DepthWrite
-              Blend = material.Blend
-              PipelineName = material.PipelineName
-              Names = "" }
-        struct (properties, material)
+        struct (material, properties)
 
     static member private applySurfaceMaterial (material : Material) (surfaceMaterial : PhysicallyBasedMaterial) renderer =
         let albedoTexture =
@@ -2980,8 +2992,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
          castShadow : bool,
          presence : Presence,
          insetOpt : Box2 voption inref,
-         properties : MaterialProperties,
          material : Material,
+         properties : MaterialProperties,
          staticModel : StaticModel AssetTag,
          surfaceIndex : int,
          renderType : RenderType,
@@ -3076,8 +3088,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
          castShadow : bool,
          presence : Presence,
          insetOpt : Box2 voption inref,
-         properties : MaterialProperties,
          material : Material,
+         properties : MaterialProperties,
          staticModel : StaticModel AssetTag,
          renderType : RenderType,
          renderPass : RenderPass,
@@ -3154,8 +3166,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
          castShadow : bool,
          presence : Presence,
          insetOpt : Box2 voption inref,
-         properties : MaterialProperties,
          material : Material,
+         properties : MaterialProperties,
          boneTransforms : Matrix4x4 array,
          animatedModel : AnimatedModel AssetTag,
          surfaceIndex : int,
@@ -3228,8 +3240,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
          castShadow : bool,
          presence : Presence,
          insetOpt : Box2 voption inref,
-         properties : MaterialProperties,
          material : Material,
+         properties : MaterialProperties,
          boneTransforms : Matrix4x4 array,
          animatedModel : AnimatedModel AssetTag,
          subsortOffsets : Map<int, single>,
@@ -3315,7 +3327,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         | ValueNone -> Log.infoOnce ("Cannot render animated model due to unloadable asset(s) for '" + scstring animatedModel + "'.")
 
     static member private categorizeAnimatedModels
-        (animatedModels : (Matrix4x4 * bool * Presence * Box2 option * MaterialProperties * Material) SList,
+        (animatedModels : (Matrix4x4 * bool * Presence * Box2 option * Material * MaterialProperties) SList,
          boneTransforms : Matrix4x4 array,
          animatedModel : AnimatedModel AssetTag,
          subsortOffsets : Map<int, single>,
@@ -3335,7 +3347,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
 
                     // render animated surfaces
                     let surface = modelAsset.Surfaces[i]
-                    for (model, castShadow, presence, insetOpt, properties, material) in animatedModels do // TODO: see if these should a struct tuples.
+                    for (model, castShadow, presence, insetOpt, material, properties) in animatedModels do // TODO: see if these should a struct tuples.
 
                         // compute tex coords offset
                         let texCoordsOffset =
@@ -3546,13 +3558,13 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             | RenderSkyBox rsb ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rsb.RenderPass renderer
                 renderTasks.SkyBoxes.Add (rsb.AmbientColor, rsb.AmbientBrightness, rsb.CubeMapColor, rsb.CubeMapBrightness, rsb.CubeMap)
-            | RenderLightProbe3d rlp ->
+            | RenderLightProbe rlp ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rlp.RenderPass renderer
                 if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
                     Log.warnOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
                     renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
                 renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
-            | RenderLightMap3d rlm ->
+            | RenderLightMap rlm ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rlm.RenderPass renderer
                 renderTasks.LightMapRenders.Add rlm.LightProbeId |> ignore<bool>
             | RenderLight3d rl ->
@@ -3582,18 +3594,18 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 if rl.DesireShadows then
                     renderer.LightsDesiringShadows[rl.LightId] <- light
             | RenderBillboard rb ->
-                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial rb.MaterialProperties rb.Material renderer
-                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f 0.5f -0.5f) v3One) billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rb.Material rb.MaterialProperties renderer
+                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f 0.5f -0.5f) v3One) billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
                 let renderTasks = VulkanRenderer3d.getRenderTasks rb.RenderPass renderer
                 VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.RenderType, rb.RenderPass, renderTasks, renderer)
             | RenderBillboards rbs ->
-                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial rbs.MaterialProperties rbs.Material renderer
-                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f -0.5f -0.5f) v3One) billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rbs.Material rbs.MaterialProperties renderer
+                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f -0.5f -0.5f) v3One) billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
                 let renderTasks = VulkanRenderer3d.getRenderTasks rbs.RenderPass renderer
                 for (model, castShadow, presence, insetOpt, orientUp, planar) in rbs.Billboards do
                     VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
             | RenderBillboardParticles rbps ->
-                let struct (billboardProperties, billboardMaterial) = VulkanRenderer3d.makeBillboardMaterial rbps.MaterialProperties rbps.Material renderer
+                let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rbps.Material rbps.MaterialProperties renderer
                 let renderTasks = VulkanRenderer3d.getRenderTasks rbps.RenderPass renderer
                 for particle in rbps.Particles do
                     let billboardMatrix =
@@ -3602,11 +3614,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                              particle.Transform.Rotation,
                              particle.Transform.Size * particle.Transform.Scale)
                     let billboardProperties = { billboardProperties with Albedo = billboardProperties.Albedo * particle.Color; Emission = particle.Emission.R }
-                    let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity box3Zero billboardProperties billboardMaterial -1 Assimp.Node.Empty renderer.BillboardGeometry
+                    let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity box3Zero billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
                     VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
             | RenderStaticModelSurface rsms ->
                 let insetOpt = Option.toValueOption rsms.InsetOpt
-                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, rsms.MaterialProperties, rsms.Material, rsms.StaticModel, rsms.SurfaceIndex, rsms.RenderType, rsms.RenderPass, renderer)
+                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, rsms.Material, rsms.MaterialProperties, rsms.StaticModel, rsms.SurfaceIndex, rsms.RenderType, rsms.RenderPass, renderer)
             | RenderStaticModelSurfacePreBatch rsmsb ->
                 let renderPass = rsmsb.RenderPass
                 let renderTasks = VulkanRenderer3d.getRenderTasks renderPass renderer
@@ -3619,38 +3631,41 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             | RenderStaticModel rsm ->
                 let insetOpt = Option.toValueOption rsm.InsetOpt
                 let renderTasks = VulkanRenderer3d.getRenderTasks rsm.RenderPass renderer
-                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, rsm.MaterialProperties, rsm.Material, rsm.StaticModel, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
+                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rsm.ModelMatrix, rsm.CastShadow, rsm.Presence, &insetOpt, rsm.Material, rsm.MaterialProperties, rsm.StaticModel, rsm.RenderType, rsm.RenderPass, renderTasks, renderer)
             | RenderStaticModels rsms ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rsms.RenderPass renderer
                 for (model, castShadow, presence, insetOpt, properties, material) in rsms.StaticModels do // TODO: see if these should be struct tuples.
                     let insetOpt = Option.toValueOption insetOpt
                     VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &model, castShadow, presence, &insetOpt, properties, material, rsms.StaticModel, rsms.RenderType, rsms.RenderPass, renderTasks, renderer)
-            | RenderCachedStaticModelSurface csmsm ->
-                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, csmsm.CachedStaticModelSurfaceMaterialProperties, csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
             | RenderCachedStaticModel csmm ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks csmm.CachedStaticModelRenderPass renderer
-                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModelMaterial, csmm.CachedStaticModel, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
+                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &csmm.CachedStaticModelMatrix, csmm.CachedStaticModelCastShadow, csmm.CachedStaticModelPresence, &csmm.CachedStaticModelInsetOpt, csmm.CachedStaticModelMaterial, csmm.CachedStaticModelMaterialProperties, csmm.CachedStaticModel, csmm.CachedStaticModelRenderType, csmm.CachedStaticModelRenderPass, renderTasks, renderer)
+            | RenderCachedStaticModelSurface csmsm ->
+                VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&csmsm.CachedStaticModelSurfaceMatrix, csmsm.CachedStaticModelSurfaceCastShadow, csmsm.CachedStaticModelSurfacePresence, &csmsm.CachedStaticModelSurfaceInsetOpt, csmsm.CachedStaticModelSurfaceMaterial, csmsm.CachedStaticModelSurfaceMaterialProperties, csmsm.CachedStaticModelSurfaceModel, csmsm.CachedStaticModelSurfaceIndex, csmsm.CachedStaticModelSurfaceRenderType, csmsm.CachedStaticModelSurfaceRenderPass, renderer)
             | RenderUserDefinedStaticModel rudsm ->
                 let insetOpt = Option.toValueOption rudsm.InsetOpt
                 let assetTag = asset Assets.Default.PackageName Gen.name // TODO: see if we should instead use a specialized package for temporary assets like these.
                 VulkanRenderer3d.tryCreateUserDefinedStaticModel rudsm.StaticModelSurfaceDescriptors rudsm.Bounds assetTag renderer
                 let renderTasks = VulkanRenderer3d.getRenderTasks rudsm.RenderPass renderer
-                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, rudsm.MaterialProperties, rudsm.Material, assetTag, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
+                VulkanRenderer3d.categorizeStaticModel (frustumInterior, frustumExterior, frustumImposter, &rudsm.ModelMatrix, rudsm.CastShadow, rudsm.Presence, &insetOpt, rudsm.Material, rudsm.MaterialProperties, assetTag, rudsm.RenderType, rudsm.RenderPass, renderTasks, renderer)
                 renderer.UserDefinedStaticModelsToDestroy.Add assetTag
             | RenderAnimatedModelSurface rams ->
                 let insetOpt = Option.toValueOption rams.InsetOpt
                 let renderTasks = VulkanRenderer3d.getRenderTasks rams.RenderPass renderer
-                VulkanRenderer3d.categorizeAnimatedModelSurface (&rams.ModelMatrix, rams.CastShadow, rams.Presence, &insetOpt, rams.MaterialProperties, rams.Material, rams.BoneTransforms, rams.AnimatedModel, rams.SurfaceIndex, rams.DualRendered, rams.RenderType, renderTasks, renderer)
+                VulkanRenderer3d.categorizeAnimatedModelSurface (&rams.ModelMatrix, rams.CastShadow, rams.Presence, &insetOpt, rams.Material, rams.MaterialProperties, rams.BoneTransforms, rams.AnimatedModel, rams.SurfaceIndex, rams.DualRendered, rams.RenderType, renderTasks, renderer)
             | RenderAnimatedModel ram ->
                 let insetOpt = Option.toValueOption ram.InsetOpt
                 let renderTasks = VulkanRenderer3d.getRenderTasks ram.RenderPass renderer
-                VulkanRenderer3d.categorizeAnimatedModel (&ram.ModelMatrix, ram.CastShadow, ram.Presence, &insetOpt, ram.MaterialProperties, ram.Material, ram.BoneTransforms, ram.AnimatedModel, ram.SubsortOffsets, ram.DualRenderedSurfaces, ram.RenderType, renderTasks, renderer)
+                VulkanRenderer3d.categorizeAnimatedModel (&ram.ModelMatrix, ram.CastShadow, ram.Presence, &insetOpt, ram.Material, ram.MaterialProperties, ram.BoneTransforms, ram.AnimatedModel, ram.SubsortOffsets, ram.DualRenderedSurfaces, ram.RenderType, renderTasks, renderer)
             | RenderAnimatedModels rams ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rams.RenderPass renderer
                 VulkanRenderer3d.categorizeAnimatedModels (rams.AnimatedModels, rams.BoneTransforms, rams.AnimatedModel, rams.SubsortOffsets, rams.DualRenderedSurfaces, rams.RenderType, renderTasks, renderer)
-            | RenderCachedAnimatedModel camm ->
-                let renderTasks = VulkanRenderer3d.getRenderTasks camm.CachedAnimatedModelRenderPass renderer
-                VulkanRenderer3d.categorizeAnimatedModel (&camm.CachedAnimatedModelMatrix, camm.CachedAnimatedModelCastShadow, camm.CachedAnimatedModelPresence, &camm.CachedAnimatedModelInsetOpt, camm.CachedAnimatedModelMaterialProperties, camm.CachedAnimatedModelMaterial, camm.CachedAnimatedModelBoneTransforms, camm.CachedAnimatedModel, camm.CachedAnimatedModelSubsortOffsets, camm.CachedAnimatedModelDualRenderedSurfaces, camm.CachedAnimatedModelRenderType, renderTasks, renderer)
+            | RenderCachedAnimatedModel cam ->
+                let renderTasks = VulkanRenderer3d.getRenderTasks cam.CachedAnimatedModelRenderPass renderer
+                VulkanRenderer3d.categorizeAnimatedModel (&cam.CachedAnimatedModelMatrix, cam.CachedAnimatedModelCastShadow, cam.CachedAnimatedModelPresence, &cam.CachedAnimatedModelInsetOpt, cam.CachedAnimatedModelMaterial, cam.CachedAnimatedModelMaterialProperties, cam.CachedAnimatedModelBoneTransforms, cam.CachedAnimatedModel, cam.CachedAnimatedModelSubsortOffsets, cam.CachedAnimatedModelDualRenderedSurfaces, cam.CachedAnimatedModelRenderType, renderTasks, renderer)
+            | RenderCachedAnimatedModelSurface cams ->
+                let renderTasks = VulkanRenderer3d.getRenderTasks cams.CachedAnimatedModelSurfaceRenderPass renderer
+                VulkanRenderer3d.categorizeAnimatedModelSurface (&cams.CachedAnimatedModelSurfaceMatrix, cams.CachedAnimatedModelSurfaceCastShadow, cams.CachedAnimatedModelSurfacePresence, &cams.CachedAnimatedModelSurfaceInsetOpt, cams.CachedAnimatedModelSurfaceMaterial, cams.CachedAnimatedModelSurfaceMaterialProperties, cams.CachedAnimatedModelSurfaceBoneTransforms, cams.CachedAnimatedModelSurfaceModel, cams.CachedAnimatedModelSurfaceIndex, cams.CachedAnimatedModelSurfaceDualRendering, cams.CachedAnimatedModelSurfaceRenderType, renderTasks, renderer)
             | RenderTerrain rt ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rt.RenderPass renderer
                 VulkanRenderer3d.categorizeTerrain (rt.Visible, rt.TerrainDescriptor, renderTasks, renderer)
@@ -4596,32 +4611,6 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         shadowCubeMapFace eyeCenter view projection
         lightShadowSamples lightShadowBias lightShadowSampleScalar lightShadowExponent lightShadowDensity
         terrainDescriptor materialSamplers geometry colorAttachments depthAttachment resolution renderPassIndex pipeline renderer =
-        let terrainMaterialProperties = terrainDescriptor.MaterialProperties
-        let materialProperties =
-            { Albedo = Option.defaultValue Constants.Render.AlbedoDefault terrainMaterialProperties.AlbedoOpt
-              Roughness = Option.defaultValue Constants.Render.RoughnessDefault terrainMaterialProperties.RoughnessOpt
-              Metallic = Constants.Render.MetallicDefault
-              AmbientOcclusion = Option.defaultValue Constants.Render.AmbientOcclusionDefault terrainMaterialProperties.AmbientOcclusionOpt
-              Emission = Constants.Render.EmissionDefault
-              IgnoreLightMaps = Option.defaultValue Constants.Render.IgnoreLightMapsDefault terrainMaterialProperties.IgnoreLightMapsOpt
-              Anisotropy = Constants.Render.AnisotropyDefault
-              OpaqueDistance = Constants.Render.OpaqueDistanceDefault
-              FinenessOffset = Constants.Render.FinenessOffsetDefault
-              ScatterType = Constants.Render.ScatterTypeDefault
-              SpecularScalar = Constants.Render.SpecularScalarDefault
-              SubsurfaceCutoff = Constants.Render.SubsurfaceCutoffDefault
-              SubsurfaceCutoffMargin = Constants.Render.SubsurfaceCutoffMarginDefault
-              RefractiveIndex = Constants.Render.RefractiveIndexDefault
-              ClearCoat = Constants.Render.ClearCoatDefault
-              ClearCoatRoughness = Constants.Render.ClearCoatRoughnessDefault
-              UserDefinedSetting0 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting0Opt
-              UserDefinedSetting1 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting1Opt
-              UserDefinedSetting2 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting2Opt
-              UserDefinedSetting3 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting3Opt
-              UserDefinedSetting4 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting4Opt
-              UserDefinedSetting5 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting5Opt
-              UserDefinedSetting6 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting6Opt
-              UserDefinedSetting7 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting7Opt }
         let (texelWidth, texelHeight, materials, userDefinedImage0Texture, userDefinedImage1Texture) =
             match terrainDescriptor.Material with
             | BlendMaterial blendMaterial ->
@@ -4715,6 +4704,32 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             Array.create Constants.Render.TerrainLayersMax PhysicallyBasedMaterial.empty
             |> Array.append materials
             |> Array.take Constants.Render.TerrainLayersMax
+        let terrainMaterialProperties = terrainDescriptor.MaterialProperties
+        let materialProperties =
+            { Albedo = Option.defaultValue Constants.Render.AlbedoDefault terrainMaterialProperties.AlbedoOpt
+              Roughness = Option.defaultValue Constants.Render.RoughnessDefault terrainMaterialProperties.RoughnessOpt
+              Metallic = Constants.Render.MetallicDefault
+              AmbientOcclusion = Option.defaultValue Constants.Render.AmbientOcclusionDefault terrainMaterialProperties.AmbientOcclusionOpt
+              Emission = Constants.Render.EmissionDefault
+              IgnoreLightMaps = Option.defaultValue Constants.Render.IgnoreLightMapsDefault terrainMaterialProperties.IgnoreLightMapsOpt
+              Anisotropy = Constants.Render.AnisotropyDefault
+              OpaqueDistance = Constants.Render.OpaqueDistanceDefault
+              FinenessOffset = Constants.Render.FinenessOffsetDefault
+              ScatterType = Constants.Render.ScatterTypeDefault
+              SpecularScalar = Constants.Render.SpecularScalarDefault
+              SubsurfaceCutoff = Constants.Render.SubsurfaceCutoffDefault
+              SubsurfaceCutoffMargin = Constants.Render.SubsurfaceCutoffMarginDefault
+              RefractiveIndex = Constants.Render.RefractiveIndexDefault
+              ClearCoat = Constants.Render.ClearCoatDefault
+              ClearCoatRoughness = Constants.Render.ClearCoatRoughnessDefault
+              UserDefinedSetting0 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting0Opt
+              UserDefinedSetting1 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting1Opt
+              UserDefinedSetting2 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting2Opt
+              UserDefinedSetting3 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting3Opt
+              UserDefinedSetting4 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting4Opt
+              UserDefinedSetting5 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting5Opt
+              UserDefinedSetting6 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting6Opt
+              UserDefinedSetting7 = Option.defaultValue Constants.Render.UserDefinedSettingDefault terrainMaterialProperties.UserDefinedSetting7Opt }
         let texCoordsOffset =
             match terrainDescriptor.InsetOpt with
             | Some inset ->
@@ -4911,6 +4926,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         DeviceApi.vkCmdEndRendering renderer.VulkanContext.RenderCommandBuffer
 
         // deferred static surface rendering
+        // TODO: consider getting rid of frame-based allocation here.
         let pipelineNames =
             renderTasks.DeferredStatic.Keys
             |> Seq.append renderTasks.DeferredStaticPreBatches.Keys
@@ -4970,6 +4986,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             endBatch ()
 
         // deferred static surface clipped rendering
+        // TODO: consider getting rid of frame-based allocation here.
         let pipelineNames =
             renderTasks.DeferredStaticClipped.Keys
             |> Seq.append renderTasks.DeferredStaticClippedPreBatches.Keys
@@ -5099,11 +5116,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // deferred render quad to light accum texture
         let lightAccumTexture = renderer.PhysicallyBasedAttachments.LightingAttachment
         Texture.recordTransitionLayout ColorAttachmentRead ColorAttachmentWrite lightAccumTexture renderer.VulkanContext.RenderCommandBuffer
-        PhysicallyBased.drawPhysicallyBasedDeferredLightingSurface
+        PhysicallyBased.drawPhysicallyBasedDeferredLighting3dSurface
             eyeCenter view geometryProjection renderer.LightingConfig.LightCutoffMargin renderer.LightingConfig.LightShadowSamples renderer.LightingConfig.LightShadowBias renderer.LightingConfig.LightShadowSampleScalar renderer.LightingConfig.LightShadowExponent renderer.LightingConfig.LightShadowDensity sssEnabled
             depthTexture albedoTexture materialTexture normalPlusTexture subdermalPlusTexture scatterPlusTexture clearCoatPlusTexture userDefinedBufferTexture shadowTextureArray shadowMaps shadowCascades
             lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightSpecularities lightCutoffs lightTypes lightRadii lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count) shadowNear renderer.ShadowMatricesFlipped renderer.UnfilteredSampler renderer.FilteredSampler
-            geometryResolution renderer.RenderPassIndex renderer.QuadGeometry lightAccumTexture renderer.PhysicallyBasedPipelines.DeferredLightingPipeline renderer.VulkanContext
+            geometryResolution renderer.RenderPassIndex renderer.QuadGeometry lightAccumTexture renderer.PhysicallyBasedPipelines.DeferredLighting3dPipeline renderer.VulkanContext
         Texture.recordTransitionLayout ColorAttachmentWrite ColorAttachmentRead lightAccumTexture renderer.VulkanContext.RenderCommandBuffer
 
         // setup fogging textures and viewport
@@ -5116,12 +5133,12 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 // deferred render quad to fogging textures
                 let fogAccumTexture = renderer.PhysicallyBasedAttachments.FoggingAttachment
                 Texture.recordTransitionLayout ColorAttachmentRead ColorAttachmentWrite fogAccumTexture renderer.VulkanContext.RenderCommandBuffer
-                PhysicallyBased.drawPhysicallyBasedDeferredFoggingSurface
+                PhysicallyBased.drawPhysicallyBasedDeferredFogging3dSurface
                     eyeCenter view geometryProjection renderer.LightingConfig.LightCutoffMargin renderer.LightingConfig.SsvfIntensity renderer.LightingConfig.SsvfSteps renderer.LightingConfig.SsvfAsymmetry
                     depthTexture shadowTextureArray shadowMaps shadowCascades lightMaps.Length renderer.LightingConfig.LightMapSingletonBlendMargin
                     lightOrigins lightDirections lightColors lightBrightnesses lightAttenuationLinears lightAttenuationQuadratics lightSpecularities lightCutoffs lightTypes lightRadii lightConeInners lightConeOuters lightDesireFogs lightShadowIndices (min lightIds.Length renderTasks.Lights.Count)
                     renderer.ShadowMatricesFlipped renderer.UnfilteredSampler renderer.FilteredSampler fogAccumTexture
-                    geometryResolution renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredFoggingPipeline renderer.VulkanContext
+                    geometryResolution renderer.RenderPassIndex renderer.QuadGeometry renderer.PhysicallyBasedPipelines.DeferredFogging3dPipeline renderer.VulkanContext
                 Texture.recordTransitionLayout ColorAttachmentWrite ColorAttachmentRead fogAccumTexture renderer.VulkanContext.RenderCommandBuffer
 
                 // deferred render down-sample filter quad to down-sample texture
@@ -5142,7 +5159,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                     downSampleColorTexture downSampleDepthTexture depthTexture renderer.FilteredSampler upSampleColorTexture.ImageView
                     geometryResolution renderer.QuadGeometry renderer.PhysicallyBasedPipelines.FilterBilateralUpSamplePipeline renderer.VulkanContext
                 Texture.recordTransitionLayout ColorAttachmentWrite ColorAttachmentRead upSampleColorTexture renderer.VulkanContext.RenderCommandBuffer
-                
+
                 // blit up-sample texture to fog accum texture
                 Texture.recordTransitionLayout ColorAttachmentRead TransferSrc upSampleColorTexture renderer.VulkanContext.RenderCommandBuffer
                 Texture.recordTransitionLayout ColorAttachmentRead TransferDst fogAccumTexture renderer.VulkanContext.RenderCommandBuffer
@@ -5727,68 +5744,68 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         
         // get albedo metadata and texture
         let albedoTexture =
-            match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialAlbedo" + ext) RenderThread context with
+            match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Albedo" + ext) RenderThread context with
             | Right textureInternal -> EagerTexture textureInternal
-            | Left error -> failwith ("Could not load albedo material texture due to: " + error)
+            | Left error -> failwith ("Could not load albedo material due to: " + error)
 
         // create default physically-based material
         let physicallyBasedMaterial : PhysicallyBasedMaterial =
             let roughnessTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialRoughness" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Roughness" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material roughness texture due to: " + error)
+                | Left error -> failwith ("Could not load roughness texture due to: " + error)
             let metallicTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialMetallic" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Metallic" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material metallic texture due to: " + error)
+                | Left error -> failwith ("Could not load metallic texture due to: " + error)
             let ambientOcclusionTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialAmbientOcclusion" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/AmbientOcclusion" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material ambient occlusion texture due to: " + error)
+                | Left error -> failwith ("Could not load ambient occlusion texture due to: " + error)
             let emissionTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialEmission" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Emission" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material emission texture due to: " + error)
+                | Left error -> failwith ("Could not load emission texture due to: " + error)
             let normalTexture =
-                match TextureInternal.tryCreate false true NormalCompression ("Assets/Default/MaterialNormal" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true NormalCompression ("Assets/Default/Normal" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material normal texture due to: " + error)
+                | Left error -> failwith ("Could not load normal texture due to: " + error)
             let subdermalTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialSubdermal" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Subdermal" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material subdermal texture due to: " + error)
+                | Left error -> failwith ("Could not load subdermal texture due to: " + error)
             let finenessTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialFineness" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Fineness" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material fineness texture due to: " + error)
+                | Left error -> failwith ("Could not load fineness texture due to: " + error)
             let scatterTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialSubdermal" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/Subdermal" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material scatter texture due to: " + error)
+                | Left error -> failwith ("Could not load scatter texture due to: " + error)
             let clearCoatTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialClearCoat" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/ClearCoat" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material clear coat texture due to: " + error)
+                | Left error -> failwith ("Could not load clear coat texture due to: " + error)
             let clearCoatRoughnessTexture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialClearCoatRoughness" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/ClearCoatRoughness" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material clear coat roughness texture due to: " + error)
+                | Left error -> failwith ("Could not load clear coat roughness texture due to: " + error)
             let clearCoatNormalTexture =
-                match TextureInternal.tryCreate false true NormalCompression ("Assets/Default/MaterialClearCoatNormal" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true NormalCompression ("Assets/Default/ClearCoatNormal" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material clear coat normal texture due to: " + error)
+                | Left error -> failwith ("Could not load clear coat normal texture due to: " + error)
             let userDefinedImage0Texture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialUserDefinedImage0" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/UserDefinedImage0" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material user-defined image 0 texture due to: " + error)
+                | Left error -> failwith ("Could not load user-defined image 0 texture due to: " + error)
             let userDefinedImage1Texture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialUserDefinedImage1" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/UserDefinedImage1" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material user-defined image 1 texture due to: " + error)
+                | Left error -> failwith ("Could not load user-defined image 1 texture due to: " + error)
             let userDefinedImage2Texture =
-                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/MaterialUserDefinedImage2" + ext) RenderThread context with
+                match TextureInternal.tryCreate false true ColorCompression ("Assets/Default/UserDefinedImage2" + ext) RenderThread context with
                 | Right textureInternal -> EagerTexture textureInternal
-                | Left error -> failwith ("Could not load material user-defined image 2 texture due to: " + error)
+                | Left error -> failwith ("Could not load user-defined image 2 texture due to: " + error)
             { AlbedoTexture = albedoTexture
               RoughnessTexture = roughnessTexture
               MetallicTexture = metallicTexture
