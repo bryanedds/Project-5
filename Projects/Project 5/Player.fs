@@ -105,10 +105,10 @@ type PlayerDispatcher () =
              Entity.Rotation @= rotationInterpolated * Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
              Entity.MountOpt .= None
              Entity.Static .= false
-             Entity.LightType .= SpotLight (0.25f, 0.8f, 1.2f)
              Entity.LightCutoff .= 12.0f
              Entity.Brightness .= 0.65f
-             Entity.DesireShadows .= true
+             Entity.LightType .= SpotLight (0.25f, 0.8f, 1.2f)
+             Entity.ShadowingType .= DynamicShadowing
              Entity.VisibleLocal @= entity.GetFlashLightEnabled world] world
 
         // declare player hearts
