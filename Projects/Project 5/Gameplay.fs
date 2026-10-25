@@ -467,8 +467,10 @@ type GameplayDispatcher () =
 
             // update eye light
             let eyeLightColor = Color.Lerp (Color.White, Color.Red, screen.GetDanger world * 0.5f)
+            let eyeLightBrightness = if player.GetFlashLightEnabled world then 0.25f else 0.15f
             Simulants.GameplayEyeLight.SetPosition (World.getEye3dCenter world) world
             Simulants.GameplayEyeLight.SetColor eyeLightColor world
+            Simulants.GameplayEyeLight.SetBrightness eyeLightBrightness world
 
             // declare quit button
             if World.doButton "Quit" [Entity.Text .= "Quit"; Entity.Position .= v3 232.0f -144.0f 0.0f] world then
