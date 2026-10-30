@@ -221,7 +221,7 @@ type GameplayDispatcher () =
                 let sceneNavFilePath = PathF.ChangeExtension (sceneFilePath, ".nav")
                 World.defer (fun world ->
                     World.synchronizeNav3d false (Some sceneNavFilePath) screen world
-                    GC.Collect ())
+                    Core.collectGarbage true)
                     screen world
 
             // protect player from accidental deletion in Gaia
