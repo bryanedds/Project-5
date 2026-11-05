@@ -18,11 +18,18 @@ module WorldEntityHierarchyExtensions =
     type Entity with
 
         member internal this.GetSurfaceFreezable world =
-            this.GetIs3d world &&
+            let dispatcher = this.GetDispatcher world
+            dispatcher.Is3d &&
             this.GetStatic world &&
             not (this.Has<LightProbeFacet> world) &&
             not (this.Has<Light3dFacet> world) &&
-            (this.GetChildren world |> Seq.forall (fun child -> child.GetSurfaceFreezable world))
+            (getType dispatcher = typeof<Entity3dDispatcher> ||
+             this.Has<StaticModelSurfaceFacet> world ||
+             this.Has<StaticModelFacet> world &&
+             match Metadata.tryGetStaticModelMetadata (this.GetStaticModel world) with
+             | ValueSome metadata -> metadata.LightProbes.Length = 0 && metadata.Lights.Length = 0
+             | ValueNone -> false) &&
+            Seq.forall (fun (child : Entity) -> child.GetSurfaceFreezable world) (this.GetChildren world)
 
         member internal this.GetBodyFreezableWhenSurfaceFreezable world =
             this.Has<RigidBodyFacet> world &&
@@ -235,11 +242,7 @@ module WorldEntityHierarchyExtensions =
                                 let navShape = entity.GetNavShape world
                                 let bodyShape = entity.GetBodyShape world
                                 frozenShapes.Add (entityBounds, affineMatrix, staticModel, surfaceIndex, navShape, affine, bodyShape)
-                        elif
-                            entity.Has<StaticModelFacet> world &&
-                            (match Metadata.tryGetStaticModelMetadata (entity.GetStaticModel world) with
-                             | ValueSome metadata -> metadata.LightProbes.Length = 0 && metadata.Lights.Length = 0
-                             | ValueNone -> false) then
+                        else
                             let mutable transform = entity.GetTransform world
                             let castShadow = transform.CastShadow
                             let affineMatrix = transform.AffineMatrix
