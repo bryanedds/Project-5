@@ -24,7 +24,7 @@ type PlayerDispatcher () =
         if World.isKeyboardKeyPressed KeyboardKey.Enter world && false then
             match entity.GetActionState world with
             | NormalState ->
-                entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
+                entity.SetActionState (AttackState (AttackState.make world.ScaledTime)) world
                 entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
             | _ -> ()
 
@@ -52,7 +52,7 @@ type PlayerDispatcher () =
             let turnVelocity =
                 (if World.isKeyboardKeyDown KeyboardKey.Right world then -turnSpeed else 0.0f) +
                 (if World.isKeyboardKeyDown KeyboardKey.Left world then turnSpeed else 0.0f)
-            let rotation = if turnVelocity <> 0.0f then rotation * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.GameDelta.SecondsF) else rotation
+            let rotation = if turnVelocity <> 0.0f then rotation * Quaternion.CreateFromAxisAngle (v3Up, turnVelocity * world.ScaledDelta.SecondsF) else rotation
             entity.SetAngularVelocity (v3 0.0f turnVelocity 0.0f) world
             entity.SetRotation rotation world
         | AttackState _ | InjuryState _ | WoundState _ -> ()

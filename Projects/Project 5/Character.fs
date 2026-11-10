@@ -96,7 +96,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                 let playerPositionFlat = targetPosition.WithY 0.0f
                 if  playerPositionFlat.Distance positionFlat < 1.0f &&
                     rotationForwardFlat.AngleBetween (playerPositionFlat - positionFlat) < 0.1f then
-                    entity.SetActionState (AttackState (AttackState.make world.GameTime)) world
+                    entity.SetActionState (AttackState (AttackState.make world.ScaledTime)) world
                     entity.SetLinearVelocity (v3Up * entity.GetLinearVelocity world) world
         | _ -> ()
 
@@ -133,7 +133,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                 | Some doorSpot ->
                     match doorSpot.GetDoorState world with
                     | DoorClosed ->
-                        doorSpot.SetDoorState (DoorOpening world.GameTime) world
+                        doorSpot.SetDoorState (DoorOpening world.ScaledTime) world
                         true
                     | _ -> false
                 | None -> false
@@ -225,7 +225,7 @@ type [<AbstractClass>] CharacterDispatcher () =
             match entity.GetActionState world with
             | NormalState -> ()
             | AttackState attack as actionState ->
-                let localTime = world.GameTime - attack.AttackTime
+                let localTime = world.ScaledTime - attack.AttackTime
                 let actionState = if localTime <= 0.92 then actionState else NormalState
                 entity.SetActionState actionState world
             | InventoryState -> ()
@@ -234,16 +234,16 @@ type [<AbstractClass>] CharacterDispatcher () =
             | HideState hide ->
                 match hide.HidePhase with
                 | HideEntering ->
-                    let localTime = world.GameTime - hide.HideTime
+                    let localTime = world.ScaledTime - hide.HideTime
                     if localTime >= 1.5 then
-                        entity.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideWaiting }) world
+                        entity.SetActionState (HideState { HideTime = world.ScaledTime; HidePhase = HideWaiting }) world
                 | HideWaiting -> ()
                 | HideEmerging ->
-                    let localTime = world.GameTime - hide.HideTime
+                    let localTime = world.ScaledTime - hide.HideTime
                     if localTime >= 1.5 then entity.SetActionState NormalState world
                 | HideUncovered -> ()
             | InjuryState injury as actionState ->
-                let localTime = world.GameTime - injury.InjuryTime
+                let localTime = world.ScaledTime - injury.InjuryTime
                 let injuryTime = characterType.InjuryTime
                 let actionState = if localTime < injuryTime then actionState else NormalState
                 entity.SetActionState actionState world
@@ -286,10 +286,10 @@ type [<AbstractClass>] CharacterDispatcher () =
             let movementState = entity.GetMovementState world
             if List.hasAtLeast 2 animations then
                 if movementState.IsStanding then
-                    entity.SetMovementState (Moving (world.GameTime, world.GameTime)) world
+                    entity.SetMovementState (Moving (world.ScaledTime, world.ScaledTime)) world
             else
                 if movementState.IsMoving then
-                    entity.SetMovementState (Standing world.GameTime) world
+                    entity.SetMovementState (Standing world.ScaledTime) world
             animatedModel.SetAnimations (Array.ofList animations) world
         | _ -> ()
 
@@ -303,7 +303,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                 | Player ->
                     let strideTime = GameTime.ofSeconds 0.75
                     let offsetTime = GameTime.ofSeconds 0.255
-                    let localStepTime = world.GameTime - lastStepTime + offsetTime
+                    let localStepTime = world.ScaledTime - lastStepTime + offsetTime
                     if localStepTime >= strideTime then
                         let notJustTurning = Array.exists (fun (animation : Animation) -> animation.Name.Contains "Walk") (animatedModel.GetAnimations world)
                         let volume = if notJustTurning then 0.15f else 0.0f
@@ -314,7 +314,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                 | Hunter | Stalker ->
                     let strideTime = GameTime.ofSeconds 0.7
                     let offsetTime = GameTime.ofSeconds 0.3
-                    let localStepTime = world.GameTime - lastStepTime + offsetTime
+                    let localStepTime = world.ScaledTime - lastStepTime + offsetTime
                     if localStepTime >= strideTime then
                         let playerPosition = Simulants.GameplayPlayer.GetPosition world
                         let entityPosition = entity.GetPosition world
@@ -324,7 +324,7 @@ type [<AbstractClass>] CharacterDispatcher () =
                         World.playSound distanceFromPlayer 0.0f volume Assets.Gameplay.StompSound world
                         entity.SetMovementState (Moving (startTime, lastStepTime + strideTime)) world
         | AttackState attack ->
-            let localTime = world.GameTime - attack.AttackTime
+            let localTime = world.ScaledTime - attack.AttackTime
             if localTime > 0.12 && not attack.AttackSoundPlayed then
                 let attack = { attack with AttackSoundPlayed = true }
                 entity.SetActionState (AttackState attack) world
@@ -388,7 +388,7 @@ type [<AbstractClass>] CharacterDispatcher () =
         // process attacks
         match entity.GetActionState world with
         | AttackState attack ->
-            let localTime = world.GameTime - attack.AttackTime
+            let localTime = world.ScaledTime - attack.AttackTime
             if localTime >= 0.2 && localTime < 0.8 then
                 let weaponCollisions = entity.GetWeaponCollisions world
                 let attackedCharacters = Set.difference weaponCollisions attack.AttackedCharacters
@@ -400,7 +400,7 @@ type [<AbstractClass>] CharacterDispatcher () =
 
         // process death
         match entity.GetActionState world with
-        | WoundState wound when wound.WoundTime >= world.GameTime - GameTime.ofSeconds 1.0 && not wound.WoundEventPublished ->
+        | WoundState wound when wound.WoundTime >= world.ScaledTime - GameTime.ofSeconds 1.0 && not wound.WoundEventPublished ->
             World.publish () entity.DeathEvent entity world
             let wound = { wound with WoundEventPublished = true }
             entity.SetActionState (WoundState wound) world

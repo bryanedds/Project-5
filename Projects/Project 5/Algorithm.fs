@@ -32,7 +32,7 @@ module Algorithm =
         Seq.notEmpty targetSightings
 
     let computeEyeDistanceScalar position (rotation : Quaternion) actionState (entity : Entity) (world : World) =
-        let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.GameTime actionState
+        let eyeDistanceScalarA = ActionState.computeEyeDistanceScalar world.ScaledTime actionState
         let positionEyeLevel = position + v3Up * Constants.Gameplay.PlayerEyeLevel
         let ray = Ray3 (positionEyeLevel, rotation.Back * Constants.Gameplay.PlayerEyeDistance)
         let entityEhs = entity / Constants.Gameplay.CharacterExpandedHideSensorName

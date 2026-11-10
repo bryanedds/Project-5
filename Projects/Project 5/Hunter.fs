@@ -43,7 +43,7 @@ type HunterDispatcher () =
                     if wayPointDistance < Constants.Gameplay.HuntWayPointProximity then
                         match entity.GetWayPointTimeOpt world with
                         | Some wayPointTime ->
-                            let waitTime = world.GameTime - wayPointTime
+                            let waitTime = world.ScaledTime - wayPointTime
                             if waitTime >= wayPoint.WayPointWaitTime then
                                 let (wayPointIndexOpt, wayPointBouncing) =
                                     match entity.GetWayPointPlayback world with
@@ -72,7 +72,7 @@ type HunterDispatcher () =
                             else
                                 entity.LinearVelocity.Map ((*) 0.5f) world
                                 entity.AngularVelocity.Map ((*) 0.5f) world
-                        | None -> entity.SetWayPointTimeOpt (Some world.GameTime) world
+                        | None -> entity.SetWayPointTimeOpt (Some world.ScaledTime) world
                     else CharacterDispatcher.processEnemyNavigation wayPointPosition entity world
                 | None -> ()
             | Some _ | None -> ()
@@ -88,11 +88,11 @@ type HunterDispatcher () =
             match targetActionState with
             | HideState hide ->
                 match hide.HidePhase with
-                | HideEntering -> entity.SetAwareness (AwareOfTargetHiding world.GameTime) world
+                | HideEntering -> entity.SetAwareness (AwareOfTargetHiding world.ScaledTime) world
                 | HideWaiting -> ()
-                | HideEmerging -> entity.SetAwareness (AwareOfTargetTraversing world.GameTime) world
+                | HideEmerging -> entity.SetAwareness (AwareOfTargetTraversing world.ScaledTime) world
                 | HideUncovered -> ()
-            | _ -> entity.SetAwareness (AwareOfTargetTraversing world.GameTime) world
+            | _ -> entity.SetAwareness (AwareOfTargetTraversing world.ScaledTime) world
 
         // process player uncovering
         let uncoveredPlayer =
@@ -101,18 +101,18 @@ type HunterDispatcher () =
                 processHunterWayPointNavigation entity world
                 false
             | AwareOfTargetTraversing startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0 then
+                if GameTime.progress startTime world.ScaledTime Constants.Gameplay.AwareOfTargetTraversingDuration = 1.0 then
                     entity.SetAwareness UnawareOfTarget world
                     false
                 else
                     CharacterDispatcher.processEnemyAggression targetPosition targetBodyIds entity world
                     false
             | AwareOfTargetHiding startTime ->
-                if GameTime.progress startTime world.GameTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0 then
+                if GameTime.progress startTime world.ScaledTime Constants.Gameplay.AwareOfTargetHidingDuration = 1.0 then
                     entity.SetAwareness UnawareOfTarget world
                     false
                 elif CharacterDispatcher.processEnemyUncovering targetPosition entity world then
-                    entity.SetAwareness (AwareOfTargetTraversing world.GameTime) world
+                    entity.SetAwareness (AwareOfTargetTraversing world.ScaledTime) world
                     true
                 else false
 
@@ -148,7 +148,7 @@ type HunterDispatcher () =
             match enemyTargetingEir with
             | Right (targetPosition, targetBodyIds, targetActionState) ->
                 let uncoveredPlayer = processHunterState targetPosition targetBodyIds targetActionState entity world
-                if uncoveredPlayer then player.SetActionState (HideState { HideTime = world.GameTime; HidePhase = HideUncovered }) world
+                if uncoveredPlayer then player.SetActionState (HideState { HideTime = world.ScaledTime; HidePhase = HideUncovered }) world
             | Left () -> ()
 
     override this.DeclareCharacterVisuals (entity, world) =

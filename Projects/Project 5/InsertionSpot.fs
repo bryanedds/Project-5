@@ -35,7 +35,7 @@ type InsertionSpotDispatcher () =
         match entity.GetInsertionPhase world with
         | InsertionNotStarted -> ()
         | InsertionStarted startTime ->
-            let localTime = world.GameTime - startTime
+            let localTime = world.ScaledTime - startTime
             if localTime > 4.0 then entity.SetInsertionPhase InsertionFinished world
         | InsertionFinished -> ()
 
