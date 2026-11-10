@@ -367,6 +367,7 @@ module WorldModuleEntity =
         static member internal getEntityEnabledLocal entity world = (World.getEntityState entity world).EnabledLocal
         static member internal getEntityVisible entity world = (World.getEntityState entity world).Visible
         static member internal getEntityVisibleLocal entity world = (World.getEntityState entity world).VisibleLocal
+        static member internal getEntityTimeScaled entity world = (World.getEntityState entity world).TimeScaled
         static member internal getEntityCastShadow entity world = (World.getEntityState entity world).CastShadow
         static member internal getEntityPickable entity world = (World.getEntityState entity world).Pickable
         static member internal getEntityAlwaysUpdate entity world = (World.getEntityState entity world).AlwaysUpdate
@@ -1015,6 +1016,13 @@ module WorldModuleEntity =
 
                 // OPTIMIZATION: do updates and propagation in-place as much as possible.
                 if entityState.Optimized world.Imperative then
+                    let visibleInViewOld = entityState.VisibleInView
+                    let staticInPlayOld = entityState.StaticInPlay
+                    let lightProbeOld = entityState.LightProbe
+                    let lightOld = entityState.Light
+                    let presenceOld = entityState.Presence
+                    let presenceInPlayOld = entityState.PresenceInPlay
+                    let boundsOld = entityState.Bounds
                     entityState.PositionLocal <- value
                     let position =
                         match Option.bind (flip tryResolve entity) entityState.MountOpt with
@@ -1023,6 +1031,7 @@ module WorldModuleEntity =
                             value.Transform affineMatrix
                         | _ -> value
                     entityState.Position <- position
+                    World.updateEntityInEntityTree visibleInViewOld staticInPlayOld lightProbeOld lightOld presenceOld presenceInPlayOld boundsOld entity world
                     if entityState.Mounted then World.propagateEntityAffineMatrix entity world
                     true
 
@@ -1087,6 +1096,13 @@ module WorldModuleEntity =
                 // OPTIMIZATION: do updates and propagation in-place as much as possible.
                 let anglesLocal = value.RollPitchYaw
                 if entityState.Optimized world.Imperative then
+                    let visibleInViewOld = entityState.VisibleInView
+                    let staticInPlayOld = entityState.StaticInPlay
+                    let lightProbeOld = entityState.LightProbe
+                    let lightOld = entityState.Light
+                    let presenceOld = entityState.Presence
+                    let presenceInPlayOld = entityState.PresenceInPlay
+                    let boundsOld = entityState.Bounds
                     entityState.RotationLocal <- value
                     entityState.AnglesLocal <- anglesLocal
                     let rotation =
@@ -1096,6 +1112,7 @@ module WorldModuleEntity =
                             rotationLocal * value
                         | _ -> value
                     entityState.Rotation <- rotation
+                    World.updateEntityInEntityTree visibleInViewOld staticInPlayOld lightProbeOld lightOld presenceOld presenceInPlayOld boundsOld entity world
                     if entityState.Mounted then World.propagateEntityAffineMatrix entity world
                     true
 
@@ -1158,6 +1175,13 @@ module WorldModuleEntity =
 
                 // OPTIMIZATION: do updates and propagation in-place as much as possible.
                 if entityState.Optimized world.Imperative then
+                    let visibleInViewOld = entityState.VisibleInView
+                    let staticInPlayOld = entityState.StaticInPlay
+                    let lightProbeOld = entityState.LightProbe
+                    let lightOld = entityState.Light
+                    let presenceOld = entityState.Presence
+                    let presenceInPlayOld = entityState.PresenceInPlay
+                    let boundsOld = entityState.Bounds
                     entityState.ScaleLocal <- value
                     let scale =
                         match Option.bind (flip tryResolve entity) entityState.MountOpt with
@@ -1166,6 +1190,7 @@ module WorldModuleEntity =
                             value * scale
                         | _ -> value
                     entityState.Scale <- scale
+                    World.updateEntityInEntityTree visibleInViewOld staticInPlayOld lightProbeOld lightOld presenceOld presenceInPlayOld boundsOld entity world
                     if entityState.Mounted then World.propagateEntityAffineMatrix entity world
                     true
 
@@ -1257,6 +1282,13 @@ module WorldModuleEntity =
                 // OPTIMIZATION: do updates and propagation in-place as much as possible.
                 let rotationLocal = value.RollPitchYaw
                 if entityState.Optimized world.Imperative then
+                    let visibleInViewOld = entityState.VisibleInView
+                    let staticInPlayOld = entityState.StaticInPlay
+                    let lightProbeOld = entityState.LightProbe
+                    let lightOld = entityState.Light
+                    let presenceOld = entityState.Presence
+                    let presenceInPlayOld = entityState.PresenceInPlay
+                    let boundsOld = entityState.Bounds
                     entityState.RotationLocal <- rotationLocal
                     entityState.AnglesLocal <- value
                     let rotation =
@@ -1266,6 +1298,7 @@ module WorldModuleEntity =
                             rotationMount * rotationLocal
                         | _ -> rotationLocal
                     entityState.Rotation <- rotation
+                    World.updateEntityInEntityTree visibleInViewOld staticInPlayOld lightProbeOld lightOld presenceOld presenceInPlayOld boundsOld entity world
                     if entityState.Mounted then World.propagateEntityAffineMatrix entity world
                     true
 
@@ -1498,6 +1531,20 @@ module WorldModuleEntity =
                     | _ -> true
                 let visible = visibleMount && value
                 World.setEntityVisible visible entity world |> ignore<bool>
+                true
+            else false
+
+        static member internal setEntityTimeScaled value entity world =
+            let entityState = World.getEntityState entity world
+            let previous = entityState.TimeScaled
+            if value <> previous then
+                if world.Imperative then
+                    entityState.TimeScaled <- value
+                else
+                    let entityState = EntityState.copy entityState
+                    entityState.TimeScaled <- value
+                    World.setEntityState entityState entity world
+                World.publishEntityChange (nameof entityState.TimeScaled) previous value entityState.PublishChangeEvents entity world
                 true
             else false
 
@@ -1795,7 +1842,9 @@ module WorldModuleEntity =
                     match property.PropertyValue with
                     | :? DesignerProperty as dp -> dp.DesignerType <- typeof<'a>; dp.DesignerValue <- valueObj
                     | :? ComputedProperty -> () // nothing to do
-                    | _ -> property.PropertyType <- typeof<'a>; property.PropertyValue <- valueObj
+                    | _ ->
+                        property.PropertyType <- typeof<'a>
+                        property.PropertyValue <- valueObj
                     Some valueObj
             else
                 let valueObjOpt =
@@ -1869,12 +1918,13 @@ module WorldModuleEntity =
                         let previous = propertyOld.PropertyValue
                         if property.PropertyValue =/= previous then
                             if world.Imperative then
+                                propertyOld.PropertyType <- property.PropertyType
                                 propertyOld.PropertyValue <- property.PropertyValue
                                 struct (true, true, previous)
                             else
                                 match EntityState.trySetProperty propertyName property entityState with
                                 | struct (true, entityState) ->
-                                    if world.Functional then World.setEntityState entityState entity world
+                                    World.setEntityState entityState entity world
                                     struct (true, true, previous)
                                 | struct (false, _) -> struct (false, false, previous)
                         else struct (true, false, previous)
@@ -1882,12 +1932,13 @@ module WorldModuleEntity =
                     let previous = propertyOld.PropertyValue
                     if property.PropertyValue =/= previous then
                         if world.Imperative then
+                            propertyOld.PropertyType <- property.PropertyType
                             propertyOld.PropertyValue <- property.PropertyValue
                             struct (true, true, previous)
                         else
                             match EntityState.trySetProperty propertyName property entityState with
                             | struct (true, entityState) ->
-                                if world.Functional then World.setEntityState entityState entity world
+                                World.setEntityState entityState entity world
                                 struct (true, true, previous)
                             | struct (false, _) -> struct (false, false, previous)
                     else struct (true, false, previous)
@@ -1948,21 +1999,23 @@ module WorldModuleEntity =
                         if value =/= previous then
                             changed <- true
                             if world.Imperative then
+                                propertyOld.PropertyType <- typeof<'a>
                                 propertyOld.PropertyValue <- value
                             else
                                 let property = { propertyOld with PropertyValue = value }
                                 let entityState = EntityState.setProperty propertyName property entityState
-                                if world.Functional then World.setEntityState entityState entity world
+                                World.setEntityState entityState entity world
                 else
                     previous <- propertyOld.PropertyValue
                     if value =/= previous then
                         changed <- true
                         if world.Imperative then
+                            propertyOld.PropertyType <- typeof<'a>
                             propertyOld.PropertyValue <- value
                         else
                             let property = { propertyOld with PropertyValue = value }
                             let entityState = EntityState.setProperty propertyName property entityState
-                            if world.Functional then World.setEntityState entityState entity world
+                            World.setEntityState entityState entity world
                 if changed then World.publishEntityChange propertyName previous value entityState.PublishChangeEvents entity world
             else Log.warnOnce ("Setting non-existent Xtension property '" + propertyName + "'.")
 
@@ -2773,6 +2826,7 @@ module WorldModuleEntity =
                  ("EnabledLocal", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityEnabledLocal entity world })
                  ("Visible", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityVisible entity world })
                  ("VisibleLocal", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityVisibleLocal entity world })
+                 ("TimeScaled", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityTimeScaled entity world })
                  ("CastShadow", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityCastShadow entity world })
                  ("Pickable", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityPickable entity world })
                  ("AlwaysUpdate", fun entity world -> { PropertyType = typeof<bool>; PropertyValue = World.getEntityAlwaysUpdate entity world })
@@ -2840,6 +2894,7 @@ module WorldModuleEntity =
                  ("EnabledLocal", fun property entity world -> World.setEntityEnabledLocal (property.PropertyValue :?> bool) entity world)
                  ("Visible", fun property entity world -> World.setEntityVisible (property.PropertyValue :?> bool) entity world)
                  ("VisibleLocal", fun property entity world -> World.setEntityVisibleLocal (property.PropertyValue :?> bool) entity world)
+                 ("TimeScaled", fun property entity world -> World.setEntityTimeScaled (property.PropertyValue :?> bool) entity world)
                  ("CastShadow", fun property entity world -> World.setEntityCastShadow (property.PropertyValue :?> bool) entity world)
                  ("Pickable", fun property entity world -> World.setEntityPickable (property.PropertyValue :?> bool) entity world)
                  ("Static", fun property entity world -> World.setEntityStatic (property.PropertyValue :?> bool) entity world)
