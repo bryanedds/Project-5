@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 	</PropertyGroup>
 
     <Import Project="../../Nu/Nu.targets" />
@@ -17,6 +17,7 @@
 		<Compile Include="OctreeTests.fs" />
 		<Compile Include="FluidEmitterTests.fs" />
 		<Compile Include="WorldTests.fs" />
+		<Compile Include="NamedSubscriptionTests.fs" />
 		<Compile Include="TraversalInterpolatedFacetTests.fs" />
         <None Include="AssetGraph.nuag" />
         <None Include="Overlayer.nuol" />
