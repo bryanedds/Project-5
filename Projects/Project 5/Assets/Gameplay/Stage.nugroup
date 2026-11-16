@@ -42,6 +42,8 @@
         [LightShadowExponent 80]
         [LightShadowDensity 32]
         [SsaoIntensity 1.35]
+        [ColorGradeStrength 0]
+        [ColorGradeLut [Default ColorGradeLut]]
         [SsaoBias 0.025]
         [SsaoRadius 0.125]
         [SsaoDistanceMax 0.125]
