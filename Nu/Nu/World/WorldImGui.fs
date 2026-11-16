@@ -754,7 +754,7 @@ module WorldImGui =
                 (false, edited, substance)
             | :? Animation as animation ->
                 let tryReplaceAnimationName (fieldInfo : PropertyInfo) (field : obj) =
-                    match (fieldInfo.Name, context.SelectedEntityOpt) with
+                    match (fieldInfo.Name, Seq.tryExactlyOne context.SelectedEntities) with
                     | ("Name", Some selectedEntity) ->
                         match selectedEntity.TryGetProperty "AnimatedModel" world with // HACK: can only get related asset tag from selected entity's top-level.
                         | Some property when (property.PropertyValue :? AnimatedModel AssetTag) ->
@@ -779,7 +779,7 @@ module WorldImGui =
                 World.imGuiEditPropertyRecordPlus tryReplaceAnimationName true name (typeof<Animation>) animation context world
             | :? UserDefinedImages as images ->
                 let tryReplaceUserDefinedImageOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
+                    match Seq.tryExactlyOne context.SelectedEntities with
                     | Some selectedEntity ->
                         let userDefinedImageSubstring = "UserDefinedImage"
                         if fieldInfo.Name.StartsWith userDefinedImageSubstring then
@@ -816,7 +816,7 @@ module WorldImGui =
                 World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedImageOpt false name (typeof<UserDefinedImages>) images context world
             | :? UserDefinedSettings as settings ->
                 let tryReplaceUserDefinedSettingOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
+                    match Seq.tryExactlyOne context.SelectedEntities with
                     | Some selectedEntity ->
                         let userDefinedSettingSubstring = "UserDefinedSetting"
                         if fieldInfo.Name.StartsWith userDefinedSettingSubstring then
@@ -850,7 +850,7 @@ module WorldImGui =
                 World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedSettingOpt false name (typeof<UserDefinedSettings>) settings context world
             | :? TerrainMaterialProperties as tmps ->
                 let tryReplaceUserDefinedSettingOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
+                    match Seq.tryExactlyOne context.SelectedEntities with
                     | Some selectedEntity ->
                         let userDefinedSettingSubstring = "UserDefinedSetting"
                         let optSubstring = "Opt"
@@ -904,7 +904,7 @@ module WorldImGui =
                 World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedSettingOpt true name (typeof<TerrainMaterialProperties>) tmps context world
             | :? Material as material ->
                 let tryReplaceUserDefinedImageOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
+                    match Seq.tryExactlyOne context.SelectedEntities with
                     | Some selectedEntity ->
                         let userDefinedImageSubstring = "UserDefinedImage"
                         let optSubstring = "Opt"
@@ -1011,7 +1011,7 @@ module WorldImGui =
                 World.imGuiEditPropertyRecordPlus tryReplaceUserDefinedImageOpt false name (typeof<Material>) material context world
             | :? MaterialProperties as properties ->
                 let tryReplaceUserDefinedSettingOpt (fieldInfo : PropertyInfo) (field : obj) =
-                    match context.SelectedEntityOpt with
+                    match Seq.tryExactlyOne context.SelectedEntities with
                     | Some selectedEntity ->
                         let userDefinedSettingSubstring = "UserDefinedSetting"
                         let optSubstring = "Opt"
@@ -1200,6 +1200,8 @@ module WorldImGui =
                 let mutable toneMapPower = lighting3dConfig.ToneMapPower
                 let mutable toneMapSaturation = lighting3dConfig.ToneMapSaturation
                 let mutable toneMapWhitePoint = lighting3dConfig.ToneMapWhitePoint
+                let mutable colorGradeStrength = lighting3dConfig.ColorGradeStrength
+                let mutable colorGradeLut = lighting3dConfig.ColorGradeLut
                 let mutable fogEnabled = lighting3dConfig.FogEnabled
                 let mutable fogType = lighting3dConfig.FogType.Enumerate
                 let mutable fogStart = lighting3dConfig.FogStart
@@ -1277,6 +1279,12 @@ module WorldImGui =
                     lighting3dEdited <- ImGui.SliderFloat ("Tone Map Saturation", &toneMapSaturation, 0.0f, 2.0f) || lighting3dEdited; if ImGui.IsItemFocused () then context.FocusProperty ()
                 if toneMapType = ReinhardExtendedToneMap.Enumerate then
                     lighting3dEdited <- ImGui.SliderFloat ("Tone Map White Point", &toneMapWhitePoint, 0.0f, 10.0f) || lighting3dEdited; if ImGui.IsItemFocused () then context.FocusProperty ()
+                ImGui.Text "Color Grade"
+                lighting3dEdited <- ImGui.SliderFloat ("Color Grade Strength", &colorGradeStrength, 0.0f, 1.0f) || lighting3dEdited; if ImGui.IsItemFocused () then context.FocusProperty ()
+                let (_, colorGradeLutEdited, colorGradeLut') = World.imGuiEditProperty "Color Grade Lut" typeof<Image AssetTag> colorGradeLut context world
+                if colorGradeLutEdited then
+                    colorGradeLut <- colorGradeLut' :?> Image AssetTag
+                    lighting3dEdited <- true
                 ImGui.Text "Distance Fog"
                 lighting3dEdited <- ImGui.Checkbox ("Fog Enabled", &fogEnabled) || lighting3dEdited; if ImGui.IsItemFocused () then context.FocusProperty ()
                 lighting3dEdited <- ImGui.Combo ("Fog Type", &fogType, FogType.Names, FogType.Names.Length) || lighting3dEdited; if ImGui.IsItemFocused () then context.FocusProperty ()
@@ -1365,6 +1373,8 @@ module WorldImGui =
                           ToneMapPower = toneMapPower
                           ToneMapSaturation = toneMapSaturation
                           ToneMapWhitePoint = toneMapWhitePoint
+                          ColorGradeStrength = colorGradeStrength
+                          ColorGradeLut = colorGradeLut
                           FogEnabled = fogEnabled
                           FogType = FogType.makeFromEnumeration fogType
                           FogStart = fogStart
@@ -1525,7 +1535,7 @@ module WorldImGui =
                 ImGui.PopID ()
                 (promoted, edited, animations)
             | :? StairSteppingCharacterProperties when
-                (match context.SelectedEntityOpt with
+                (match Seq.tryExactlyOne context.SelectedEntities with
                  | Some entity -> match entity.TryGet<Nu.BodyType> "BodyType" world with ValueSome bodyType -> not bodyType.IsCharacter | ValueNone -> false
                  | None -> false) ->
                 (false, false, value) // hides character properties unless is character body type
