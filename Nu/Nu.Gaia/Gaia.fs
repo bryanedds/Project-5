@@ -839,10 +839,18 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         | (FreeMode, CaptureMode) -> ViewMode <- viewMode
         | (CaptureMode, FreeMode) -> ViewMode <- viewMode
 
+        // focus the viewport so that nothing stays input-focused, including after any window restoration
+        SelectedWindowOpt <- Some "Viewport"
+        ViewportFocusRequested <- true
+
     let private toggleViewMode viewMode world =
         if ViewMode = viewMode
         then setViewMode NormalMode world
         else setViewMode viewMode world
+
+    let private toggleOverlayMode () =
+        OverlayMode <- not OverlayMode
+        ViewportFocusRequested <- true // focus the viewport so that nothing stays input-focused
 
     let private tryUndo (world : World) =
         if  not (World.getImperative world) &&
@@ -2064,7 +2072,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             elif ImGui.IsKeyPressed ImGuiKey.F8 then ReloadAssetsRequested <- 1
             elif ImGui.IsKeyPressed ImGuiKey.F9 && ImGui.IsShiftUp () then ReloadCodeRequested <- (false, 1)
             elif ImGui.IsKeyPressed ImGuiKey.F9 && ImGui.IsShiftDown () then ReloadCodeRequested <- (true, 1)
-            elif ImGui.IsKeyPressed ImGuiKey.F10 then OverlayMode <- not OverlayMode
+            elif ImGui.IsKeyPressed ImGuiKey.F10 then toggleOverlayMode ()
             elif ImGui.IsKeyPressed ImGuiKey.F11 then toggleViewMode FreeMode world
             elif ImGui.IsKeyPressed ImGuiKey.F12 then toggleViewMode CaptureMode world
             elif ImGui.IsKeyPressed ImGuiKey.Enter && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then World.tryToggleWindowFullScreen world
@@ -2143,6 +2151,10 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let expanded = ImGui.TreeNodeEx (treeNodeLabel, treeNodeFlags)
         if ShowSelectedEntity && SelectedEntities.Contains entity then
             ImGui.SetScrollHereY 0.5f
+        if  ImGui.IsItemFocused () &&
+            (ImGui.IsKeyPressed ImGuiKey.Enter || ImGui.IsKeyPressed ImGuiKey.KeypadEnter) &&
+            ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltUp () then
+            ViewportFocusRequested <- true // hand the keyboard back to the viewport after picking an entity
         if ImGui.IsMouseDoubleClicked ImGuiMouseButton.Left && ImGui.IsItemHovered () then
             let entities = if SelectedEntities.Contains entity then getSelectedEntityRoots false world else [entity]
             frameEntities entities world // the selection when it's among it
@@ -2858,7 +2870,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
     let private imGuiMainMenuWindow (world : World) =
         
         // menu window
-        if ImGui.Begin ("Gaia", ImGuiWindowFlags.MenuBar) then
+        if ImGui.Begin ("Gaia", ImGuiWindowFlags.MenuBar ||| ImGuiWindowFlags.NoNavInputs) then
             
             // menu bar
             if ImGui.BeginMenuBar () then
@@ -3074,9 +3086,10 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SameLine ()
             ImGui.Text "Overlay Mode"
             ImGui.SameLine ()
-            ImGui.Checkbox ("##overlayMode", &OverlayMode) |> ignore<bool>
+            let mutable overlayMode = OverlayMode
+            if ImGui.Checkbox ("##overlayMode", &overlayMode) then toggleOverlayMode ()
             if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
-                ImGui.Text "Toggle overlay mode (F12 to toggle)."
+                ImGui.Text "Toggle overlay mode (F10 to toggle)."
                 ImGui.EndTooltip ()
 
             // free mode
@@ -3096,9 +3109,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.SameLine ()
             let mutable captureMode = ViewMode.IsCaptureMode
             if ImGui.Checkbox ("##captureMode", &captureMode) then
-                setViewMode (if captureMode then FreeMode else NormalMode) world
+                setViewMode (if captureMode then CaptureMode else NormalMode) world
             if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
-                ImGui.Text "Toggle capture mode view (F10 to toggle)."
+                ImGui.Text "Toggle capture mode view (F12 to toggle)."
                 ImGui.EndTooltip ()
 
         ImGui.End ()
@@ -3218,7 +3231,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         let windowName = "Timeline"
         if ImGui.Begin (windowName, ImGuiWindowFlags.NoNavInputs) then
             if ImGui.IsWindowFocused () && SelectedWindowRestoreRequested = 0 then SelectedWindowOpt <- Some windowName
-            if ImGui.BeginListBox ("##history", v2 -1.0f -1.0f) then
+            if ImGui.BeginChild ("##history", v2 -1.0f -1.0f, ImGuiChildFlags.FrameStyle, ImGuiWindowFlags.NoNavInputs) then
                 for (snapshotType, _) in List.rev Pasts do
                     let snapshotLabel = snapshotType.Label
                     ImGui.Text snapshotLabel
@@ -3235,7 +3248,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
                         ImGui.Text snapshotLabel
                         ImGui.EndTooltip ()
-                ImGui.EndListBox ()
+            ImGui.EndChild ()
         ImGui.End ()
 
     let private imGuiGamePropertiesWindow world =
@@ -3280,7 +3293,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     entity.Name.ToLowerInvariant().Contains (PropagationSourcesSearchStr.ToLowerInvariant ()))
                 |> Seq.filter (fun entity -> entity.GetProtection world = Unprotected)
                 |> hashSetPlus HashIdentity.Structural
-            ImGui.BeginChild "Container" |> ignore<bool>
+            ImGui.BeginChild ("Container", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoNavInputs) |> ignore<bool>
             let selectionSize = if Seq.exists SelectedEntities.Contains propagationSources then 1 else 0
             let multiSelectIo = ImGui.BeginMultiSelect (ImGuiMultiSelectFlags.SingleSelect, selectionSize, -1)
             applyPropagationSourcesSelectionRequests multiSelectIo world // NOTE: resolves against last frame's items.
@@ -3679,7 +3692,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             if enter then InteractiveInputStr <- ""
             if eval || enter then InteractiveInputFocusRequested <- true
             ImGui.Separator ()
-            ImGui.BeginChild ("##interactiveOutputStr", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysHorizontalScrollbar ||| ImGuiWindowFlags.AlwaysVerticalScrollbar) |> ignore<bool>
+            ImGui.BeginChild ("##interactiveOutputStr", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysHorizontalScrollbar ||| ImGuiWindowFlags.AlwaysVerticalScrollbar ||| ImGuiWindowFlags.NoNavInputs) |> ignore<bool>
             ImGui.TextUnformatted InteractiveOutputStr
             if toBottom then ImGui.SetScrollHereY 1.0f
             ImGui.EndChild ()
@@ -3801,7 +3814,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             if ImGui.IsItemHovered ImGuiHoveredFlags.DelayNormal && ImGui.BeginTooltip () then
                 ImGui.Text "Clear evaluation output (Alt+C)"
                 ImGui.EndTooltip ()
-            ImGui.BeginChild ("##outputBufferStr", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysHorizontalScrollbar ||| ImGuiWindowFlags.AlwaysVerticalScrollbar) |> ignore<bool>
+            ImGui.BeginChild ("##outputBufferStr", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysHorizontalScrollbar ||| ImGuiWindowFlags.AlwaysVerticalScrollbar ||| ImGuiWindowFlags.NoNavInputs) |> ignore<bool>
             ImGui.TextUnformatted LogStr
             ImGui.EndChild ()
         if flash then for i in 0 .. dec 8 do ImGui.PopStyleColor ()
@@ -3870,7 +3883,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             if ImGui.InputTextWithHint ("##loadPackageName", "[package to load]", &LoadPackageName, 4096u, ImGuiInputTextFlags.EnterReturnsTrue) then
                 Metadata.loadMetadataPackage LoadPackageName
                 LoadPackageName <- ""
-            ImGui.BeginChild "Container" |> ignore<bool>
+            ImGui.BeginChild ("Container", v2Zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoNavInputs) |> ignore<bool>
             for packageEntry in Metadata.getMetadataPackagesLoaded () |> Array.sortWith (fun a b -> String.Compare (a.Key, b.Key, true)) do
                 let flags = ImGuiTreeNodeFlags.OpenOnArrow
                 if searchActiveCurrent then ImGui.SetNextItemOpen true

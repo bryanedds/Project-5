@@ -468,6 +468,20 @@ type TerrainDescriptor =
           HeightMap = this.HeightMap
           Patches = this.Patches }
 
+/// An internally cached billboard used to reduce GC promotion or pressure.
+type CachedBillboardMessage =
+    { mutable CachedBillboardMatrix : Matrix4x4
+      mutable CachedBillboardCastShadow : bool
+      mutable CachedBillboardPresence : Presence
+      mutable CachedBillboardInsetOpt : Box2 voption
+      mutable CachedBillboardOrientUp : bool
+      mutable CachedBillboardPlanar : bool
+      mutable CachedBillboardMaterial : Material
+      mutable CachedBillboardMaterialProperties : MaterialProperties
+      mutable CachedBillboardShadowOffset : single
+      mutable CachedBillboardRenderType : RenderType
+      mutable CachedBillboardRenderPass : RenderPass }
+
 /// An internally cached static model used to reduce GC promotion or pressure.
 type CachedStaticModelMessage =
     { mutable CachedStaticModelMatrix : Matrix4x4
@@ -970,6 +984,7 @@ type RenderMessage3d =
     | RenderBillboard of RenderBillboard
     | RenderBillboards of RenderBillboards
     | RenderBillboardParticles of RenderBillboardParticles
+    | RenderCachedBillboard of CachedBillboardMessage
     | RenderStaticModelSurface of RenderStaticModelSurface
     | RenderStaticModelSurfacePreBatch of RenderStaticModelSurfacePreBatch
     | RenderStaticModelSurfacePreBatches of RenderStaticModelSurfacePreBatches
@@ -2744,7 +2759,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
          model : Matrix4x4,
          castShadow : bool,
          presence : Presence,
-         insetOpt : Box2 option,
+         insetOpt : Box2 voption,
          albedoMetadata : TextureMetadata,
          properties,
          orientUp,
@@ -2759,7 +2774,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // compute tex coords offset
         let texCoordsOffset =
             match insetOpt with
-            | Some inset ->
+            | ValueSome inset ->
                 let texelWidth = albedoMetadata.TextureTexelWidth
                 let texelHeight = albedoMetadata.TextureTexelHeight
                 let px = inset.Min.X * texelWidth
@@ -2767,7 +2782,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 let sx = inset.Size.X * texelWidth
                 let sy = -inset.Size.Y * texelHeight
                 Box2 (px, py, sx, sy)
-            | None ->
+            | ValueNone ->
                 let px = 0.0f
                 let py = 1.0f
                 let sx = 1.0f
@@ -2776,17 +2791,45 @@ type [<ReferenceEquality>] VulkanRenderer3d =
 
         // render as appropriate
         match renderPass with
-        | ShadowPass (_, _, _, _, shadowRotation, _) ->
+        | ShadowPass (_, shadowFaceInfoOpt, shadowLightType, _, shadowRotation, _) ->
 
-            // compute billboard rotation
-            let lookRotation = shadowRotation * Quaternion.CreateFromAxisAngle (v3Right, -MathF.PI_OVER_2)
-            let billboardRotation = Matrix4x4.CreateFromQuaternion lookRotation
+            // compute the direction toward the light, taking it from a point light's position since each of its
+            // cube map faces has its own rotation, and otherwise from the light's rotation (which is exact for
+            // directional lights and approximates spot lights by their axis)
+            let toLight =
+                match (shadowLightType, shadowFaceInfoOpt) with
+                | (PointLight _, Some (_, shadowView, _)) ->
+                    let toLight = shadowView.Inverted.Translation - model.Translation
+                    if toLight.MagnitudeSquared > 0.000001f then toLight.Normalized else shadowRotation.Up
+                | (_, _) -> shadowRotation.Up
 
-            // add render task as appropriate
+            // compute billboard rotation to face the light as the camera-view billboard faces the eye, respecting
+            // orient up and planarness. NOTE: with a single direction toward the light per billboard, planar and
+            // non-planar billboards orient alike.
+            let billboardRotation =
+                if orientUp then
+                    let toLightFlat = toLight.WithY 0.0f
+                    if toLightFlat.MagnitudeSquared > 0.000001f then
+                        let forward = toLightFlat.Normalized
+                        let right = Vector3.Cross (v3Up, forward)
+                        (right, v3Up, forward)
+                        |> Matrix4x4.CreateRotation
+                        |> Matrix4x4.Transpose
+                    else m4Identity // light directly above or below, where any yaw casts the same shadow
+                else
+                    let forward = toLight
+                    let upHint = if abs (forward.Dot v3Up) < 0.999f then v3Up else v3Forward
+                    let right = (Vector3.Cross (upHint, forward)).Normalized
+                    let up = Vector3.Cross (forward, right)
+                    (right, up, forward)
+                    |> Matrix4x4.CreateRotation
+                    |> Matrix4x4.Transpose
+
+            // add render task as appropriate, offsetting away from the light
             let mutable affineRotation = model
             affineRotation.Translation <- v3Zero
             let mutable billboardMatrix = model * billboardRotation
-            billboardMatrix.Translation <- model.Translation + lookRotation.Forward * shadowOffset
+            billboardMatrix.Translation <- model.Translation - toLight * shadowOffset
             match renderType with
             | DeferredRenderType ->
                 if not billboardSurface.SurfaceMaterial.Clipped then
@@ -3565,13 +3608,13 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rb.Material rb.MaterialProperties renderer
                 let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f 0.5f -0.5f) v3One) billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
                 let renderTasks = VulkanRenderer3d.getRenderTasks rb.RenderPass renderer
-                VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.RenderType, rb.RenderPass, renderTasks, renderer)
+                VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, rb.ModelMatrix, rb.CastShadow, rb.Presence, Option.toValueOption rb.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rb.MaterialProperties, rb.OrientUp, rb.Planar, rb.ShadowOffset, billboardSurface, rb.RenderType, rb.RenderPass, renderTasks, renderer)
             | RenderBillboards rbs ->
                 let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rbs.Material rbs.MaterialProperties renderer
                 let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f -0.5f -0.5f) v3One) billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
                 let renderTasks = VulkanRenderer3d.getRenderTasks rbs.RenderPass renderer
                 for (model, castShadow, presence, insetOpt, orientUp, planar) in rbs.Billboards do
-                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
+                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, model, castShadow, presence, Option.toValueOption insetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbs.MaterialProperties, orientUp, planar, rbs.ShadowOffset, billboardSurface, rbs.RenderType, rbs.RenderPass, renderTasks, renderer)
             | RenderBillboardParticles rbps ->
                 let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial rbps.Material rbps.MaterialProperties renderer
                 let renderTasks = VulkanRenderer3d.getRenderTasks rbps.RenderPass renderer
@@ -3583,7 +3626,12 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                              particle.Transform.Size * particle.Transform.Scale)
                     let billboardProperties = { billboardProperties with Albedo = billboardProperties.Albedo * particle.Color; Emission = particle.Emission.R }
                     let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity box3Zero billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
-                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, Option.ofValueOption particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
+                    VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, billboardMatrix, rbps.CastShadow, rbps.Presence, particle.InsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, rbps.MaterialProperties, true, false, rbps.ShadowOffset, billboardSurface, rbps.RenderType, rbps.RenderPass, renderTasks, renderer)
+            | RenderCachedBillboard cb ->
+                let struct (billboardMaterial, billboardProperties) = VulkanRenderer3d.makeBillboardMaterial cb.CachedBillboardMaterial cb.CachedBillboardMaterialProperties renderer
+                let billboardSurface = PhysicallyBasedSurface.make Array.empty m4Identity (box3 (v3 -0.5f 0.5f -0.5f) v3One) billboardMaterial billboardProperties -1 Assimp.Node.Empty renderer.BillboardGeometry
+                let renderTasks = VulkanRenderer3d.getRenderTasks cb.CachedBillboardRenderPass renderer
+                VulkanRenderer3d.categorizeBillboardSurface (eyeCenter, eyeRotation, cb.CachedBillboardMatrix, cb.CachedBillboardCastShadow, cb.CachedBillboardPresence, cb.CachedBillboardInsetOpt, billboardMaterial.AlbedoTexture.TextureMetadata, cb.CachedBillboardMaterialProperties, cb.CachedBillboardOrientUp, cb.CachedBillboardPlanar, cb.CachedBillboardShadowOffset, billboardSurface, cb.CachedBillboardRenderType, cb.CachedBillboardRenderPass, renderTasks, renderer)
             | RenderStaticModelSurface rsms ->
                 let insetOpt = Option.toValueOption rsms.InsetOpt
                 VulkanRenderer3d.categorizeStaticModelSurfaceByIndex (&rsms.ModelMatrix, rsms.CastShadow, rsms.Presence, &insetOpt, rsms.Material, rsms.MaterialProperties, rsms.StaticModel, rsms.SurfaceIndex, rsms.RenderType, rsms.RenderPass, renderer)
@@ -4395,7 +4443,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                                 let shadowForward = shadowRotation.Down
                                 let shadowUp = shadowForward.OrthonormalUp
                                 let shadowView = Matrix4x4.CreateLookAt (lightOrigin, lightOrigin + shadowForward, shadowUp)
-                                let shadowCutoff = lightCutoff
+                                let shadowCutoff = max lightCutoff (Constants.Render.NearPlaneDistanceInterior * 2.0f)
                                 let shadowProjection = Matrix4x4.CreateOrthographic (shadowCutoff * 2.0f, shadowCutoff * 2.0f, -shadowCutoff, shadowCutoff)
                                 let (shadowColorArrayAttachment, shadowDepthArrayAttachment) = renderer.PhysicallyBasedAttachments.ShadowTextureArrayAttachments
                                 (lightOrigin, shadowView, shadowProjection, shadowCutoff, shadowColorArrayAttachment, shadowDepthArrayAttachment)
