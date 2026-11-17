@@ -984,6 +984,7 @@ type RenderMessage3d =
     | RenderCachedAnimatedModel of CachedAnimatedModelMessage
     | RenderCachedAnimatedModelSurface of CachedAnimatedModelSurfaceMessage
     | RenderTerrain of RenderTerrain
+    | RenderEmptyPass of RenderPass
     | ConfigureLighting3d of Lighting3dConfig
     | ConfigureRenderer3d of Renderer3dConfig
     | LoadRenderPackage3d of string
@@ -1113,58 +1114,17 @@ type private SortableLight =
         let desiredShadowsWeight = -light.SortableLightDesireShadows
         SortableLightProjection.make directionalWeight light.SortableLightDistance desiredShadowsWeight
 
-    /// Sort shadowing point lights.
-    /// TODO: see if we can get rid of allocation here.
-    static member sortShadowingPointLightsIntoArray lightsMax position lights =
+    /// Collect shadowing lights of the given types in the order their shadow passes were received, which is the order
+    /// in which World prioritized them.
+    static member collectShadowingLightsIntoArray lightsMax (isLightType : int -> bool) (lightIds : uint64 List) (lights : Dictionary<uint64, SortableLight>) =
         let lightsArray = Array.zeroCreate<_> lightsMax
-        for light in lights do
-            light.SortableLightDistance <-
-                (light.SortableLightOrigin - position).Magnitude - light.SortableLightCutoff |> max 0.0f
-        let lightsSorted =
-            lights
-            |> Seq.toArray
-            |> Array.filter (fun light -> light.SortableLightDesireShadows = 1 && light.SortableLightType = 0)
-            |> Array.sortBy SortableLight.project
-        for i in 0 .. dec lightsMax do
-            if i < lightsSorted.Length then
-                let light = lightsSorted[i]
-                lightsArray[i] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
-        lightsArray
-
-    /// Sort shadowing spot and directional lights.
-    /// TODO: see if we can get rid of allocation here.
-    static member sortShadowingSpotAndDirectionalLightsIntoArray lightsMax position lights =
-        let lightsArray = Array.zeroCreate<_> lightsMax
-        for light in lights do
-            light.SortableLightDistance <-
-                (light.SortableLightOrigin - position).Magnitude - light.SortableLightCutoff |> max 0.0f
-        let lightsSorted =
-            lights
-            |> Seq.toArray
-            |> Array.filter (fun light -> light.SortableLightDesireShadows = 1 && (light.SortableLightType = 1 || light.SortableLightType = 2))
-            |> Array.sortBy SortableLight.project
-        for i in 0 .. dec lightsMax do
-            if i < lightsSorted.Length then
-                let light = lightsSorted[i]
-                lightsArray[i] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
-        lightsArray
-
-    /// Sort shadowing cascaded lights.
-    /// TODO: see if we can get rid of allocation here.
-    static member sortShadowingCascadedLightsIntoArray lightsMax position lights =
-        let lightsArray = Array.zeroCreate<_> lightsMax
-        for light in lights do
-            light.SortableLightDistance <-
-                (light.SortableLightOrigin - position).Magnitude - light.SortableLightCutoff |> max 0.0f
-        let lightsSorted =
-            lights
-            |> Seq.toArray
-            |> Array.filter (fun light -> light.SortableLightDesireShadows = 1 && light.SortableLightType = 3)
-            |> Array.sortBy SortableLight.project
-        for i in 0 .. dec lightsMax do
-            if i < lightsSorted.Length then
-                let light = lightsSorted[i]
-                lightsArray[i] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
+        let mutable lightIndex = 0
+        for lightId in lightIds do
+            match lights.TryGetValue lightId with
+            | (true, light) when lightIndex < lightsMax && isLightType light.SortableLightType ->
+                lightsArray[lightIndex] <- struct (light.SortableLightId, light.SortableLightOrigin, light.SortableLightCutoff, light.SortableLightConeOuter, light.SortableLightDesireShadows)
+                lightIndex <- inc lightIndex
+            | (_, _) -> ()
         lightsArray
 
     /// Sort lights into float array for uploading to Vulkan.
@@ -1360,9 +1320,9 @@ type [<ReferenceEquality>] private RenderTasks =
 
         renderTasks.DeferredAnimatedRemovals.Clear ()
 
-    static member shadowUpToDate lightingConfigChanged renderingConfigChanged renderTasks renderTasksCached =
+    static member shadowUpToDate lightShadowConfigChanged renderingConfigChanged renderTasks renderTasksCached =
 
-        if not lightingConfigChanged && not renderingConfigChanged then
+        if not lightShadowConfigChanged && not renderingConfigChanged then
 
             let deferredStaticCached =
                 renderTasks.DeferredStatic.Count = renderTasksCached.DeferredStatic.Count &&
@@ -1560,6 +1520,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
           ShadowMatricesFlipped : Matrix4x4 array
           LightShadowIndices : Dictionary<uint64, int>
           LightsDesiringShadows : Dictionary<uint64, SortableLight>
+          ShadowLightIdList : uint64 List
+          ShadowLightIdSet : uint64 HashSet
           CubeMapGeometry : CubeMapGeometry
           BillboardGeometry : PhysicallyBasedGeometry
           QuadGeometry : PhysicallyBasedGeometry
@@ -1576,7 +1538,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
           mutable PhysicallyBasedAttachments : PhysicallyBasedAttachments3d
           LightMaps : Dictionary<uint64, LightMap>
           mutable LightingConfig : Lighting3dConfig
-          mutable LightingConfigChanged : bool
+          mutable LightShadowConfigChanged : bool
           mutable RendererConfig : Renderer3dConfig
           mutable RendererConfigChanged : bool
           mutable InstanceFields : single array
@@ -1585,8 +1547,9 @@ type [<ReferenceEquality>] VulkanRenderer3d =
           ForwardSurfacesComparer : IComparer<struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * single * int)>
           ForwardSurfacesSortBuffer : struct (single * single * Matrix4x4 * bool * Presence * Box2 * MaterialProperties * Matrix4x4 array voption * PhysicallyBasedSurface * single * int) List
           RenderPackages : Packages<RenderAsset, AssetClient>
-          mutable RenderPasses : Dictionary<RenderPass, RenderTasks>
-          mutable RenderPasses2 : Dictionary<RenderPass, RenderTasks>
+          // NOTE: render passes are ordered since shadow passes must be processed in the order they were received.
+          mutable RenderPasses : OrderedDictionary<RenderPass, RenderTasks>
+          mutable RenderPasses2 : OrderedDictionary<RenderPass, RenderTasks>
           mutable RenderPackageCachedOpt : RenderPackageCached
           mutable RenderAssetCached : RenderAssetCached
           mutable ReloadAssetsRequested : bool
@@ -1688,13 +1651,12 @@ type [<ReferenceEquality>] VulkanRenderer3d =
     static member private clearRenderPasses lightProbesIncluded renderer =
 
         // clear current render passes with possible exception of light probes to preserve tracking of associated light maps
-        let normalTasksOpt = Dictionary.tryFind NormalPass renderer.RenderPasses
+        let mutable normalTasks = Unchecked.defaultof<RenderTasks>
+        let normalTasksFound = renderer.RenderPasses.TryGetValue (NormalPass, &normalTasks)
         renderer.RenderPasses.Clear ()
-        match normalTasksOpt with
-        | Some normalTasks ->
+        if normalTasksFound then
             RenderTasks.clear lightProbesIncluded normalTasks
             renderer.RenderPasses.Add (NormalPass, normalTasks)
-        | None -> ()
 
         // clear previous render passes
         renderer.RenderPasses2.Clear ()
@@ -2240,8 +2202,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 [for entry in renderer.RenderPasses do
                     if RenderPass.displaces renderPass entry.Key then
                         entry]
+            let mutable insertionIndex = renderer.RenderPasses.Count
             for displacedPass in displacedPasses do
-                renderer.RenderPasses.Remove displacedPass.Key |> ignore<bool>
+                let displacedIndex = renderer.RenderPasses.IndexOf displacedPass.Key
+                renderer.RenderPasses.RemoveAt displacedIndex
+                insertionIndex <- min insertionIndex displacedIndex
             let renderTasks =
                 match displacedPasses with
                 | head :: _ ->
@@ -2249,7 +2214,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                     RenderTasks.clear true recycledTasks
                     recycledTasks
                 | _ -> RenderTasks.make ()
-            renderer.RenderPasses.Add (renderPass, renderTasks)
+
+            // insert render pass, taking its displaced pass's position if any
+            let insertionIndex = min insertionIndex renderer.RenderPasses.Count
+            renderer.RenderPasses.Insert (insertionIndex, renderPass, renderTasks)
             renderTasks
 
     static member private getLastSkyBoxOpt renderPass renderer =
@@ -3669,8 +3637,19 @@ type [<ReferenceEquality>] VulkanRenderer3d =
             | RenderTerrain rt ->
                 let renderTasks = VulkanRenderer3d.getRenderTasks rt.RenderPass renderer
                 VulkanRenderer3d.categorizeTerrain (rt.Visible, rt.TerrainDescriptor, renderTasks, renderer)
+            | RenderEmptyPass renderPass ->
+                VulkanRenderer3d.getRenderTasks renderPass renderer |> ignore<RenderTasks>
+                match renderPass with
+                | ShadowPass (lightId, _, _, _, _, _) ->
+                    // NOTE: World sends a light's shadow passes in priority order, each preceded by its empty pass, so
+                    // recording light ids here captures World's shadow light priority.
+                    if renderer.ShadowLightIdSet.Add lightId then renderer.ShadowLightIdList.Add lightId
+                | LightMapPass (_, _) | ReflectionPass (_, _) | NormalPass -> ()
             | ConfigureLighting3d l3c ->
-                if renderer.LightingConfig <> l3c then renderer.LightingConfigChanged <- true
+                // NOTE: only the lighting config fields that affect shadow map contents invalidate cached shadows.
+                if  renderer.LightingConfig.LightShadowExponent <> l3c.LightShadowExponent ||
+                    renderer.LightingConfig.LightShadowRadius <> l3c.LightShadowRadius then
+                    renderer.LightShadowConfigChanged <- true
                 renderer.LightingConfig <- l3c
             | ConfigureRenderer3d r3c ->
                 if renderer.RendererConfig <> r3c then renderer.RendererConfigChanged <- true
@@ -4042,6 +4021,12 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         Pipeline.beginFrame renderer.EnvironmentFilterPipeline.Pipeline
         PhysicallyBased.beginPhysicallyBasedPipelines renderer.PhysicallyBasedPipelines
 
+        // reload render assets when requested on previous frame, doing so before categorizing messages so that this
+        // frame's render passes aren't cleared by the reload
+        if renderer.ReloadAssetsRequested then
+            VulkanRenderer3d.handleReloadRenderAssets renderer
+            renderer.ReloadAssetsRequested <- false
+
         // categorize messages
         VulkanRenderer3d.categorize frustumInterior frustumExterior frustumImposter eyeCenter eyeRotation renderMessages renderer
 
@@ -4370,11 +4355,13 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // actually render to shadow cube map face
         VulkanRenderer3d.renderShadow lightOrigin shadowView shadowProjection shadowFrustum CascadedLight lightCutoff shadowResolution colorAttachment depthAttachment renderTasks renderer
 
-    static member private renderShadows eyeCenter renderer =
+    static member private renderShadows renderer =
 
-        // sort spot and directional lights according to how they are utilized by shadows
-        let normalTasks = VulkanRenderer3d.getRenderTasks NormalPass renderer
-        let spotAndDirectionalLightsArray = SortableLight.sortShadowingSpotAndDirectionalLightsIntoArray Constants.Render.ShadowTexturesMax eyeCenter normalTasks.Lights
+        // collect spot and directional lights in the order World prioritized their shadows
+        let spotAndDirectionalLightsArray =
+            SortableLight.collectShadowingLightsIntoArray
+                Constants.Render.ShadowTexturesMax (fun lightType -> lightType = 1 || lightType = 2)
+                renderer.ShadowLightIdList renderer.LightsDesiringShadows
 
         // sort spot and directional lights so that shadows that have the possibility of cache reuse come to the front
         // NOTE: this approach has O(n^2) complexity altho perhaps it could be optimized.
@@ -4420,10 +4407,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                         // draw shadow texture when not cached
                         let shouldDraw =
                             renderer.RendererConfig.LightShadowingEnabled &&
-                            match renderer.RenderPasses2.TryGetValue renderPass with
+                            match (renderer.RenderPasses2.TryGetValue renderPass : bool * RenderTasks) with
                             | (true, renderTasksCached) ->
                                 if Option.contains shadowTextureIndex renderTasksCached.ShadowBufferIndexOpt then
-                                    let upToDate = RenderTasks.shadowUpToDate renderer.LightingConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
+                                    let upToDate = RenderTasks.shadowUpToDate renderer.LightShadowConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
                                     not upToDate
                                 else true
                             | (_, _) -> true
@@ -4468,8 +4455,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
 
                     | _ -> ()
 
-        // sort point lights according to how they are utilized by shadows
-        let pointLightsArray = SortableLight.sortShadowingPointLightsIntoArray Constants.Render.ShadowMapsMax eyeCenter normalTasks.Lights
+        // collect point lights in the order World prioritized their shadows
+        let pointLightsArray =
+            SortableLight.collectShadowingLightsIntoArray
+                Constants.Render.ShadowMapsMax (fun lightType -> lightType = 0)
+                renderer.ShadowLightIdList renderer.LightsDesiringShadows
 
         // sort point lights so that shadows that have the possibility of cache reuse come to the front
         // NOTE: this approach has O(n^2) complexity altho perhaps it could be optimized.
@@ -4499,10 +4489,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                             // NOTE: it's a tiny bit inefficient that we set up and tear down the same shadow map once
                             // per face render here, but probably nothing worth caring about.
                             let shouldDraw =
-                                match renderer.RenderPasses2.TryGetValue renderPass with
+                                match (renderer.RenderPasses2.TryGetValue renderPass : bool * RenderTasks) with
                                 | (true, renderTasksCached) ->
                                     if Option.contains (shadowMapBufferIndex + Constants.Render.ShadowTexturesMax) renderTasksCached.ShadowBufferIndexOpt then
-                                        let upToDate = RenderTasks.shadowUpToDate renderer.LightingConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
+                                        let upToDate = RenderTasks.shadowUpToDate renderer.LightShadowConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
                                         not upToDate
                                     else true
                                 | (_, _) -> true
@@ -4529,8 +4519,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                         | SpotLight (_, _, _) | DirectionalLight _ | CascadedLight -> failwithumf ()
                     | _ -> ()
 
-        // sort cascaded lights according to how they are utilized by shadows
-        let cascadedLightsArray = SortableLight.sortShadowingCascadedLightsIntoArray Constants.Render.ShadowCascadesMax eyeCenter normalTasks.Lights
+        // collect cascaded lights in the order World prioritized their shadows
+        let cascadedLightsArray =
+            SortableLight.collectShadowingLightsIntoArray
+                Constants.Render.ShadowCascadesMax (fun lightType -> lightType = 3)
+                renderer.ShadowLightIdList renderer.LightsDesiringShadows
 
         // sort cascaded lights so that shadows that have the possibility of cache reuse come to the front
         // NOTE: this approach has O(n^2) complexity altho perhaps it could be optimized.
@@ -4558,10 +4551,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
 
                             // draw shadow cascade when not cached
                             let shouldDraw =
-                                match renderer.RenderPasses2.TryGetValue renderPass with
+                                match (renderer.RenderPasses2.TryGetValue renderPass : bool * RenderTasks) with
                                 | (true, renderTasksCached) ->
                                     if Option.contains (shadowCascadeBufferIndex + Constants.Render.ShadowTexturesMax) renderTasksCached.ShadowBufferIndexOpt then
-                                        let upToDate = RenderTasks.shadowUpToDate renderer.LightingConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
+                                        let upToDate = RenderTasks.shadowUpToDate renderer.LightShadowConfigChanged renderer.RendererConfigChanged renderTasks renderTasksCached
                                         not upToDate
                                     else true
                                 | (_, _) -> true
@@ -5564,7 +5557,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // update viewports
         if renderer.GeometryViewport <> geometryViewport then
             VulkanRenderer3d.invalidateCaches renderer
-            VulkanRenderer3d.clearRenderPasses false renderer // force shadows to rerender, but keep light probes for light map tracking
+            // force shadows to rerender by clearing their cache source rather than this frame's render passes
+            renderer.RenderPasses2.Clear ()
             renderer.GeometryViewport <- geometryViewport
         renderer.WindowViewport <- windowViewport
 
@@ -5575,16 +5569,11 @@ type [<ReferenceEquality>] VulkanRenderer3d =
         // delete textures as requested on previous frame
         TextureDumpster.dump renderer.TextureDumpster renderer.VulkanContext
 
-        // reload render assets when requested on previous frame
-        if renderer.ReloadAssetsRequested then
-            VulkanRenderer3d.handleReloadRenderAssets renderer
-            renderer.ReloadAssetsRequested <- false
-
         // render light maps
         VulkanRenderer3d.renderLightMaps frustumInterior frustumExterior frustumImposter renderer
 
         // render shadows
-        VulkanRenderer3d.renderShadows eyeCenter renderer
+        VulkanRenderer3d.renderShadows renderer
 
         // render top-level geometry pass
         if renderGeometry then
@@ -5607,7 +5596,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                 targetBounds 0 resolveTexture.Image
 
         // clear config dirty flags
-        renderer.LightingConfigChanged <- false
+        renderer.LightShadowConfigChanged <- false
         renderer.RendererConfigChanged <- false
 
         // clear light shadow indices
@@ -5615,6 +5604,10 @@ type [<ReferenceEquality>] VulkanRenderer3d =
 
         // clear lights desiring shadows
         renderer.LightsDesiringShadows.Clear ()
+
+        // clear shadow light ids
+        renderer.ShadowLightIdList.Clear ()
+        renderer.ShadowLightIdSet.Clear ()
 
         // destroy cached terrain geometries that weren't rendered this frame
         for geometry in renderer.TerrainGeometries do
@@ -5876,6 +5869,12 @@ type [<ReferenceEquality>] VulkanRenderer3d =
                             if ssc <> 0 then ssc
                             else -order.CompareTo order2 } // order enabled stable sort
 
+        // create render passes, each starting with a normal pass
+        let renderPasses = OrderedDictionary<RenderPass, RenderTasks> HashIdentity.Structural
+        renderPasses.Add (NormalPass, RenderTasks.make ())
+        let renderPasses2 = OrderedDictionary<RenderPass, RenderTasks> HashIdentity.Structural
+        renderPasses2.Add (NormalPass, RenderTasks.make ())
+
         // make renderer
         let renderer =
             { GeometryViewport = geometryViewport
@@ -5892,6 +5891,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
               ShadowMatricesFlipped = shadowMatricesFlipped
               LightShadowIndices = dictPlus HashIdentity.Structural []
               LightsDesiringShadows = dictPlus HashIdentity.Structural []
+              ShadowLightIdList = List ()
+              ShadowLightIdSet = hashSetPlus HashIdentity.Structural []
               CubeMapGeometry = cubeMapGeometry
               BillboardGeometry = billboardGeometry
               QuadGeometry = quadGeometry
@@ -5908,7 +5909,7 @@ type [<ReferenceEquality>] VulkanRenderer3d =
               PhysicallyBasedAttachments = physicallyBasedAttachments
               LightMaps = dictPlus HashIdentity.Structural []
               LightingConfig = Lighting3dConfig.defaultConfig
-              LightingConfigChanged = false
+              LightShadowConfigChanged = false
               RendererConfig = Renderer3dConfig.defaultConfig
               RendererConfigChanged = false
               InstanceFields = Array.zeroCreate<single> (Constants.Render.InstanceFieldCount * Constants.Render.InstanceBatchPrealloc)
@@ -5917,8 +5918,8 @@ type [<ReferenceEquality>] VulkanRenderer3d =
               ForwardSurfacesComparer = forwardSurfacesComparer
               ForwardSurfacesSortBuffer = List ()
               RenderPackages = dictPlus StringComparer.Ordinal []
-              RenderPasses = dictPlus HashIdentity.Structural [(NormalPass, RenderTasks.make ())]
-              RenderPasses2 = dictPlus HashIdentity.Structural [(NormalPass, RenderTasks.make ())]
+              RenderPasses = renderPasses
+              RenderPasses2 = renderPasses2
               RenderPackageCachedOpt = Unchecked.defaultof<_>
               RenderAssetCached = { CachedAssetTagOpt = Unchecked.defaultof<_>; CachedRenderAsset = Unchecked.defaultof<_> }
               ReloadAssetsRequested = false
