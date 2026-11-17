@@ -72,6 +72,8 @@
         [ToneMapPower [1 1 1]]
         [ToneMapSaturation 1.1]
         [ToneMapWhitePoint 0.5]
+        [ColorGradeStrength 0]
+        [ColorGradeLut [Default ColorGradeLut]]
         [FogEnabled True]
         [FogType LinearFog]
         [FogStart 24]
