@@ -61,6 +61,9 @@ module Gaia =
     let mutable private RightClickPosition = v2Zero
     let mutable private PropertyFocusedOpt = Option<PropertyDescriptor * Simulant>.None
     let mutable private PropertyEditorFocusRequested = false
+    let mutable private PropertyValueSearchStr = ""
+    let mutable private PropertyValueSearchIndex = -1
+    let mutable private PropertyValueSelectionRequestOpt = Option<int * int>.None
     let mutable private EntityHierarchySearchRequested = false
     let mutable private AssetViewerSearchRequested = false
     let mutable private DragDropPayloadOpt = Option<DragDropPayload>.None
@@ -116,6 +119,8 @@ module Gaia =
     let mutable private AlternativeEyeTravelInput = false
     let mutable private PhysicsDebugRendering2d = false
     let mutable private PhysicsDebugRendering3d = false
+    let mutable private PhysicsDebugRenderingDistance3d = Constants.Render.Body3dRenderDistanceMax
+    let mutable private PhysicsDebugRenderingHeightMaps3d = false
     let mutable private ImGuiDebugWindow = false
     let mutable private EntityHierarchySearchStr = ""
     let mutable private PropagationSourcesSearchStr = ""
@@ -1014,6 +1019,13 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         | None ->
             let entities3d = getPickCandidates3d world
             World.tryPickEntity3d mousePosition entities3d world
+
+    /// Pick all the entities under the mouse, from the nearest down - 2d entities when any are under the mouse, and
+    /// otherwise 3d entities.
+    let private mousePickAll mousePosition world =
+        let entities2d = World.pickEntities2d mousePosition (getPickCandidates2d world) world
+        if Array.notEmpty entities2d then entities2d
+        else World.pickEntities3d mousePosition (getPickCandidates3d world) world |> Array.map snd
 
     let private tryPickName names =
         let io = ImGui.GetIO ()
@@ -1933,9 +1945,25 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         DragEntityState <- DragEntityDuplicate2d (world.DateTime, mousePositionWorld, entity)
                     else toggleEntitySelection entity world
                 | Some (_, entity) ->
-                    if SelectedEntities.Contains entity && SelectedEntities.Count > 1
-                    then SelectionCollapseRequestedOpt <- Some entity // keep the selection to drag, unless just clicked
-                    else selectEntities true (Set.singleton entity) world
+
+                    // when the lone selected entity is under the mouse, even behind others, clicking it acts on it
+                    // and selects the entity behind it on release unless dragged, cycling through overlapping entities
+                    let picks = mousePickAll mousePosition world
+                    let selectedIndexOpt =
+                        match Seq.tryExactlyOne SelectedEntities with
+                        | Some selected -> Array.tryFindIndex ((=) selected) picks
+                        | None -> None
+                    let entity =
+                        match selectedIndexOpt with
+                        | Some selectedIndex ->
+                            if picks.Length > 1 then SelectionCollapseRequestedOpt <- Some picks[(inc selectedIndex) % picks.Length]
+                            picks[selectedIndex]
+                        | None ->
+                            // keep the selection to drag, unless just clicked
+                            if SelectedEntities.Contains entity && SelectedEntities.Count > 1
+                            then SelectionCollapseRequestedOpt <- Some entity
+                            else selectEntities true (Set.singleton entity) world
+                            entity
                     if entity.GetIs2d world && not (getSelectionMixed world) then // not 2d and 3d together
                         if World.isKeyboardAltDown world then
                             let absolute = entity.GetAbsolute world
@@ -2021,7 +2049,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     else DragEntityState <- DragEntityInactive
             | DragEntityInactive -> ()
 
-        // attempt to end dragging, selecting just the entity clicked within a selection when it wasn't dragged
+        // attempt to end dragging, selecting just the entity clicked within a selection (or the entity behind the one
+        // clicked when cycling) when it wasn't dragged
         if ImGui.IsMouseReleased ImGuiMouseButton.Left then
             match SelectionCollapseRequestedOpt with
             | Some entity ->
@@ -2112,6 +2141,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                         PropagationSourcesSearchStr <- ""
                     elif not (String.IsNullOrWhiteSpace EntityHierarchySearchStr) then
                         EntityHierarchySearchStr <- ""
+                    elif not (String.IsNullOrWhiteSpace PropertyValueSearchStr) then
+                        PropertyValueSearchStr <- ""
+                        PropertyValueSearchIndex <- -1
                     else
                         ImGuiInternal.tryCancelDragDrop ()
                         DragDropPayloadOpt <- None // TODO: P1: remove this line when AcceptDragDropPayload is exposed.
@@ -2567,7 +2599,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 // physics debug rendering
                 if PhysicsDebugRendering3d then
                     let mutable settings3d = DrawSettings (DrawShapeWireframe = true)
-                    World.imGuiRenderPhysics3d settings3d world
+                    World.imGuiRenderPhysics3dPlus settings3d PhysicsDebugRenderingDistance3d PhysicsDebugRenderingHeightMaps3d world
                 if PhysicsDebugRendering2d then
                     World.imGuiRenderPhysics2d world
 
@@ -3413,6 +3445,52 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.InputTextMultiline ("##assetGraphStr", &AssetGraphStr, 131072u, v2 -1.0f -1.0f) |> ignore<bool>
         ImGui.End ()
 
+    /// Select the property value text in the given UTF-8 byte range when requested, scrolling it into view.
+    let private propertyValueTextCallback =
+        ImGuiInputTextCallback (fun data ->
+            match PropertyValueSelectionRequestOpt with
+            | Some (selectionStart, selectionEnd) ->
+                let data = ImGuiInputTextCallbackDataPtr data
+                data.SelectionStart <- selectionStart
+                data.SelectionEnd <- selectionEnd
+                data.CursorPos <- selectionEnd
+                PropertyValueSelectionRequestOpt <- None
+            | None -> ()
+            0)
+
+    /// Find the next (or previous) occurrence of the search text in the property value text, wrapping around, and
+    /// request that it be selected.
+    let private searchPropertyValueStr forward (propertyValueStr : string) =
+        if PropertyValueSearchStr.Length > 0 then
+            let comparison = StringComparison.OrdinalIgnoreCase
+            let index =
+                if forward then
+                    let startIndex = min (PropertyValueSearchIndex + 1) propertyValueStr.Length
+                    match propertyValueStr.IndexOf (PropertyValueSearchStr, startIndex, comparison) with
+                    | -1 -> propertyValueStr.IndexOf (PropertyValueSearchStr, comparison)
+                    | index -> index
+                else
+                    let index =
+                        if PropertyValueSearchIndex > 0
+                        then propertyValueStr.LastIndexOf (PropertyValueSearchStr, PropertyValueSearchIndex - 1, comparison)
+                        else -1
+                    if index = -1 then propertyValueStr.LastIndexOf (PropertyValueSearchStr, comparison) else index
+            PropertyValueSearchIndex <- index
+            if index >= 0 then
+                let selectionStart = Encoding.UTF8.GetByteCount (propertyValueStr.AsSpan (0, index))
+                let selectionLength = Encoding.UTF8.GetByteCount (propertyValueStr.AsSpan (index, PropertyValueSearchStr.Length))
+                PropertyValueSelectionRequestOpt <- Some (selectionStart, selectionStart + selectionLength)
+
+    /// Count the occurrences of the search text in the property value text.
+    let private countPropertyValueSearchMatches (propertyValueStr : string) =
+        let mutable count = 0
+        if PropertyValueSearchStr.Length > 0 then
+            let mutable index = propertyValueStr.IndexOf (PropertyValueSearchStr, StringComparison.OrdinalIgnoreCase)
+            while index >= 0 do
+                count <- inc count
+                index <- propertyValueStr.IndexOf (PropertyValueSearchStr, index + PropertyValueSearchStr.Length, StringComparison.OrdinalIgnoreCase)
+        count
+
     let private imGuiEditPropertyWindow world =
         if PropertyEditorFocusRequested then
             ImGui.SetNextWindowFocus ()
@@ -3446,10 +3524,31 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     if  isPropertyAssetTag then
                         ImGui.SameLine ()
                         if ImGui.Button "Pick" then searchAssetViewer ()
+
+                    // search the property value text
+                    ImGui.SetNextItemWidth (ImGui.GetContentRegionAvail().X * 0.5f)
+                    let searchStrPrevious = PropertyValueSearchStr
+                    if ImGui.InputTextWithHint ("##propertyValueSearchStr", "[search text]", &PropertyValueSearchStr, 4096u, ImGuiInputTextFlags.EnterReturnsTrue) then
+                        searchPropertyValueStr (not (ImGui.IsShiftDown ())) propertyValueStr
+                    if ImGui.IsItemDeactivated () && ImGui.IsKeyPressed ImGuiKey.Escape then PropertyValueSearchStr <- ""
+                    if PropertyValueSearchStr <> searchStrPrevious then PropertyValueSearchIndex <- -1
+                    ImGui.SameLine ()
+                    if ImGui.Button "<" then searchPropertyValueStr false propertyValueStr
+                    ImGui.SameLine ()
+                    if ImGui.Button ">" then searchPropertyValueStr true propertyValueStr
+                    if PropertyValueSearchStr.Length > 0 then
+                        ImGui.SameLine ()
+                        ImGui.Text (string (countPropertyValueSearchMatches propertyValueStr) + " found")
+
+                    // activate the property value text when a found match is to be selected
+                    if PropertyValueSelectionRequestOpt.IsSome then ImGui.SetKeyboardFocusHere ()
+
+                    // edit the property value text
+                    let propertyValueFlags = ImGuiInputTextFlags.CallbackAlways
                     if  propertyDescriptor.PropertyName = Constants.Engine.FacetNamesPropertyName &&
                         propertyDescriptor.PropertyType = typeof<string Set> then
-                        ImGui.InputTextMultiline ("##propertyValueStr", &propertyValueStr, 4096u, v2 -1.0f -1.0f, ImGuiInputTextFlags.ReadOnly) |> ignore<bool>
-                    elif ImGui.InputTextMultiline ("##propertyValueStr", &propertyValueStr, 131072u, v2 -1.0f -1.0f) then
+                        ImGui.InputTextMultiline ("##propertyValueStr", &propertyValueStr, 4096u, v2 -1.0f -1.0f, ImGuiInputTextFlags.ReadOnly ||| propertyValueFlags, propertyValueTextCallback) |> ignore<bool>
+                    elif ImGui.InputTextMultiline ("##propertyValueStr", &propertyValueStr, 131072u, v2 -1.0f -1.0f, propertyValueFlags, propertyValueTextCallback) then
                         let pasts = Pasts
                         try let propertyValueEscaped = propertyValueStr
                             let propertyValueUnescaped = String.unescape propertyValueEscaped
@@ -3862,6 +3961,13 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.Text "Debug"
             ImGui.Checkbox ("Physics Debug Rendering (2d)", &PhysicsDebugRendering2d) |> ignore<bool>
             ImGui.Checkbox ("Physics Debug Rendering (3d)", &PhysicsDebugRendering3d) |> ignore<bool>
+            if PhysicsDebugRendering3d then
+                ImGui.Indent ()
+                ImGui.Text "Distance"
+                ImGui.SameLine ()
+                ImGui.DragFloat ("##physicsDebugRenderingDistance3d", &PhysicsDebugRenderingDistance3d, SnapDrag, 1.0f, Single.MaxValue, "%2.2f") |> ignore<bool>
+                ImGui.Checkbox ("Height Maps", &PhysicsDebugRenderingHeightMaps3d) |> ignore<bool>
+                ImGui.Unindent ()
             ImGui.Checkbox ("ImGui Debug Window", &ImGuiDebugWindow) |> ignore<bool>
         ImGui.End ()
 
