@@ -459,6 +459,9 @@ module TextFacetExtensions =
         member this.GetJustification world : Justification = this.Get (nameof this.Justification) world
         member this.SetJustification (value : Justification) world = this.Set (nameof this.Justification) value world
         member this.Justification = lens (nameof this.Justification) this this.GetJustification this.SetJustification
+        member this.GetLineSpacing world : single = this.Get (nameof this.LineSpacing) world
+        member this.SetLineSpacing (value : single) world = this.Set (nameof this.LineSpacing) value world
+        member this.LineSpacing = lens (nameof this.LineSpacing) this this.GetLineSpacing this.SetLineSpacing
         member this.GetTextMargin world : Vector2 = this.Get (nameof this.TextMargin) world
         member this.SetTextMargin (value : Vector2) world = this.Set (nameof this.TextMargin) value world
         member this.TextMargin = lens (nameof this.TextMargin) this this.GetTextMargin this.SetTextMargin
@@ -491,6 +494,7 @@ type TextFacet () =
          define Entity.FontSizing None
          define Entity.FontStyling Set.empty
          define Entity.Justification (Justified (JustifyCenter, JustifyMiddle))
+         define Entity.LineSpacing 1.0f
          define Entity.TextMargin v2Zero
          define Entity.TextColor Color.White
          define Entity.TextColorDisabled Constants.Gui.ColorDisabledDefault
@@ -515,10 +519,11 @@ type TextFacet () =
         let fontStyling = entity.GetFontStyling world
         let color = if transform.Enabled then entity.GetTextColor world else entity.GetTextColorDisabled world
         let justification = entity.GetJustification world
+        let lineSpacing = entity.GetLineSpacing world
         let userDefinedSettings = entity.GetTextUserDefinedSettings world
         World.renderGuiText
             absolute perimeter offset elevation shift clipOpt pipelineName text margin
-            font fontSizing fontStyling color justification None userDefinedSettings world
+            font fontSizing fontStyling color justification lineSpacing None userDefinedSettings world
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important Constants.Engine.EntityGuiSizeDefault v3Zero
@@ -1203,7 +1208,7 @@ type TextBoxFacet () =
         let userDefinedSettings = entity.GetTextUserDefinedSettings world
         World.renderGuiText
             absolute perimeter offset elevation shift clipOpt pipelineName text margin
-            font fontSizing fontStyling color justification caretOpt userDefinedSettings world
+            font fontSizing fontStyling color justification 1.0f caretOpt userDefinedSettings world
 
     override this.GetAttributesInferred (_, _) =
         AttributesInferred.important Constants.Engine.EntityGuiSizeDefault v3Zero
@@ -4271,7 +4276,22 @@ module TraversalInterpolatedFacetExtensions =
             else current
 
         member this.GetPositionInterpolated world =
-            this.InterpolateVector3 (this.GetPositionHistory world) (this.GetPosition world) world
+
+            // when standing on moving ground, such as a moving platform, carry each past position along with the
+            // ground's motion since then so that interpolation smooths only the entity's own motion rather than
+            // making it trail behind the ground
+            let history = this.GetPositionHistory world
+            let groundVelocity =
+                if this.Has<RigidBodyFacet> world then
+                    let bodyId = this.GetBodyId world
+                    if World.getBodyExists bodyId world then World.getBodyGroundVelocity bodyId world else v3Zero
+                else v3Zero
+            let history =
+                if groundVelocity <> v3Zero then
+                    let gameTime = if this.GetTimeScaled world then world.ScaledTime else world.UnscaledTime
+                    FQueue.map (fun (time, position) -> (time, position + groundVelocity * (gameTime - time).SecondsF)) history
+                else history
+            this.InterpolateVector3 history (this.GetPosition world) world
 
         member this.GetLinearVelocityInterpolated world =
             this.InterpolateVector3 (this.GetLinearVelocityHistory world) (this.GetLinearVelocity world) world
