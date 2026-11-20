@@ -252,23 +252,25 @@ module WorldModule =
         static member getTickTime world =
             AmbientState.getTickTime world.AmbientState
 
-        /// Get the polymorphic engine time between this and the previous frame, unscaled by the time scalar.
+        /// Get the game time between this and the previous frame, unscaled by the time scalar.
         static member getUnscaledDelta world =
             AmbientState.getUnscaledDelta world.AmbientState
 
-        /// Get the polymorphic engine time that has transpired since the world began advancing, unscaled by the time
-        /// scalar.
+        /// Get the game time that has transpired since the world began advancing, unscaled by the time scalar.
         static member getUnscaledTime world =
             AmbientState.getUnscaledTime world.AmbientState
 
-        /// Get the polymorphic engine time between this and the previous frame, scaled by the time scalar.
+        /// Get the game time between this and the previous frame, scaled by the time scalar.
         static member getScaledDelta world =
             AmbientState.getScaledDelta world.AmbientState
 
-        /// Get the polymorphic engine time that has transpired since the world began advancing, scaled by the time
-        /// scalar as it went.
+        /// Get the game time that has transpired since the world began advancing, scaled by the time scalar as it went.
         static member getScaledTime world =
             AmbientState.getScaledTime world.AmbientState
+
+        /// Get the scaled game time that has transpired since a previous time.
+        static member getLocalTime previousTime world =
+            World.getScaledTime world - previousTime
 
         /// Get the amount of date time that has transpired between this and the previous frame. This value is independent
         /// of whether the world was or is advancing.
@@ -590,9 +592,9 @@ module WorldModule =
             World.mapAmbientState (AmbientState.mapSymbolics mapper) world
 
         /// Try to load a symbol package with the given name.
-        static member tryLoadSymbolPackage implicitDelimiters packageName world =
+        static member tryLoadSymbolPackage packageName metadata world =
             let symbolics = World.getSymbolics world
-            Symbolics.tryLoadSymbolPackage implicitDelimiters packageName symbolics
+            Symbolics.tryLoadSymbolPackage packageName metadata symbolics
 
         /// Unload a symbol package with the given name.
         static member unloadSymbolPackage packageName world =
@@ -605,9 +607,9 @@ module WorldModule =
             Symbolics.tryGetSymbol assetTag metadata symbolics
 
         /// Try to find symbols with the given asset tags.
-        static member tryGetSymbols implicitDelimiters assetTags world =
+        static member tryGetSymbols assetTags metadata world =
             let symbolics = World.getSymbolics world
-            Symbolics.tryGetSymbols implicitDelimiters assetTags symbolics
+            Symbolics.tryGetSymbols assetTags metadata symbolics
 
         /// Reload all the symbols in symbolics.
         static member reloadSymbols world =

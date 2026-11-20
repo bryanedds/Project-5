@@ -750,12 +750,13 @@ module AssimpExtensions =
                 let mutable animationChannel = Unchecked.defaultof<_>
                 if animationChannels.TryGetValue (AnimationChannelKey.make animation.Name node.Name, &animationChannel) then
                     let localTime = max 0.0 (time - animationStartTime)
-                    if  (match animationLifeTimeOpt with Some lifeTime -> localTime < animationStartTime + lifeTime | None -> true) &&
+                    if  (match animationLifeTimeOpt with Some lifeTime -> localTime < lifeTime | None -> true) &&
                         (match animation.BoneFilterOpt with Some boneFilter -> boneFilter.Contains node.Name | None -> true) then
                         let localTimeScaled =
                             match animation.Playback with
                             | Once ->
-                                localTime * double animationRate
+                                let length = animationChannel.RotationKeys[dec animationChannel.RotationKeys.Length].Time
+                                min (localTime * double animationRate) length // hold the last pose once played through
                             | Loop ->
                                 let length = animationChannel.RotationKeys[dec animationChannel.RotationKeys.Length].Time
                                 localTime * double animationRate % length

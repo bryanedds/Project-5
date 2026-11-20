@@ -108,7 +108,7 @@ and [<ReferenceEquality>] Lens<'a, 's when 's :> Simulant> =
         | ValueNone -> false
 
     /// Set the lensed property to the given value.
-    /// Throws an exception if the lens is readonly.
+    /// Warns once if the lens is readonly.
     member lens.Set value world =
         match lens.SetOpt with
         | ValueSome setter -> setter value world
@@ -2087,23 +2087,25 @@ and [<NoEquality; NoComparison>] World =
     member this.TickTime =
         AmbientState.getTickTime this.AmbientState
 
-    /// Get the polymorphic engine time between this and the previous frame, unscaled by the time scalar.
+    /// Get the game time between this and the previous frame, unscaled by the time scalar.
     member this.UnscaledDelta =
         AmbientState.getUnscaledDelta this.AmbientState
 
-    /// Get the polymorphic engine time that has transpired since the world began advancing, unscaled by the time
-    /// scalar.
+    /// Get the game time that has transpired since the world began advancing, unscaled by the time scalar.
     member this.UnscaledTime =
         AmbientState.getUnscaledTime this.AmbientState
 
-    /// Get the polymorphic engine time between this and the previous frame, scaled by the time scalar.
+    /// Get the game time between this and the previous frame, scaled by the time scalar.
     member this.ScaledDelta =
         AmbientState.getScaledDelta this.AmbientState
 
-    /// Get the polymorphic engine time that has transpired since the world began advancing, scaled by the time
-    /// scalar as it went.
+    /// Get the game time that has transpired since the world began advancing, scaled by the time scalar as it went.
     member this.ScaledTime =
         AmbientState.getScaledTime this.AmbientState
+
+    /// Get the scaled game time that has transpired since a previous time.
+    member this.LocalTime previousTime =
+        this.ScaledTime - previousTime
 
     /// Get the time scalar - how fast scaled game time passes relative to unscaled game time, 0 holding it still.
     member this.TimeScalar =
