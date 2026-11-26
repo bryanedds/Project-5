@@ -28,14 +28,11 @@ open Nu.Gaia
 // Custom properties in order of priority:  //
 //  Enums                                   //
 //  Flag Enums                              //
+//  DateTimeOffset                          //
+//  SymbolicCompression                     //
 //  CollisionMask                           //
 //  CollisionCategories                     //
 //  CollisionDetection                      //
-//  BodyShape                               //
-//  BodyJoint                               //
-//  BlendMaterial                           //
-//  DateTimeOffset?                         //
-//  SymbolicCompression                     //
 //////////////////////////////////////////////
 
 [<RequireQualifiedAccess>]
@@ -491,6 +488,20 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
     DockNode        ID=0x00000001 Parent=0x00000010 SizeRef=295,1080 Selected=0xD5116FF8
 
 """
+
+    (* ImGui Callbacks *)
+    
+    let private propertyValueTextCallback =
+        ImGuiInputTextCallback (fun data ->
+            match PropertyValueSelectionRequestOpt with
+            | Some (selectionStart, selectionEnd) ->
+                let data = ImGuiInputTextCallbackDataPtr data
+                data.SelectionStart <- selectionStart
+                data.SelectionEnd <- selectionEnd
+                data.CursorPos <- selectionEnd
+                PropertyValueSelectionRequestOpt <- None
+            | None -> ()
+            0)
 
     (* Prelude Functions *)
 
@@ -1024,18 +1035,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 |> Seq.tryHead|]
         |> Array.definitize
         |> Array.tryHead
-
-    let private propertyValueTextCallback =
-        ImGuiInputTextCallback (fun data ->
-            match PropertyValueSelectionRequestOpt with
-            | Some (selectionStart, selectionEnd) ->
-                let data = ImGuiInputTextCallbackDataPtr data
-                data.SelectionStart <- selectionStart
-                data.SelectionEnd <- selectionEnd
-                data.CursorPos <- selectionEnd
-                PropertyValueSelectionRequestOpt <- None
-            | None -> ()
-            0)
 
     let private searchPropertyValueStr forward (propertyValueStr : string) =
         if PropertyValueSearchStr.Length > 0 then
