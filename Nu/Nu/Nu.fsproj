@@ -20,6 +20,8 @@
     <ItemGroup>
         <Compile Include="Core\Core.fs" />
         <Compile Include="Core\Log.fs" />
+        <Compile Include="Core\Hashd.fs" />
+        <Compile Include="Core\Randomk.fs" />
         <Compile Include="Core\Gen.fs" />
         <Compile Include="Core\Math.fs" />
         <Compile Include="Core\Branchless.fs" />
@@ -93,8 +95,8 @@
         <Compile Include="Cursor\CursorClient.fs" />
         <Compile Include="Symbolics\Symbolics.fs" />
         <Compile Include="Particles\Particles.fs" />
-        <Compile Include="Effects\EffectDescriptor.fs" />
         <Compile Include="Effects\DataToken.fs" />
+        <Compile Include="Effects\EffectDescriptor.fs" />
         <Compile Include="Effects\EffectSystem.fs" />
         <Compile Include="BlockMap\BlockMap.fs" />
         <Compile Include="World\WorldPrelude.fs" />
