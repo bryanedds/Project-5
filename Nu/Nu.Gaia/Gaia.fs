@@ -119,7 +119,6 @@ module Gaia =
     let mutable private Snaps2d = Constants.Gaia.Snaps2dDefault
     let mutable private Snaps3d = Constants.Gaia.Snaps3dDefault
     let mutable private SnapDrag = 0.1f
-    let mutable private AlternativeEyeTravelInput = false
     let mutable private PhysicsDebugRendering2d = false
     let mutable private PhysicsDebugRendering3d = false
     let mutable private PhysicsDebugRenderingDistance3d = Constants.Render.Body3dRenderDistanceMax
@@ -174,6 +173,7 @@ module Gaia =
     let mutable private ShowRenameEntityDialog = false
     let mutable private ShowDeleteEntityDialog = false
     let mutable private ShowCutEntityDialog = false
+    let mutable private ShowInputsDialog = false
     let mutable private ShowConfirmExitDialog = false
     let mutable private ShowRestartDialog = false
     let mutable private ReloadAssetsRequested = 0
@@ -195,6 +195,7 @@ module Gaia =
         ShowRenameEntityDialog ||
         ShowDeleteEntityDialog ||
         ShowCutEntityDialog ||
+        ShowInputsDialog ||
         ShowConfirmExitDialog ||
         ShowRestartDialog ||
         ReloadAssetsRequested <> 0 ||
@@ -374,9 +375,9 @@ Pos=699,495
 Size=524,138
 Collapsed=0
 
-[Window][Choose a project .dll... *EDITOR RESTART REQUIRED!*]
-Pos=628,476
-Size=674,128
+[Window][Choose a project... *EDITOR RESTART REQUIRED!*]
+Pos=434,298
+Size=411,123
 Collapsed=0
 
 [Window][Create a group...]
@@ -417,6 +418,11 @@ Collapsed=0
 [Window][Rename entity...]
 Pos=734,514
 Size=444,94
+Collapsed=0
+
+[Window][Gaia Inputs]
+Pos=448,180
+Size=1024,720
 Collapsed=0
 
 [Window][Reloading assets...]
@@ -524,7 +530,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         GaiaState.make
             projectDllPath editModeOpt freshlyLoaded OpenProjectImperativeExecution
             DesiredEye2dCenter DesiredEye3dCenter DesiredEye3dRotation (World.getMasterSoundVolume world) (World.getMasterSongVolume world)            
-            Snaps2dSelected Snaps2d Snaps3d NewEntityElevation NewEntityDistance AlternativeEyeTravelInput OverlayMode
+            Snaps2dSelected Snaps2d Snaps3d NewEntityElevation NewEntityDistance OverlayMode
 
     let private printGaiaState gaiaState =
         PrettyPrinter.prettyPrintSymbol (valueToSymbol gaiaState) PrettyPrinter.defaultPrinter
@@ -1841,25 +1847,37 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
 
     let private updateEyeDrag world =
         if canEditWithMouse world then
-            if ImGui.IsMouseClicked ImGuiMouseButton.Middle then
-                let mousePositionInset = World.getMousePosition2dInset world
-                DragEyeState <- DragEye2dPan mousePositionInset
-            if ImGui.IsMouseClicked ImGuiMouseButton.Right then
+            let middleStarting = // a middle drag restarts as 2d or 3d as alt changes mid-drag
+                ImGui.IsMouseClicked ImGuiMouseButton.Middle ||
+                match DragEyeState with
+                | DragEye2dPan _ -> ImGui.IsAltUp ()
+                | DragEye3dPan _ -> ImGui.IsAltDown ()
+                | _ -> false
+            if middleStarting then
+                if ImGui.IsAltDown () then
+                    let mousePositionInset = World.getMousePosition2dInset world
+                    DragEyeState <- DragEye2dPan mousePositionInset
+                else
+                    let mousePosition = World.getMousePosition world
+                    let pivot = getEyeDragPivot world
+                    let distance = max (Vector3.Distance (pivot, world.Eye3dCenter)) Constants.Gaia.Eye3dDragDistanceMinimum
+                    DragEyeState <- DragEye3dPan (world.DateTime, distance, mousePosition)
+            let rightStartTimeOpt = // a right drag restarts as orbit or free look as alt changes mid-drag, keeping its time
+                match DragEyeState with
+                | DragEye3dOrbit (time, _, _, _, _, _) when ImGui.IsAltUp () -> Some time
+                | DragEye3dFreeLook (time, _, _, _) when ImGui.IsAltDown () -> Some time
+                | _ -> if ImGui.IsMouseClicked ImGuiMouseButton.Right then Some world.DateTime else None
+            match rightStartTimeOpt with
+            | Some time ->
                 let mousePosition = World.getMousePosition world
-                let pivot = getEyeDragPivot world
-                let distance = max (Vector3.Distance (pivot, world.Eye3dCenter)) Constants.Gaia.Eye3dDragDistanceMinimum
+                let forward = world.Eye3dRotation.Forward
+                let yaw = MathF.Atan2 (-forward.X, -forward.Z)
+                let pitch = Math.Clamp (MathF.Asin (Math.Clamp (forward.Y, -1.0f, 1.0f)), -Constants.Gaia.Eye3dPitchMaximum, Constants.Gaia.Eye3dPitchMaximum)
                 DragEyeState <-
-                    if ImGui.IsAltDown () && ImGui.IsCtrlDown () then
-                        DragEye3dDolly (world.DateTime, world.Eye3dCenter, world.Eye3dRotation, distance, mousePosition)
-                    elif ImGui.IsAltDown () then
-                        DragEye3dPan (world.DateTime, distance, mousePosition)
-                    else 
-                        let forward = world.Eye3dRotation.Forward
-                        let yaw = MathF.Atan2 (-forward.X, -forward.Z)
-                        let pitch = Math.Clamp (MathF.Asin (Math.Clamp (forward.Y, -1.0f, 1.0f)), -Constants.Gaia.Eye3dPitchMaximum, Constants.Gaia.Eye3dPitchMaximum)
-                        if SelectedEntities.IsEmpty
-                        then DragEye3dFreeLook (world.DateTime, yaw, pitch, mousePosition) // nothing to orbit, so the eye turns in place
-                        else DragEye3dOrbit (world.DateTime, world.Eye3dCenter, pivot, yaw, pitch, mousePosition)
+                    if ImGui.IsAltDown ()
+                    then DragEye3dOrbit (time, world.Eye3dCenter, getEyeDragPivot world, yaw, pitch, mousePosition)
+                    else DragEye3dFreeLook (time, yaw, pitch, mousePosition)
+            | None -> ()
             match DragEyeState with
             | DragEye2dPan mousePositionInsetPrevious ->
                 let mousePositionInset = World.getMousePosition2dInset world
@@ -1870,17 +1888,16 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 DesiredEye2dCenter <- DesiredEye2dCenter - (mousePositionInset - mousePositionInsetPrevious) * speed // by frame so the speed can change mid-drag
                 DragEyeState <- DragEye2dPan mousePositionInset
             | DragEye3dPan (time, distance, mousePositionPrevious) ->
-                if (world.DateTime - time).TotalSeconds >= Constants.Gaia.DragMinimumSeconds then // a right click held only briefly opens the context menu instead
-                    let mousePosition = World.getMousePosition world
-                    let mouseDelta = mousePosition - mousePositionPrevious // by frame so the speed can change mid-drag
-                    let speed =
-                        if ImGui.IsEnterDown () || ImGui.IsCtrlDown () then Constants.Gaia.Eye3dPanSpeedFast
-                        elif ImGui.IsShiftDown () then Constants.Gaia.Eye3dPanSpeedSlow
-                        else Constants.Gaia.Eye3dPanSpeed
-                    let unitsPerPixel = 2.0f * distance * tan (world.Eye3dFieldOfView * 0.5f) / single world.WindowViewport.Bounds.Size.Y // the world under the mouse at the pivot's distance
-                    let rotation = world.Eye3dRotation
-                    DesiredEye3dCenter <- DesiredEye3dCenter + (rotation.Right * -mouseDelta.X + rotation.Up * mouseDelta.Y) * unitsPerPixel * speed
-                    DragEyeState <- DragEye3dPan (time, distance, mousePosition)
+                let mousePosition = World.getMousePosition world
+                let mouseDelta = mousePosition - mousePositionPrevious // by frame so the speed can change mid-drag
+                let speed =
+                    if ImGui.IsEnterDown () || ImGui.IsCtrlDown () then Constants.Gaia.Eye3dPanSpeedFast
+                    elif ImGui.IsShiftDown () then Constants.Gaia.Eye3dPanSpeedSlow
+                    else Constants.Gaia.Eye3dPanSpeed
+                let unitsPerPixel = 2.0f * distance * tan (world.Eye3dFieldOfView * 0.5f) / single world.WindowViewport.Bounds.Size.Y // the world under the mouse at the pivot's distance
+                let rotation = world.Eye3dRotation
+                DesiredEye3dCenter <- DesiredEye3dCenter + (rotation.Right * -mouseDelta.X + rotation.Up * mouseDelta.Y) * unitsPerPixel * speed
+                DragEyeState <- DragEye3dPan (time, distance, mousePosition)
             | DragEye3dOrbit (time, center, pivot, yaw, pitch, mousePositionOrig) ->
                 if (world.DateTime - time).TotalSeconds >= Constants.Gaia.DragMinimumSeconds then // a right click held only briefly opens the context menu instead
                     let mouseDelta = World.getMousePosition world - mousePositionOrig
@@ -1896,11 +1913,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     let yaw' = yaw - mouseDelta.X * Constants.Gaia.Eye3dOrbitSpeed
                     let pitch' = Math.Clamp (pitch - mouseDelta.Y * Constants.Gaia.Eye3dOrbitSpeed, -Constants.Gaia.Eye3dPitchMaximum, Constants.Gaia.Eye3dPitchMaximum) // never upside-down
                     DesiredEye3dRotation <- Quaternion.CreateFromAxisAngle (v3Up, yaw') * Quaternion.CreateFromAxisAngle (v3Right, pitch')
-            | DragEye3dDolly (time, center, rotation, distance, mousePositionOrig) ->
-                if (world.DateTime - time).TotalSeconds >= Constants.Gaia.DragMinimumSeconds then // a right click held only briefly opens the context menu instead
-                    let mouseDelta = World.getMousePosition world - mousePositionOrig
-                    let travel = distance * (1.0f - exp (mouseDelta.Y * Constants.Gaia.Eye3dDollySpeed)) // nears the pivot without ever reaching it
-                    DesiredEye3dCenter <- center + rotation.Forward * travel
             | DragEyeInactive ->
                 ()
             let scroll = ImGui.GetIO().MouseWheel
@@ -1913,9 +1925,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 DesiredEye3dCenter <- world.Eye3dCenter + world.Eye3dRotation.Forward * scroll * travel
             | _ -> ()
         match DragEyeState with
-        | DragEye2dPan _ when ImGui.IsMouseReleased ImGuiMouseButton.Middle ->
+        | DragEye2dPan _ | DragEye3dPan _ when ImGui.IsMouseReleased ImGuiMouseButton.Middle ->
             DragEyeState <- DragEyeInactive
-        | DragEye3dPan _ | DragEye3dOrbit _ | DragEye3dFreeLook _ | DragEye3dDolly _ when ImGui.IsMouseReleased ImGuiMouseButton.Right ->
+        | DragEye3dOrbit _ | DragEye3dFreeLook _ when ImGui.IsMouseReleased ImGuiMouseButton.Right ->
             DragEyeState <- DragEyeInactive
         | _ -> ()
 
@@ -1941,23 +1953,23 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 DesiredEye3dCenter <- center + v3Left.Transform rotation * moveSpeed
             if ImGui.IsKeyDown ImGuiKey.D && ImGui.IsCtrlUp () && ImGui.IsAltUp () then
                 DesiredEye3dCenter <- center + v3Right.Transform rotation * moveSpeed
-            if ImGui.IsKeyDown (if AlternativeEyeTravelInput then ImGuiKey.UpArrow else ImGuiKey.E) && ImGui.IsCtrlUp () then
+            if ImGui.IsKeyDown ImGuiKey.UpArrow && ImGui.IsCtrlUp () then
                 let rotation' = rotation * Quaternion.CreateFromAxisAngle (v3Right, turnSpeed)
                 DesiredEye3dRotation <-
                     if rotation'.Forward.Dot v3Up < 0.99f then rotation'
                     else
                         Quaternion.CreateFromAxisAngle (v3Down, 2.0f * MathF.Atan2(rotation.Z, rotation.W)) *
                         Quaternion.CreateFromAxisAngle (v3Right, MathF.PI_OVER_2)
-            if ImGui.IsKeyDown (if AlternativeEyeTravelInput then ImGuiKey.DownArrow else ImGuiKey.Q) && ImGui.IsCtrlUp () then
+            if ImGui.IsKeyDown ImGuiKey.DownArrow && ImGui.IsCtrlUp () then
                 let rotation' = rotation * Quaternion.CreateFromAxisAngle (v3Left, turnSpeed)
                 DesiredEye3dRotation <-
                     if rotation'.Forward.Dot v3Down < 0.99f then rotation'
                     else
                         Quaternion.CreateFromAxisAngle (v3Up, 2.0f * MathF.Atan2(rotation.Z, rotation.W)) *
                         Quaternion.CreateFromAxisAngle (v3Right, -MathF.PI_OVER_2)
-            if ImGui.IsKeyDown (if AlternativeEyeTravelInput then ImGuiKey.E else ImGuiKey.UpArrow) && ImGui.IsAltUp () then
+            if ImGui.IsKeyDown ImGuiKey.E && ImGui.IsAltUp () then
                 DesiredEye3dCenter <- center + v3Up.Transform rotation * moveSpeed
-            if ImGui.IsKeyDown (if AlternativeEyeTravelInput then ImGuiKey.Q else ImGuiKey.DownArrow) && ImGui.IsAltUp () then
+            if ImGui.IsKeyDown ImGuiKey.Q && ImGui.IsAltUp () then
                 DesiredEye3dCenter <- center + v3Down.Transform rotation * moveSpeed
             if ImGui.IsKeyDown ImGuiKey.LeftArrow && ImGui.IsAltUp () then
                 DesiredEye3dRotation <- Quaternion.CreateFromAxisAngle (v3Up, turnSpeed) * rotation
@@ -1970,8 +1982,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 match DragEyeState with
                 | DragEye3dPan (time, _, _)
                 | DragEye3dOrbit (time, _, _, _, _, _)
-                | DragEye3dFreeLook (time, _, _, _)
-                | DragEye3dDolly (time, _, _, _, _) -> (world.DateTime - time).TotalSeconds >= Constants.Gaia.DragMinimumSeconds
+                | DragEye3dFreeLook (time, _, _, _) -> (world.DateTime - time).TotalSeconds >= Constants.Gaia.DragMinimumSeconds
                 | _ -> false
             if ImGui.IsMouseReleased ImGuiMouseButton.Right && not eyeDragged then
                 let mousePosition = World.getMousePosition world
@@ -1986,50 +1997,65 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
         // attempt to start dragging an entity with the mouse
         if canEditWithMouse world then
 
-            // attempt to start dragging, unless the eye's dragged
-            if ImGui.IsMouseClicked ImGuiMouseButton.Left then
-                let mousePosition = World.getMousePosition world
-                match tryMousePick mousePosition world with
-                | Some (_, entity) when ImGui.IsShiftDown () && ImGui.IsCtrlUp () && ImGui.IsAltUp () ->
-                    toggleEntitySelection entity world // shift+click adds to or takes from the selection
-                | Some (_, entity) when ImGui.IsCtrlDown () && ImGui.IsAltUp () ->
-                    if entity.GetIs2d world then // ctrl+click adds to or takes from the selection, ctrl+drag duplicates it
-                        let absolute = entity.GetAbsolute world
-                        let mousePositionWorld = Viewport.mouseToWorld2d absolute world.Eye2dCenter world.Eye2dSize mousePosition world.WindowViewport
-                        DragEntityState <- DragEntityDuplicate2d (world.DateTime, mousePositionWorld, entity)
-                    else toggleEntitySelection entity world
-                | Some (_, entity) ->
+            // attempt to start dragging, unless the eye's dragged, or to restart a drag as moving or rotating as alt
+            // changes mid-drag, keeping its time and snapshot so it's still a single undo
+            let dragStartOpt =
+                if ImGui.IsMouseClicked ImGuiMouseButton.Left then
+                    let mousePosition = World.getMousePosition world
+                    match tryMousePick mousePosition world with
+                    | Some (_, entity) when ImGui.IsShiftDown () && ImGui.IsCtrlUp () && ImGui.IsAltUp () ->
+                        toggleEntitySelection entity world // shift+click adds to or takes from the selection
+                        None
+                    | Some (_, entity) when ImGui.IsCtrlDown () && ImGui.IsAltUp () ->
+                        if entity.GetIs2d world then // ctrl+click adds to or takes from the selection, ctrl+drag duplicates it
+                            let absolute = entity.GetAbsolute world
+                            let mousePositionWorld = Viewport.mouseToWorld2d absolute world.Eye2dCenter world.Eye2dSize mousePosition world.WindowViewport
+                            DragEntityState <- DragEntityDuplicate2d (world.DateTime, mousePositionWorld, entity)
+                        else toggleEntitySelection entity world
+                        None
+                    | Some (_, entity) ->
 
-                    // when the lone selected entity is under the mouse, even behind others, clicking it acts on it
-                    // and selects the entity behind it on release unless dragged, cycling through overlapping entities
-                    let picks = mousePickAll mousePosition world
-                    let selectedIndexOpt =
-                        match Seq.tryExactlyOne SelectedEntities with
-                        | Some selected -> Array.tryFindIndex ((=) selected) picks
-                        | None -> None
-                    let entity =
-                        match selectedIndexOpt with
-                        | Some selectedIndex ->
-                            if picks.Length > 1 then SelectionCollapseRequestedOpt <- Some picks[(inc selectedIndex) % picks.Length]
-                            picks[selectedIndex]
-                        | None ->
-                            // keep the selection to drag, unless just clicked
-                            if SelectedEntities.Contains entity && SelectedEntities.Count > 1
-                            then SelectionCollapseRequestedOpt <- Some entity
-                            else selectEntities true (Set.singleton entity) world
-                            entity
-                    if entity.GetIs2d world && not (getSelectionMixed world) then // not 2d and 3d together
-                        if World.isKeyboardAltDown world then
-                            let absolute = entity.GetAbsolute world
-                            let mousePositionWorld = Viewport.mouseToWorld2d absolute world.Eye2dCenter world.Eye2dSize mousePosition world.WindowViewport
-                            let entityDegrees = if entity.MountExists world then entity.GetDegreesLocal world else entity.GetDegrees world
-                            DragEntityState <- DragEntityRotation2d (world.DateTime, ref false, mousePositionWorld, entityDegrees.Z + mousePositionWorld.Y, entity)
-                        else
-                            let absolute = entity.GetAbsolute world
-                            let mousePositionWorld = Viewport.mouseToWorld2d absolute world.Eye2dCenter world.Eye2dSize mousePosition world.WindowViewport
-                            let entityPosition = entity.GetPosition world
-                            DragEntityState <- DragEntityPosition2d (world.DateTime, ref false, mousePositionWorld, entityPosition.V2 + mousePositionWorld, entity)
-                | None -> ()
+                        // when the lone selected entity is under the mouse, even behind others, clicking it acts on it
+                        // and selects the entity behind it on release unless dragged, cycling through overlapping entities
+                        let picks = mousePickAll mousePosition world
+                        let selectedIndexOpt =
+                            match Seq.tryExactlyOne SelectedEntities with
+                            | Some selected -> Array.tryFindIndex ((=) selected) picks
+                            | None -> None
+                        let entity =
+                            match selectedIndexOpt with
+                            | Some selectedIndex ->
+                                if picks.Length > 1 then SelectionCollapseRequestedOpt <- Some picks[(inc selectedIndex) % picks.Length]
+                                picks[selectedIndex]
+                            | None ->
+                                // keep the selection to drag, unless just clicked
+                                if SelectedEntities.Contains entity && SelectedEntities.Count > 1
+                                then SelectionCollapseRequestedOpt <- Some entity
+                                else selectEntities true (Set.singleton entity) world
+                                entity
+                        if entity.GetIs2d world && not (getSelectionMixed world) // not 2d and 3d together
+                        then Some (world.DateTime, ref false, entity)
+                        else None
+
+                    | None -> None
+                else
+                    match DragEntityState with
+                    | DragEntityPosition2d (time, snapshottedRef, _, _, entity) when World.isKeyboardAltDown world && entity.GetExists world ->
+                        Some (time, snapshottedRef, entity)
+                    | DragEntityRotation2d (time, snapshottedRef, _, _, entity) when not (World.isKeyboardAltDown world) && entity.GetExists world ->
+                        Some (time, snapshottedRef, entity)
+                    | _ -> None
+            match dragStartOpt with
+            | Some (time, snapshottedRef, entity) ->
+                let absolute = entity.GetAbsolute world
+                let mousePositionWorld = Viewport.mouseToWorld2d absolute world.Eye2dCenter world.Eye2dSize (World.getMousePosition world) world.WindowViewport
+                if World.isKeyboardAltDown world then
+                    let entityDegrees = if entity.MountExists world then entity.GetDegreesLocal world else entity.GetDegrees world
+                    DragEntityState <- DragEntityRotation2d (time, snapshottedRef, mousePositionWorld, entityDegrees.Z + mousePositionWorld.Y, entity)
+                else
+                    let entityPosition = entity.GetPosition world
+                    DragEntityState <- DragEntityPosition2d (time, snapshottedRef, mousePositionWorld, entityPosition.V2 + mousePositionWorld, entity)
+            | None -> ()
 
             // attempt to continue dragging
             match DragEntityState with
@@ -2161,7 +2187,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             elif ImGui.IsKeyPressed ImGuiKey.Enter && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then World.tryToggleWindowFullScreen world
             elif ImGui.IsKeyPressed ImGuiKey.UpArrow && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then tryReorderSelectedEntity true world
             elif ImGui.IsKeyPressed ImGuiKey.DownArrow && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then tryReorderSelectedEntity false world
-            elif ImGui.IsKeyPressed ImGuiKey.M && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltUp () then ManipulationWorld <- not ManipulationWorld
             elif ImGui.IsKeyPressed ImGuiKey.C && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then LogStr <- ""
             elif ImGui.IsKeyPressed ImGuiKey.L && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then ImGuiIniResetRequested <- true
             elif ImGui.IsKeyPressed ImGuiKey.S && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltDown () then step world
@@ -2185,10 +2210,9 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             elif ImGui.IsKeyPressed ImGuiKey.N && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then synchronizeNav world
             elif ImGui.IsKeyPressed ImGuiKey.L && ImGui.IsCtrlDown () && ImGui.IsShiftDown () && ImGui.IsAltUp () then rerenderLightMaps world
             elif ImGui.IsKeyPressed ImGuiKey.I && ImGui.IsCtrlDown () && ImGui.IsShiftUp () && ImGui.IsAltUp () then tryMoveSelectedEntityToOrigin false world |> ignore<bool>
-            elif ImGui.IsKeyPressed ImGuiKey.Escape then
-                if SelectedWindowOpt = Some "Edit Property" && not (String.IsNullOrWhiteSpace PropertyValueSearchStr) then
-                    PropertyValueSearchStr <- ""
-                    PropertyValueSearchIndex <- -1
+            elif ImGui.IsKeyPressed ImGuiKey.Escape && SelectedWindowOpt = Some "Edit Property" && not (String.IsNullOrWhiteSpace PropertyValueSearchStr) then
+                PropertyValueSearchStr <- ""
+                PropertyValueSearchIndex <- -1
             elif not io.WantCaptureKeyboardGlobal || entityHierarchyFocused then
                 if ImGui.IsKeyPressed ImGuiKey.Z && ImGui.IsCtrlDown () then tryUndo world |> ignore<bool>
                 elif ImGui.IsKeyPressed ImGuiKey.Y && ImGui.IsCtrlDown () then tryRedo world |> ignore<bool>
@@ -2197,6 +2221,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 elif ImGui.IsKeyPressed ImGuiKey.V && ImGui.IsCtrlDown () then tryPaste PasteAtLook (Option.map cast NewEntityParentOpt) world |> ignore<bool>
                 elif ImGui.IsKeyPressed ImGuiKey.Enter && ImGui.IsCtrlDown () then createEntity false false None None world |> ignore<Entity>
                 elif ImGui.IsKeyPressed ImGuiKey.Delete then tryDeleteSelectedEntity world |> ignore<bool>
+                elif ImGui.IsKeyPressed ImGuiKey.M && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltUp () then ManipulationWorld <- not ManipulationWorld
+                elif ImGui.IsKeyPressed ImGuiKey.I && ImGui.IsCtrlUp () && ImGui.IsShiftUp () && ImGui.IsAltUp () then ShowInputsDialog <- true
                 elif ImGui.IsKeyPressed ImGuiKey.Escape then
                     if not (String.IsNullOrWhiteSpace PropagationSourcesSearchStr) then
                         PropagationSourcesSearchStr <- ""
@@ -2263,6 +2289,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     createEntity true true None None world |> ignore<Entity>
                     tryMoveSelectedEntityToOrigin true world |> ignore<bool>
             if ImGui.MenuItem "Delete Entity" then tryDeleteSelectedEntity world |> ignore<bool>
+            if singular && entity.GetProtection world = Unprotected then
+                if ImGui.MenuItem ("Rename Entity", "F2") then ShowRenameEntityDialog <- true
             ImGui.Separator ()
             if ImGui.MenuItem "Cut Entity" then tryCutSelectedEntity world |> ignore<bool>
             if ImGui.MenuItem "Copy Entity" then tryCopySelectedEntity world |> ignore<bool>
@@ -3004,12 +3032,13 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     if ImGui.MenuItem ("Create Restore Point", "F7") then createRestorePoint world
                     if ImGui.MenuItem ("Clear Log", "Alt+C") then LogStr <- ""
                     if ImGui.MenuItem ("Reset Layout", "Alt+L") then ImGuiIniResetRequested <- true
-                    ImGui.Separator ()
                     if ImGui.MenuItem ("Reload Assets", "F8") then ReloadAssetsRequested <- 1
                     if ImGui.MenuItem ("Reload Code", "F9") then ReloadCodeRequested <- (false, 1)
                     if ImGui.MenuItem ("Reload Code and Initialize", "Shift+F9") then ReloadCodeRequested <- (true, 1)
                     if ImGui.MenuItem ("Reload All", "Ctrl+R") then ReloadAllRequested <- (false, 1)
                     if ImGui.MenuItem ("Reload All and Initialize", "Ctrl+Shift+R") then ReloadAllRequested <- (true, 1)
+                    ImGui.Separator ()
+                    if ImGui.MenuItem ("Show Inputs", "I") then ShowInputsDialog <- true
                     ImGui.Separator ()
                     if ImGui.MenuItem ("Exit", "Alt+F4") then ShowConfirmExitDialog <- true
                     ImGui.EndMenu ()
@@ -3047,6 +3076,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 if ImGui.BeginMenu "Entity" then
                     if ImGui.MenuItem ("Create Entity", "Ctrl+Enter") then createEntity false false None None world |> ignore<Entity>
                     if ImGui.MenuItem ("Delete Entity", "Delete") then tryDeleteSelectedEntity world |> ignore<bool>
+                    let renamable = (match Seq.tryExactlyOne SelectedEntities with Some entity -> entity.GetProtection world = Unprotected | None -> false)
+                    if ImGui.MenuItem ("Rename Entity", "F2", false, renamable) then ShowRenameEntityDialog <- true
                     ImGui.Separator ()
                     if ImGui.MenuItem ("Cut Entity", "Ctrl+X") then tryCutSelectedEntity world |> ignore<bool>
                     if ImGui.MenuItem ("Copy Entity", "Ctrl+C") then tryCopySelectedEntity world |> ignore<bool>
@@ -3425,7 +3456,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 let treeNodeFlags = ImGuiTreeNodeFlags.Leaf ||| if SelectedEntities.Contains entity then ImGuiTreeNodeFlags.Selected else ImGuiTreeNodeFlags.None
                 ImGui.SetNextItemSelectionUserData (int64 PropagationSourcesIndexed.Count)
                 PropagationSourcesIndexed.Add entity
-                if ImGui.TreeNodeEx (entity.Name, treeNodeFlags) then
+                if ImGui.TreeNodeEx (entity.Name + "##" + scstringMemo entity, treeNodeFlags) then
                     if ImGui.BeginDragDropSource () then
                         DragDropPayloadOpt <- Some (DragDropPropagationSource entity)
                         ImGui.Text entity.Name
@@ -3899,6 +3930,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             if ImGui.IsWindowFocused () && SelectedWindowRestoreRequested = 0 then SelectedWindowOpt <- Some windowName
             let renderer3dConfig = World.getRenderer3dConfig world
             let mutable renderer3dEdited = false
+            let mutable skyBoxEnabled = renderer3dConfig.SkyBoxEnabled
             let mutable lightMappingEnabled = renderer3dConfig.LightMappingEnabled
             let mutable lightShadowingEnabled = renderer3dConfig.LightShadowingEnabled
             let mutable sssEnabled = renderer3dConfig.SssEnabled
@@ -3914,6 +3946,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             let mutable fxaaSpanMax = renderer3dConfig.FxaaSpanMax
             let mutable fxaaReduceMinDivisor = renderer3dConfig.FxaaReduceMinDivisor
             let mutable fxaaReduceMulDivisor = renderer3dConfig.FxaaReduceMulDivisor
+            renderer3dEdited <- ImGui.Checkbox ("Sky Box Enabled", &skyBoxEnabled) || renderer3dEdited
             renderer3dEdited <- ImGui.Checkbox ("Light Mapping Enabled", &lightMappingEnabled) || renderer3dEdited
             renderer3dEdited <- ImGui.Checkbox ("Light Shadowing Enabled", &lightShadowingEnabled) || renderer3dEdited
             renderer3dEdited <- ImGui.Checkbox ("Sss Enabled", &sssEnabled) || renderer3dEdited
@@ -3931,7 +3964,8 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             renderer3dEdited <- ImGui.InputFloat ("Fxaa Reduce Mul Divisor", &fxaaReduceMulDivisor) || renderer3dEdited
             if renderer3dEdited then
                 let renderer3dConfig =
-                    { LightMappingEnabled = lightMappingEnabled
+                    { SkyBoxEnabled = skyBoxEnabled
+                      LightMappingEnabled = lightMappingEnabled
                       LightShadowingEnabled = lightShadowingEnabled
                       SssEnabled = sssEnabled
                       SsaoEnabled = ssaoEnabled
@@ -4020,8 +4054,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             ImGui.DragFloat ("##newEntityElevation", &NewEntityElevation, SnapDrag, Single.MinValue, Single.MaxValue, "%2.2f") |> ignore<bool>
             ImGui.Text "Creation Distance (3d)"
             ImGui.DragFloat ("##newEntityDistance", &NewEntityDistance, SnapDrag, 0.5f, Single.MaxValue, "%2.2f") |> ignore<bool>
-            ImGui.Text "Input"
-            ImGui.Checkbox ("Alternative Eye Travel Input", &AlternativeEyeTravelInput) |> ignore<bool>
             ImGui.Text "Debug"
             ImGui.Checkbox ("Physics Debug Rendering (2d)", &PhysicsDebugRendering2d) |> ignore<bool>
             ImGui.Checkbox ("Physics Debug Rendering (3d)", &PhysicsDebugRendering3d) |> ignore<bool>
@@ -4481,6 +4513,112 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                 ImGui.EndPopup ()
         | [] -> ShowCutEntityDialog <- false
 
+    let private imGuiInputsDialog () =
+        let title = "Gaia Inputs"
+        ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
+        ImGui.SetNextWindowSize (v2 1024.0f 720.0f, ImGuiCond.Appearing)
+        if not (ImGui.IsPopupOpen title) then ImGui.OpenPopup title
+        if ImGui.BeginPopupModal (title, &ShowInputsDialog) then
+            let sections =
+                [|("Eye travel, while the viewport has the keyboard",
+                   [|("W / S", "Move forward / back.")
+                     ("A / D", "Move left / right.")
+                     ("E / Q", "Move up / down.")
+                     ("Up / Down", "Look up / down.")
+                     ("Left / Right", "Turn left / right.")
+                     ("Hold Shift", "Move or turn slower.")
+                     ("Hold Enter / Enter+Shift", "Move faster / fastest.")|])
+                  ("Viewport mouse",
+                   [|("Left click", "Select the entity under the mouse. Clicking the selected entity again cycles to those behind it.")
+                     ("Shift+click / Ctrl+click", "Add to or remove from the selection.")
+                     ("Left drag (2d)", "Move the selection.")
+                     ("Alt+left drag (2d)", "Rotate the selection. Pressing or releasing Alt mid-drag switches between rotating and moving.")
+                     ("Ctrl+left drag (2d)", "Duplicate and move the selection (Ctrl+Shift duplicates without propagation).")
+                     ("Gizmo drag (3d)", "Translate the selection.")
+                     ("Shift+gizmo drag", "Scale the selection.")
+                     ("Alt+gizmo drag", "Rotate the selection.")
+                     ("Hold X / Y / Z + gizmo drag", "Rotate the selection about that axis.")
+                     ("Ctrl+gizmo drag", "Duplicate and translate the selection (Ctrl+Shift duplicates without propagation).")
+                     ("Hold Ctrl mid-drag", "Ignore snaps.")
+                     ("Right click", "Open the context menu, selecting the entity under the mouse.")
+                     ("Right drag", "Free look.")
+                     ("Alt+right drag", "Orbit about the selection, or a point ahead when nothing's selected. Alt switches mid-drag.")
+                     ("Middle drag", "Pan the 3d eye.")
+                     ("Alt+middle drag", "Pan the 2d eye. Alt switches between 2d and 3d panning mid-drag.")
+                     ("Wheel", "Move the eye forward / back.")
+                     ("Hold Shift / Ctrl or Enter", "Pan or wheel slower / faster.")
+                     ("Drop an asset or propagation source", "Create an entity from it.")|])
+                  ("Entity hierarchy",
+                   [|("Click / Ctrl+click / Shift+click", "Select / toggle / select a range.")
+                     ("Arrow keys", "Move between entities.")
+                     ("Enter", "Hand the keyboard back to the viewport.")
+                     ("Double click", "Frame the entity, or the selection it's in.")
+                     ("Right click", "Open the entity's context menu.")
+                     ("Drag onto an entity", "Parent the dragged entities under it.")
+                     ("Alt+drag onto an entity", "Place the dragged entities before it.")
+                     ("Ctrl+drag onto an entity", "Duplicate the dragged entities under it (Ctrl+Shift without propagation).")
+                     ("Drag onto the group selector", "Move the dragged entities to the top level (Ctrl duplicates them).")
+                     ("Drop an asset or propagation source", "Create an entity from it.")|])
+                  ("Property editor",
+                   [|("Ctrl+F", "Search property values.")
+                     ("Enter, in the search box", "Find the next match.")
+                     ("Tab / Shift+Tab", "Go from the search box to the value text / back.")
+                     ("Escape", "Clear the search.")
+                     ("Drop an asset onto an asset property", "Set the property to it.")|])
+                  ("Other windows",
+                   [|("Double click a propagation source", "Move the eye to it.")
+                     ("Ctrl+Enter / Ctrl+Shift+Enter", "Eval / enter, in the interactive window.")|])
+                  ("Keyboard Shortcuts",
+                   [|("I", "Show or hide this list.")
+                     ("M", "Toggle manipulation between world and object space.")
+                     ("Delete", "Delete the selected entity.")
+                     ("Escape", "Clear search / deselect.")
+                     ("Alt+Enter", "Toggle full screen.")
+                     ("Alt+Up / Alt+Down", "Move the selected entity up or down among its siblings.")
+                     ("Alt+S", "Step time by one frame.")
+                     ("Alt+C", "Clear the log.")
+                     ("Alt+L", "Reset the window layout.")
+                     ("Ctrl+N / Ctrl+O / Ctrl+S", "New, open or save a group.")
+                     ("Ctrl+Shift+O", "Open a project.")
+                     ("Ctrl+Alt+O / Ctrl+Alt+S", "Open or save an entity.")
+                     ("Ctrl+R / Ctrl+Shift+R", "Reload all / reload all and initialize.")
+                     ("Ctrl+B", "Auto bounds the selected entity.")
+                     ("Ctrl+I", "Move the selected entity to the origin.")
+                     ("Ctrl+P / Ctrl+Shift+P", "Set / reset the creation parent.")
+                     ("Ctrl+F", "Search the entity hierarchy, or property values when the property editor is focused.")
+                     ("Ctrl+Shift+F / Ctrl+Shift+T", "Freeze / thaw all entities.")
+                     ("Ctrl+Shift+N", "Rebuild navigation.")
+                     ("Ctrl+Shift+L", "Rerender light maps.")
+                     ("Ctrl+Z / Ctrl+Y", "Undo / redo.")
+                     ("Ctrl+X / Ctrl+C", "Cut / copy the selected entity.")
+                     ("Ctrl+V", "Paste an entity where the eye looks.")
+                     ("Ctrl+Enter", "Create an entity.")
+                     ("F2", "Rename the selected entity.")
+                     ("F3", "Switch between 2d and 3d snaps.")
+                     ("F5", "Advance or halt time.")
+                     ("F6", "Toggle editing while advancing.")
+                     ("F7", "Create a restore point.")
+                     ("F8", "Reload assets.")
+                     ("F9 / Shift+F9", "Reload code / reload code and initialize.")
+                     ("F10", "Toggle overlay mode.")
+                     ("F11", "Toggle free mode.")
+                     ("F12", "Toggle capture mode.")
+                     ("Alt+F4", "Exit Gaia.")|])|]
+            for (section, inputs) in sections do
+                ImGui.SeparatorText section
+                if ImGui.BeginTable (section, 2, ImGuiTableFlags.RowBg) then
+                    ImGui.TableSetupColumn ("Input", ImGuiTableColumnFlags.WidthFixed, 300.0f)
+                    ImGui.TableSetupColumn ("Action", ImGuiTableColumnFlags.WidthStretch)
+                    for (input, action) in inputs do
+                        ImGui.TableNextRow ()
+                        ImGui.TableNextColumn () |> ignore<bool>
+                        ImGui.Text input
+                        ImGui.TableNextColumn () |> ignore<bool>
+                        ImGui.TextWrapped action
+                    ImGui.EndTable ()
+            if ImGui.IsKeyPressed (ImGuiKey.I, false) || ImGui.IsKeyReleased ImGuiKey.Escape then ShowInputsDialog <- false
+            ImGui.EndPopup ()
+
     let private imGuiConfirmExitDialog world =
         let title = "Are you okay with exiting Gaia?"
         ImGui.SetNextWindowPos (ImGui.MainViewportCenter, ImGuiCond.Appearing, v2Dup 0.5f)
@@ -4552,6 +4690,11 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             if ImGui.Button "Delete" then
                 tryDeleteSelectedEntity world |> ignore<bool>
                 ShowEntityContextMenu <- false
+            if (match Seq.tryExactlyOne SelectedEntities with Some entity -> entity.GetProtection world = Unprotected | None -> false) then
+                ImGui.SameLine ()
+                if ImGui.Button "Rename" then
+                    ShowRenameEntityDialog <- true
+                    ShowEntityContextMenu <- false
             if  ImGui.IsMouseReleased ImGuiMouseButton.Right ||
                 ImGui.IsKeyReleased ImGuiKey.Escape then
                 ShowEntityContextMenu <- false
@@ -4789,6 +4932,7 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
                     if ShowRenameEntityDialog then imGuiRenameEntityDialog world
                     if ShowDeleteEntityDialog then imGuiDeleteEntityDialog world
                     if ShowCutEntityDialog then imGuiCutEntityDialog world
+                    if ShowInputsDialog then imGuiInputsDialog ()
                     if ShowConfirmExitDialog then imGuiConfirmExitDialog world
                     if ShowRestartDialog then imGuiRestartDialog world
                 | Some message -> imGuiMessageBoxDialog message
@@ -4994,7 +5138,6 @@ DockSpace           ID=0x7C6B3D9B Window=0xA87D555D Pos=0,0 Size=1920,1080 Split
             override this.WriteLine (message : string) = concatLog (message + "\n") }
         |> Trace.Listeners.Add
         |> ignore<int>
-        AlternativeEyeTravelInput <- gaiaState.AlternativeEyeTravelInput
         let world =
             if not gaiaState.ProjectFreshlyLoaded then
                 DesiredEye2dCenter <- gaiaState.DesiredEye2dCenter
