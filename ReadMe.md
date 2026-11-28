@@ -16,6 +16,7 @@ This repository hosts several projects, including -
 - the 2D puzzle game tutorial, ['Twenty 48'](https://github.com/bryanedds/Nu/tree/master/Projects/Twenty%2048).
 - the WIP prototype game sample for ['Project 5 (Tentative Title)'](https://github.com/bryanedds/Project-5/tree/master/Projects/Project%205) - [Demo Here!](https://github.com/bryanedds/Project-5/releases/tag/v0.1.16-vulkan)
 - the WIP prototype game sample for ['Project Race (Tentative Title)'](https://github.com/bryanedds/Project-Race/tree/master/Projects/Project%20Race) - [Demo Here!](https://github.com/bryanedds/Project-Race/releases/tag/v0.1.7)
+- the WIP prototype game sample for ['Zombie Game (Tentative Title)'](https://github.com/bryanedds/Nu/tree/zombie-game/Projects/Zombie%20Game) - [Demo Here!](https://github.com/bryanedds/Nu/releases/download/v21.0.0/Hero.Game.v0.0.1.zip)
 - the commercial game demo for ['Omni Blade'](https://github.com/bryanedds/Nu/tree/omni-blade/Projects/Omni%20Blade) - [Full game available here!](https://bryanedds.itch.io/omni-blade)
 
 Getting Started with Nu
@@ -25,7 +26,7 @@ Look here to get started with your own project in Nu -
 
 [Introductory Material](https://github.com/bryanedds/Nu/wiki#introductory-material) - start here first!
 
-[Making Games with the Nu Game Engine (Draft)](https://github.com/bryanedds/Nu/releases/download/v21.0.0/Making.Games.with.the.Nu.Game.Engine.Draft.pdf) - first draft of our *NEW* book on using Nu Game Engine!
+**[Making Games with the Nu Game Engine (Draft)](https://github.com/bryanedds/Nu/releases/download/v21.0.0/Making.Games.with.the.Nu.Game.Engine.Draft.pdf) - first draft of our *NEW* book on using Nu Game Engine!**
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bryanedds/Nu) -  an increasingly accurate AI-generated wiki for Nu!
 
